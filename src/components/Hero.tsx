@@ -8,7 +8,7 @@ export default function HeroSection() {
 
   return (
     <div className="bg-white">
-      <section className="bg-[#FCF8F1] bg-opacity-30 py-4">
+      <section className="bg-white bg-opacity-30 py-4">
         <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
           <div className="grid items-center grid-cols-1 gap-12 lg:grid-cols-2">
             <div>

@@ -62,8 +62,10 @@ export function Navbar() {
 
       <div
         className={clsx(
-          "md:hidden transition-all duration-300 ease-in-out overflow-hidden px-4",
-          isOpen ? "max-h-screen mt-24" : "max-h-0"
+          "md:hidden fixed top-[72px] left-0 w-full z-40 transition-all duration-300 ease-in-out px-4",
+          isOpen
+            ? "max-h-screen opacity-100"
+            : "max-h-0 opacity-0 pointer-events-none"
         )}
       >
         <div className="rounded-xl border border-gray-200 bg-white/80 backdrop-blur-md p-4 space-y-4 shadow-md">

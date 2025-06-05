@@ -15,18 +15,33 @@ export default function Footer() {
 
   // Social links with corresponding icons
 
-const socialLinks = [
-  { name: "Whatsapp", link: "https://chat.whatsapp.com/KuaphYb8hwiITWbp1bNtpo", icon: <MessageCircle className="w-6 h-6" /> },
-  { name: "Instagram", link: "https://www.instagram.com/trailbliz", icon: <Instagram className="w-6 h-6" /> },
-  { name: "LinkedIn", link: "https://www.linkedin.com/company/trailbliz/", icon: <Linkedin className="w-6 h-6" /> },
-  { name: "YouTube", link: "https://www.youtube.com/@trailbliz", icon: <Youtube className="w-6 h-6" /> },
-];
-
+  const socialLinks = [
+    {
+      name: "Whatsapp",
+      link: "https://chat.whatsapp.com/KuaphYb8hwiITWbp1bNtpo",
+      icon: <MessageCircle className="w-6 h-6" />,
+    },
+    {
+      name: "Instagram",
+      link: "https://www.instagram.com/trailbliz",
+      icon: <Instagram className="w-6 h-6" />,
+    },
+    {
+      name: "LinkedIn",
+      link: "https://www.linkedin.com/company/trailbliz/",
+      icon: <Linkedin className="w-6 h-6" />,
+    },
+    {
+      name: "YouTube",
+      link: "https://www.youtube.com/@trailbliz",
+      icon: <Youtube className="w-6 h-6" />,
+    },
+  ];
 
   return (
     <footer className="bg-gray-950 w-full text-gray-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-10">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5">
           {/* Logo, Social Media Icons vertical */}
           <div className="col-span-2 md:col-span-3 lg:col-span-2">
             <Image
@@ -87,13 +102,14 @@ const socialLinks = [
               Contact Us
             </h4>
             <ul className="space-y-4 text-sm text-gray-300 max-w-xs">
-              <li className="flex items-center gap-2">
-                <span className="font-bold">Email:</span>
-                <span>contact@nirudhyog.com</span>
+              <li className="flex items-start gap-2 flex-wrap">
+                <span className="font-bold shrink-0">Email:</span>
+                <span className="break-words">contact@nirudhyog.com</span>
               </li>
-              <li className="flex items-center gap-2">
-                <span className="font-bold">Phone:</span>
-                <span>+91 81213 98942</span>
+
+              <li className="flex items-start gap-2 flex-wrap">
+                <span className="font-bold shrink-0">Phone:</span>
+                <span className="break-words">+91 81213 98942</span>
               </li>
             </ul>
           </div>
