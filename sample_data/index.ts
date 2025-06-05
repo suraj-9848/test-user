@@ -84,3 +84,29 @@ export const testimonials: Testimonial[] = [
     experience: "This LMS gave me the flexibility to balance academics and internships without compromising on learning quality."
   },
 ];
+  export const alumni = [
+    {
+      name: "Jethin",
+      company: "SDE-I at Microsoft",
+      message:
+        "Nirudhyog gave me the structure and support I needed to crack Microsoft. The mock interviews were a game-changer!",
+    },
+    {
+      name: "Paramesh",
+      company: "SDE at Amazon",
+      message:
+        "Thanks to Nirudhyog, I went from zero DSA knowledge to confidently solving Amazon-level problems.",
+    },
+    {
+      name: "Vidya",
+      company: "SDE Intern at Uber",
+      message:
+        "The mentors at Nirudhyog were incredibly helpful. Their personalized guidance helped me land Uber.",
+    },
+    {
+      name: "Ramesh",
+      company: "SSE at Microsoft",
+      message:
+        "I owe my success to Nirudhyog. The course content and practice sessions are top-notch!",
+    },
+  ];
