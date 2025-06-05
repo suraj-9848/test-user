@@ -25,7 +25,7 @@ export const faqs:FAQItem[] = [
 
 export const testimonials: Testimonial[] = [
   {
-    logo: "/logos/vnr.png",
+    logo: "/user.jpg",
     name: "Rohit Mehra",
     username: "rohit_mehra",
     rating: 4.9,
@@ -34,7 +34,8 @@ export const testimonials: Testimonial[] = [
     experience: "The LMS platform made it easy to manage my courses and assignments. The intuitive dashboard and timely notifications really helped me stay organized."
   },
   {
-    logo: "/logos/mrec.png",
+       logo: "/user.jpg",
+
     name: "Sneha Ramesh",
     username: "sneha_r",
     rating: 4.7,
@@ -43,7 +44,8 @@ export const testimonials: Testimonial[] = [
     experience: "Interactive quizzes and video lectures helped reinforce my learning. The support from instructors through the LMS was excellent."
   },
   {
-    logo: "/logos/cmr.png",
+       logo: "/user.jpg",
+
     name: "Aditya Reddy",
     username: "aditya.v",
     rating: 4.8,
@@ -52,7 +54,8 @@ export const testimonials: Testimonial[] = [
     experience: "The LMS allowed me to learn at my own pace. I loved how progress tracking kept me motivated throughout the semester."
   },
   {
-    logo: "/logos/jntuh.png",
+    logo: "/user.jpg",
+
     name: "Priya Deshmukh",
     username: "priyadk",
     rating: 5.0,
@@ -61,7 +64,8 @@ export const testimonials: Testimonial[] = [
     experience: "Certificates and downloadable resources were a great bonus. I now feel more prepared for industry-level exams and interviews."
   },
   {
-    logo: "/logos/vnr.png",
+    logo: "/user.jpg",
+
     name: "Aman Choudhary",
     username: "aman_ch",
     rating: 4.6,
@@ -70,7 +74,8 @@ export const testimonials: Testimonial[] = [
     experience: "Group discussions and peer learning tools in the LMS helped me engage more deeply with the course material."
   },
   {
-    logo: "/logos/mrec.png",
+        logo: "/user.jpg",
+    
     name: "Megha Sharma",
     username: "megha_2025",
     rating: 4.9,

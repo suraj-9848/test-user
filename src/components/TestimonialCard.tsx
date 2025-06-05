@@ -25,7 +25,7 @@ const TestimonialCard: FC<TestimonialCardProps> = ({
               src={logo}
               alt={`${college} logo`}
               fill
-              className="object-contain"
+              className={`object-contain border-2 border-[${color}] rounded-full`}
             />
           </div>
           <div className="flex items-center gap-1 text-sm text-gray-600 font-medium">
