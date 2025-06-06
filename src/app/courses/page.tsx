@@ -8,8 +8,7 @@ import LearningPathsSection from "@/components/LearningPathsSection";
 import SkillQuizSection from "@/components/SkillQuizSection";
 
 const CoursePage = () => (
-  <PageWrapper>
-    <div className="container mx-auto bg-white rounded-xl shadow-xl overflow-hidden">
+    <div >
       <CourseSearchSection />
       <div className="flex flex-col md:flex-row">
         <CourseSidebar />
@@ -21,7 +20,6 @@ const CoursePage = () => (
       <LearningPathsSection />
       <SkillQuizSection />
     </div>
-  </PageWrapper>
 );
 
 export default CoursePage;
