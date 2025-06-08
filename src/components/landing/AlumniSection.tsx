@@ -1,6 +1,6 @@
 import Link from "next/link";
 import React from "react";
-import { alumni } from "../../sample_data";
+import { alumni } from "../../../sample_data";
 import { UsersRound } from "lucide-react";
 
 /* ─────────────────────────  Card  ───────────────────────── */
@@ -51,9 +51,11 @@ export default function AlumniSection() {
 
           <p className="text-gray-700 max-w-md">
             Learners from Nirudhyog have landed roles at world-class companies
-            like <strong className="text-[#1A1A1D]">Microsoft, Amazon, Uber</strong> and{" "}
-            <strong className="text-[#1A1A1D]">Google</strong>. Their journeys prove what the right
-            mentorship, structure, and dedication can achieve.
+            like{" "}
+            <strong className="text-[#1A1A1D]">Microsoft, Amazon, Uber</strong>{" "}
+            and <strong className="text-[#1A1A1D]">Google</strong>. Their
+            journeys prove what the right mentorship, structure, and dedication
+            can achieve.
           </p>
 
           <Link

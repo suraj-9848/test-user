@@ -11,11 +11,11 @@ export interface TestimonialCardProps {
   color: string;
 }
 export type Testimonial = {
-  logo: string;      // Path to logo image
+  logo: string; // Path to logo image
   name: string;
   username: string;
   rating: number;
-  color: string;     // Tailwind-compatible color
-  college: string;   // New field
-  experience: string
+  color: string; // Tailwind-compatible color
+  college: string; // New field
+  experience: string;
 };
