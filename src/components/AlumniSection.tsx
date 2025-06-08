@@ -16,7 +16,7 @@ const AlumniCard = ({
   index: number;
 }) => (
   <div
-    className={`bg-[#1D1616] border text-white hover:text-black hover:bg-[#FFFDF0] hover:scale-105 duration-300 ease-in  border-gray-700/70 rounded-xl p-4 shadow-sm
+    className={`bg-[#A79277] border text-white hover:text-black hover:bg-[#FFFDF0] hover:scale-105 duration-300 ease-in  border-gray-700/70 rounded-xl p-4 shadow-sm
     transform transition
     ${index % 2 === 0 ? " sm:-translate-y-4" : "sm:translate-y-4"}`}
   >
