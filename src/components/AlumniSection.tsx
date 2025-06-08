@@ -16,7 +16,7 @@ const AlumniCard = ({
   index: number;
 }) => (
   <div
-    className={`bg-[#A79277] border text-white hover:text-black hover:bg-[#FFFDF0] hover:scale-105 duration-300 ease-in  border-gray-700/70 rounded-xl p-4 shadow-sm
+    className={`bg-[#1D1616] border text-white hover:text-black hover:bg-[#FFFDF0] hover:scale-105 duration-300 ease-in  border-gray-700/70 rounded-xl p-4 shadow-sm
     transform transition
     ${index % 2 === 0 ? " sm:-translate-y-4" : "sm:translate-y-4"}`}
   >
@@ -49,10 +49,10 @@ export default function AlumniSection() {
             </span>
           </h1>
 
-          <p className="text-gray-400 max-w-md">
+          <p className="text-gray-700 max-w-md">
             Learners from Nirudhyog have landed roles at world-class companies
-            like <strong>Microsoft, Amazon, Uber</strong> and{" "}
-            <strong>Google</strong>. Their journeys prove what the right
+            like <strong className="text-[#1A1A1D]">Microsoft, Amazon, Uber</strong> and{" "}
+            <strong className="text-[#1A1A1D]">Google</strong>. Their journeys prove what the right
             mentorship, structure, and dedication can achieve.
           </p>
 
