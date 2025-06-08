@@ -3,7 +3,7 @@
 
 import Image from "next/image";
 import { FC } from "react";
-import { Testimonial } from "../../types";
+import { Testimonial } from "../../../types";
 
 type TestimonialCardProps = Testimonial;
 
@@ -18,7 +18,9 @@ const TestimonialCard: FC<TestimonialCardProps> = ({
 }) => {
   return (
     <div className="group perspective">
-      <div className={`transform transition-transform duration-300 ease-out group-hover:-rotate-3 group-hover:scale-[1.02]  rounded-xl p-5 shadow-md border bg-white border-gray-200 max-w-sm w-full`}>
+      <div
+        className={`transform transition-transform duration-300 ease-out group-hover:-rotate-3 group-hover:scale-[1.02]  rounded-xl p-5 shadow-md border bg-white border-gray-200 max-w-sm w-full`}
+      >
         <div className="flex items-center justify-between mb-4">
           <div className="w-14 h-14 relative">
             <Image

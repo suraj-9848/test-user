@@ -19,7 +19,7 @@ const useInViewOnce = (threshold = 0.3) => {
           observer.disconnect(); // stop observing - ensures it fires only once
         }
       },
-      { threshold }
+      { threshold },
     );
 
     observer.observe(ref.current);
@@ -99,7 +99,7 @@ const CountSection: React.FC = () => (
       <StatItem label="Placed" count={13_600} />
       <StatItem label="Companies" count={120} />
     </div>
-    <CollegesSection/>
+    <CollegesSection />
   </section>
 );
 
