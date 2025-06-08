@@ -146,7 +146,7 @@ export default function CandidateForm() {
               ></div>
             </div>
 
-            {steps.map((step, index) => {
+            {steps.map((step) => {
               const Icon = step.icon;
               const isActive = currentStep === step.number;
               const isCompleted = currentStep > step.number;
@@ -199,7 +199,7 @@ export default function CandidateForm() {
                       Personal Information
                     </h2>
                     <p className="text-slate-600">
-                      Let's start with your basic details
+                      Let&apos;s start with your basic details
                     </p>
                   </div>
 
@@ -480,9 +480,9 @@ export default function CandidateForm() {
 
                     {formData.skills.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-4">
-                        {formData.skills.map((skill, index) => (
+                        {formData.skills.map((skill) => (
                           <span
-                            key={index}
+                            key={skill}
                             className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
                           >
                             {skill}

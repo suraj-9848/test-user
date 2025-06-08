@@ -5,19 +5,16 @@ import { JobNotification } from "../../../types/hiring";
 import { jobNotifications } from "../../../sample_data/hiring";
 import {
   Search,
-  Filter,
   MapPin,
   Clock,
   DollarSign,
   Building,
   Calendar,
   Bell,
-  Star,
   ExternalLink,
 } from "lucide-react";
 
 export default function JobNotifications() {
-  const [jobs, setJobs] = useState<JobNotification[]>(jobNotifications);
   const [filteredJobs, setFilteredJobs] =
     useState<JobNotification[]>(jobNotifications);
   const [searchTerm, setSearchTerm] = useState("");
@@ -27,7 +24,7 @@ export default function JobNotifications() {
 
   // Filter jobs based on search and filters
   useEffect(() => {
-    let filtered = jobs;
+    let filtered = jobNotifications;
 
     if (searchTerm) {
       filtered = filtered.filter(
@@ -49,7 +46,7 @@ export default function JobNotifications() {
     }
 
     setFilteredJobs(filtered);
-  }, [searchTerm, selectedType, selectedExperience, jobs]);
+  }, [searchTerm, selectedType, selectedExperience]);
 
   const toggleNotification = (jobId: string) => {
     setNotifications((prev) =>
@@ -329,7 +326,7 @@ export default function JobNotifications() {
         {/* CTA Section */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 text-center text-white mt-12">
           <h2 className="text-2xl font-bold mb-4">
-            Don't see the perfect job yet?
+            Don&apos;t see the perfect job yet?
           </h2>
           <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
             Set up job alerts and get notified instantly when new opportunities

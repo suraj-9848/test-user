@@ -27,7 +27,7 @@ export default function HiringSidebar({
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as TabId)}
               className={`flex flex-col items-center justify-center w-full p-2 rounded-lg transition-colors duration-200 ${
                 isActive ? "text-blue-600" : "text-gray-400"
               } hover:text-blue-600 hover:bg-blue-100`}
@@ -52,7 +52,7 @@ export default function HiringSidebar({
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as TabId)}
               className={`flex flex-col items-center flex-1 p-1 ${
                 isActive ? "text-blue-600" : "text-gray-400"
               } hover:text-blue-600`}

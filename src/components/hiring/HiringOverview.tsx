@@ -1,7 +1,6 @@
 import React from "react";
 import { TabId } from "@/components/hiring/HiringSidebar";
 import {
-  Target,
   TrendingUp,
   Sparkles,
   Zap,
@@ -243,7 +242,7 @@ export default function HiringOverview({ setActiveTab }: HiringOverviewProps) {
                   </div>
                 </div>
                 <p className="text-slate-300 text-center italic">
-                  "{person.story}"
+                  &ldquo;{person.story}&rdquo;
                 </p>
               </div>
             ))}

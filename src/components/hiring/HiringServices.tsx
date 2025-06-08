@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { hiringServices } from "../../../sample_data/hiring";
-import { HiringService } from "../../../types/hiring";
 import {
   Star,
   Check,
@@ -11,7 +10,6 @@ import {
   Target,
   Zap,
   Shield,
-  Clock,
   ArrowRight,
   MessageCircle,
   Phone,
@@ -187,8 +185,8 @@ export default function HiringServices() {
                 </div>
               </div>
               <p className="text-gray-300 text-sm">
-                "Premium Career Coaching helped me transition from a service
-                company to Google. The mock interviews were game-changing!"
+                &ldquo;Premium Career Coaching helped me transition from a service
+                company to Google. The mock interviews were game-changing!&rdquo;
               </p>
             </div>
 
@@ -203,8 +201,8 @@ export default function HiringServices() {
                 </div>
               </div>
               <p className="text-gray-300 text-sm">
-                "Job Placement Guarantee gave me confidence. Within 3 months, I
-                had 4 offers including Microsoft PM role!"
+                &ldquo;Job Placement Guarantee gave me confidence. Within 3 months, I
+                had 4 offers including Microsoft PM role!&rdquo;
               </p>
             </div>
 
@@ -221,8 +219,8 @@ export default function HiringServices() {
                 </div>
               </div>
               <p className="text-gray-300 text-sm">
-                "Executive Search connected me with exclusive opportunities I
-                never knew existed. Now leading a team of 50+ at Amazon."
+                &ldquo;Executive Search connected me with exclusive opportunities I
+                never knew existed. Now leading a team of 50+ at Amazon.&rdquo;
               </p>
             </div>
           </div>
@@ -234,7 +232,7 @@ export default function HiringServices() {
             Ready to Accelerate Your Career?
           </h2>
           <p className="text-indigo-100 mb-8 max-w-2xl mx-auto">
-            Book a free consultation with our career experts. Let's discuss your
+            Book a free consultation with our career experts. Let&apos;s discuss your
             goals and create a personalized strategy to land your dream job.
           </p>
 
