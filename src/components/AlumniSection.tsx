@@ -16,7 +16,7 @@ const AlumniCard = ({
   index: number;
 }) => (
   <div
-    className={`bg-[#131010] border text-white hover:text-black hover:bg-white hover:scale-105 duration-300 ease-in  border-gray-700/70 rounded-xl p-4 shadow-sm
+    className={`bg-[#1D1616] border text-white hover:text-black hover:bg-[#FFFDF0] hover:scale-105 duration-300 ease-in  border-gray-700/70 rounded-xl p-4 shadow-sm
     transform transition
     ${index % 2 === 0 ? " sm:-translate-y-4" : "sm:translate-y-4"}`}
   >
@@ -36,7 +36,7 @@ const AlumniCard = ({
 /* ────────────────────────  Section  ─────────────────────── */
 export default function AlumniSection() {
   return (
-    <section className="min-h-screen bg-[#0f0f0f] text-white px-6 py-16 flex items-center justify-center">
+    <section className="min-h-screen bg-[#FEF3E2] text-[#075B5E] px-6 py-16 flex items-center justify-center">
       <div className="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
         {/* Left — Copy & CTA */}
         <div className="space-y-6">
@@ -44,7 +44,7 @@ export default function AlumniSection() {
             Our alumni cracked the code to <br />
             top tech careers
             <br />
-            <span className="italic font-semibold text-white">
+            <span className="italic font-semibold text-black">
               from Microsoft to Google
             </span>
           </h1>
@@ -58,8 +58,8 @@ export default function AlumniSection() {
 
           <Link
             href="/sign-in"
-            className="inline-block mt-4 border border-white px-5 py-2 rounded-full
-            hover:bg-white hover:text-black transition"
+            className="inline-block bg-sky-200 mt-4 border border-white px-5 py-2 rounded-full
+            hover:bg-black hover:text-black transition"
           >
             ▶️ Start your success story
           </Link>
