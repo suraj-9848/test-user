@@ -96,8 +96,8 @@ const CountSection: React.FC = () => (
       <div className="col-span-2 md:col-auto">
         <StatItem label="Trained" count={17_000} />
       </div>
-      <StatItem label="Placed" count={7_500} />
-      <StatItem label="Companies" count={50} />
+      <StatItem label="Placed" count={13_600} />
+      <StatItem label="Companies" count={120} />
     </div>
     <CollegesSection/>
   </section>
