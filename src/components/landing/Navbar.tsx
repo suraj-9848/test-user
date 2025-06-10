@@ -12,7 +12,7 @@ export function Navbar() {
     { name: "Courses", href: "/courses" },
     { name: "Hiring", href: "/hiring" },
     { name: "Blogs", href: "/blogs" },
-    { name: "About us", href: "/about" },
+    { name: "About Us", href: "/about" },
   ];
 
   return (
