@@ -16,7 +16,7 @@ export function Navbar() {
   ];
 
   return (
-    <>
+    <header>
       <nav className="fixed top-4 left-1/2 z-50 transform -translate-x-1/2 max-w-5xl w-[90%] md:w-full flex items-center justify-between rounded-full border border-gray-200 bg-white/82 backdrop-blur-sm px-6 py-2 md:py-5 shadow-md">
         <div className="flex items-center gap-2 text-lg font-bold text-blue-600">
           <Image src="/logo.svg" alt="logo" width={100} height={60} />
@@ -94,6 +94,6 @@ export function Navbar() {
           </div>
         </div>
       </div>
-    </>
+    </header>
   );
 }
