@@ -17,7 +17,7 @@ export default function AboutHero() {
                 Empowering Careers Through Knowledge
               </h1>
               <p className="mt-4 text-base text-black lg:mt-8 sm:text-xl">
-                At Nirudhyog, we're committed to bridging the gap between education and employment by providing industry-relevant skills training and career development resources.
+                At Nirudhyog, we&apos;re committed to bridging the gap between education and employment by providing industry-relevant skills training and career development resources.
               </p>
 
               <Link

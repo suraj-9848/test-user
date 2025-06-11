@@ -28,7 +28,7 @@ export default function OurMission() {
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Quality Education</h3>
               <p className="text-gray-700">
-                Provide industry-relevant, practical education that prepares students for the real challenges they'll face in their careers.
+                Provide industry-relevant, practical education that prepares students for the real challenges they&apos;ll face in their careers.
               </p>
             </div>
           </div>
@@ -67,7 +67,7 @@ export default function OurMission() {
         
         <div className="mt-16 bg-gray-50 rounded-xl p-8 shadow-md">
           <blockquote className="text-center italic text-xl text-gray-700">
-            "Our mission is to transform lives by making quality education accessible and bridging the gap between learning and career success."
+            &quot;Our mission is to transform lives by making quality education accessible and bridging the gap between learning and career success.&quot;
           </blockquote>
           <p className="text-center mt-4 font-semibold text-gray-900">— Nirudhyog Leadership</p>
         </div>
