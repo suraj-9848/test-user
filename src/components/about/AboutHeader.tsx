@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export default function AboutHeader() {
   return (
-    <section className="relative py-16 overflow-hidden">
+    <section className="relative py-16 pt-32 overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-blue-50 to-white"></div>
