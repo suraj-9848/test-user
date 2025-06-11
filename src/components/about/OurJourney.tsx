@@ -104,7 +104,7 @@ export default function OurJourney() {
   }, [scrollPosition, timelineHeight, timelineTop]);
 
   return (
-    <section className="pt-16 pb-0 bg-gray-50/50">
+    <section id="our-journey" className="pt-24 pb-0 bg-gray-50/50">
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto text-center mb-16">
           <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">

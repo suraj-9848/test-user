@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Add scroll padding to account for fixed navbar */
+html {
+  scroll-padding-top: 6rem; /* Adjust this value based on your navbar height */
+  scroll-behavior: smooth;
+}
+
 @layer utilities {
   .animation-delay-2000 {
     animation-delay: 2s;
