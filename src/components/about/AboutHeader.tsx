@@ -14,7 +14,7 @@ export default function AboutHeader() {
     }, 3000); // Switch every 3 seconds
 
     return () => clearInterval(timer);
-  }, []);
+  }, [images.length]);
 
   return (
     <section className="relative py-16 pt-32 overflow-hidden bg-gradient-to-b from-indigo-50 via-white to-blue-50">
