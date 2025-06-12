@@ -45,13 +45,17 @@ export default function TechnologyPlatform() {
   return (
     <section className="py-16 bg-white overflow-hidden">
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8 relative">
-        {/* Decorative elements */}
-        <div className="absolute top-1/3 right-0 w-64 h-64 bg-blue-50 rounded-full opacity-40 blur-3xl -z-10"></div>
-        <div className="absolute bottom-1/3 left-0 w-64 h-64 bg-yellow-50 rounded-full opacity-40 blur-3xl -z-10"></div>
+        {/* Large decorative circles like AboutHero */}
+        <div className="absolute -top-8 -left-8 w-32 h-32 bg-blue-100 rounded-full opacity-50"></div>
+        <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-yellow-100 rounded-full opacity-50"></div>
+        <div className="absolute top-1/2 right-1/4 w-20 h-20 bg-indigo-100 rounded-full opacity-30"></div>
         
         <div className="max-w-3xl mx-auto text-center mb-16">
+          <p className="text-base font-semibold tracking-wider text-blue-600 uppercase mb-4">
+            Technology
+          </p>
           <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
-            Our Technology Platform
+            Our Learning Platform
           </h2>
           <div className="w-16 h-1 bg-blue-600 mx-auto mt-4 mb-6"></div>
           <p className="text-lg text-gray-700">
@@ -59,64 +63,77 @@ export default function TechnologyPlatform() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          <div className="lg:col-span-5 order-2 lg:order-1">
+        <div className="grid items-center grid-cols-1 gap-12 lg:grid-cols-2 max-w-6xl mx-auto">
+          {/* Features Section */}
+          <div className="order-2 lg:order-1">
             <div className="space-y-6">
               {platformFeatures.map((feature, index) => (
-                <div key={index} className="flex gap-4 items-start bg-gray-50 p-6 rounded-xl hover:shadow-md transition-all duration-300">
-                  <div className="flex-shrink-0">
-                    {feature.icon}
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                    <p className="text-gray-700">{feature.description}</p>
+                <div key={index} className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-blue-200">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 p-3 bg-blue-50 rounded-full">
+                      {feature.icon}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                      <p className="text-gray-700">{feature.description}</p>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
           
-          <div className="lg:col-span-7 order-1 lg:order-2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 rounded-xl transform rotate-3"></div>
-              <div className="relative bg-white rounded-xl shadow-xl overflow-hidden border border-gray-200">
-                <div className="bg-gray-100 px-4 py-2 flex items-center gap-2">
+          {/* Platform Demo Section */}
+          <div className="order-1 lg:order-2 relative">
+            {/* Decorative elements around platform demo */}
+            <div className="absolute -top-6 -left-6 w-24 h-24 bg-blue-100 rounded-full opacity-50"></div>
+            <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-yellow-100 rounded-full opacity-50"></div>
+            
+            <div className="relative rounded-xl shadow-lg">
+              <div className="bg-white rounded-xl overflow-hidden border border-gray-200">
+                {/* Browser chrome */}
+                <div className="bg-gray-100 px-4 py-3 flex items-center gap-2 border-b border-gray-200">
                   <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                   <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <div className="ml-2 text-sm text-gray-600">Nirudhyog Learning Platform</div>
+                  <div className="ml-3 text-sm text-gray-600 font-medium">Nirudhyog Learning Platform</div>
                 </div>
                 
-                <div className="p-4">
+                {/* Platform screenshot */}
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50">
                   <Image
                     src="/lms.png"
                     alt="Nirudhyog LMS Platform"
-                    width={800}
-                    height={500}
-                    className="w-full h-auto rounded-lg shadow-sm border border-gray-200"
+                    width={600}
+                    height={400}
+                    className="w-full rounded-lg shadow-sm"
                   />
                 </div>
                 
-                <div className="bg-gray-50 p-4 border-t border-gray-200">
+                {/* Status bar */}
+                <div className="bg-gray-50 px-4 py-3 border-t border-gray-200">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm font-medium text-gray-700">Online: 1,245 students</span>
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm font-medium text-gray-700">Live: 1,245 students online</span>
                     </div>
-                    <div className="text-sm font-medium text-blue-600">View Dashboard →</div>
+                    <div className="text-sm font-medium text-blue-600 hover:text-blue-700 cursor-pointer">
+                      View Dashboard →
+                    </div>
                   </div>
                 </div>
               </div>
               
-              <div className="absolute -bottom-6 -right-6 bg-white rounded-lg shadow-lg p-3 transform rotate-6">
+              {/* Floating stats card */}
+              <div className="absolute -bottom-4 -right-4 bg-white rounded-lg shadow-lg p-4 border border-gray-100">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-green-600" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-gray-900">99.9% Uptime</div>
+                    <div className="text-sm font-bold text-gray-900">99.9% Uptime</div>
                     <div className="text-xs text-gray-600">Enterprise-grade reliability</div>
                   </div>
                 </div>
@@ -125,21 +142,33 @@ export default function TechnologyPlatform() {
           </div>
         </div>
         
-        <div className="mt-20 bg-gray-50 rounded-xl p-8 shadow-md">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <div>
-              <div className="text-3xl font-bold text-blue-600 mb-2">50+</div>
-              <p className="text-gray-700">Integrations with learning tools</p>
-            </div>
-            
-            <div>
-              <div className="text-3xl font-bold text-blue-600 mb-2">99.9%</div>
-              <p className="text-gray-700">Platform uptime</p>
-            </div>
-            
-            <div>
-              <div className="text-3xl font-bold text-blue-600 mb-2">24/7</div>
-              <p className="text-gray-700">Technical support</p>
+        {/* Stats Section */}
+        <div className="mt-20">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 shadow-lg border border-blue-100">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+              <div className="relative">
+                <div className="absolute -top-2 -left-2 w-16 h-16 bg-blue-200 rounded-full opacity-30"></div>
+                <div className="relative">
+                  <div className="text-4xl font-bold text-blue-600 mb-2">50+</div>
+                  <p className="text-gray-700 font-medium">Learning Tool Integrations</p>
+                </div>
+              </div>
+              
+              <div className="relative">
+                <div className="absolute -top-2 -left-2 w-16 h-16 bg-green-200 rounded-full opacity-30"></div>
+                <div className="relative">
+                  <div className="text-4xl font-bold text-green-600 mb-2">99.9%</div>
+                  <p className="text-gray-700 font-medium">Platform Uptime</p>
+                </div>
+              </div>
+              
+              <div className="relative">
+                <div className="absolute -top-2 -left-2 w-16 h-16 bg-yellow-200 rounded-full opacity-30"></div>
+                <div className="relative">
+                  <div className="text-4xl font-bold text-yellow-600 mb-2">24/7</div>
+                  <p className="text-gray-700 font-medium">Technical Support</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
