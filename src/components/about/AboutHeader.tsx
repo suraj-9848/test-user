@@ -79,8 +79,8 @@ export default function AboutHeader() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto lg:mx-0">
               {[
                 { number: "17", suffix: "k+", label: "Students Trained" },
-                { number: "7.5", suffix: "k+", label: "Students Placed" },
-                { number: "50", suffix: "+", label: "Partner Companies" },
+                { number: "13.6", suffix: "k+", label: "Students Placed" },
+                { number: "120", suffix: "+", label: "Partner Companies" },
                 { number: "100", suffix: "%", label: "Career Support" }
               ].map((stat, index) => (
                 <div key={index} className="group bg-white/80 backdrop-blur-md rounded-xl shadow-lg border border-indigo-50 p-4 text-center hover:shadow-xl transition-all duration-300 transform hover:scale-105 hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50">
