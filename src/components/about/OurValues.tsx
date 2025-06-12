@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export default function OurValues() {
   const values = [
     {
@@ -16,8 +18,7 @@ export default function OurValues() {
       description: "We embrace innovation and continuously evolve our methods to stay ahead in a rapidly changing world.",
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-10 h-10 text-blue-600">
-          <path d="M12 .75a8.25 8.25 0 00-4.135 15.39c.686.398 1.115 1.008 1.134 1.623a.75.75 0 00.577.706c.352.083.71.148 1.074.195.323.041.6.218.765.504l1.2 2.069c.22.38.678.526 1.056.354.378-.173.624-.611.651-1.024.682.17 1.409.17 2.091 0 .027.413.273.85.651 1.024.378.172.836.026 1.056-.354l1.2-2.069c.165-.286.442-.463.765-.504.365-.047.722-.112 1.074-.195a.75.75 0 00.577-.706c.02-.615.448-1.225 1.134-1.623A8.25 8.25 0 0012 .75z" />
-          <path fillRule="evenodd" d="M1.5 4.5a3 3 0 013-3h1.372c.86 0 1.61.586 1.845 1.43l.333 1.2a1.5 1.5 0 001.329 1.12c.34.044.677.094 1.011.149a1.5 1.5 0 001.329-1.12l.333-1.2A1.999 1.999 0 0114.128 1.5h1.372a3 3 0 013 3v1.372c0 .86-.586 1.61-1.43 1.845l-1.2.333a1.5 1.5 0 00-1.12 1.329c-.044.34-.094.677-.149 1.011a1.5 1.5 0 001.12 1.329l1.2.333c.844.235 1.43.986 1.43 1.845v1.372a3 3 0 01-3 3h-1.372c-.86 0-1.61-.586-1.845-1.43l-.333-1.2a1.5 1.5 0 00-1.329-1.12c-.34-.044-.677-.094-1.011-.149a1.5 1.5 0 00-1.329 1.12l-.333 1.2A1.999 1.999 0 019.872 22.5H8.5a3 3 0 01-3-3v-1.372c0-.86.586-1.61 1.43-1.845l1.2-.333a1.5 1.5 0 001.12-1.329c.044-.34.094-.677.149-1.011a1.5 1.5 0 00-1.12-1.329l-1.2-.333A1.999 1.999 0 015.5 9.872V8.5a3 3 0 013-3z" clipRule="evenodd" />
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7zm2 13h-4v-1h4v1zm0-2h-4v-1h4v1zm-1-7H9.5C9.22 6 9 6.22 9 6.5S9.22 7 9.5 7h3c.28 0 .5-.22.5-.5S13.28 6 13 6z"/>
         </svg>
       ),
     },
@@ -86,9 +87,11 @@ export default function OurValues() {
         </div>
         
         <div className="mt-16 text-center">
-          <div className="inline-block bg-blue-600 text-white px-8 py-4 rounded-full font-semibold hover:bg-blue-700 transition-colors duration-300 cursor-pointer">
-            Join Our Community
-          </div>
+          <Link href="https://chat.whatsapp.com/KuaphYb8hwiITWbp1bNtpo" target="_blank" rel="noopener noreferrer">
+            <div className="inline-block bg-blue-600 text-white px-8 py-4 rounded-full font-semibold hover:bg-blue-700 transition-colors duration-300 cursor-pointer">
+              Join Our Community
+            </div>
+          </Link>
         </div>
       </div>
     </section>
