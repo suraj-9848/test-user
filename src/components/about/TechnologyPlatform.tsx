@@ -14,20 +14,20 @@ export default function TechnologyPlatform() {
       )
     },
     {
-      title: "AI-Powered Recommendations",
-      description: "Get personalized content suggestions based on your learning patterns",
+      title: "Rich Course Catalog",
+      description: "Explore a wide variety of courses across different domains to find what suits your learning goals.",
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+          <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 16c1.255 0 2.443-.29 3.5-.804V4.804zM14.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 0114.5 16c1.255 0 2.443-.29 3.5-.804v-10A7.968 7.968 0 0014.5 4z" />
         </svg>
       )
     },
     {
-      title: "Gamified Learning",
-      description: "Earn points, badges, and certificates as you progress through courses",
+      title: "Progress & Analytics",
+      description: "Track your course progress, assignment submissions, and get insights into your learning journey.",
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
-          <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+          <path fillRule="evenodd" d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm9 4a1 1 0 10-2 0v6a1 1 0 102 0V7zm-3 2a1 1 0 10-2 0v4a1 1 0 102 0V9zm-3 3a1 1 0 10-2 0v1a1 1 0 102 0v-1z" clipRule="evenodd" />
         </svg>
       )
     },
@@ -89,11 +89,11 @@ export default function TechnologyPlatform() {
                 
                 <div className="p-4">
                   <Image
-                    src="/window.svg"
+                    src="/lms.png"
                     alt="Nirudhyog LMS Platform"
                     width={800}
                     height={500}
-                    className="w-full h-auto rounded-lg shadow-sm"
+                    className="w-full h-auto rounded-lg shadow-sm border border-gray-200"
                   />
                 </div>
                 

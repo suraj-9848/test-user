@@ -79,25 +79,29 @@ export default function EducationalApproach() {
             </div>
           </div>
           
-          <div className="order-1 lg:order-2 relative">
-            <div className="absolute -top-4 -right-4 w-full h-full bg-blue-100 rounded-xl transform -rotate-3 opacity-60"></div>
-            <div className="relative rounded-xl overflow-hidden shadow-xl">
-              <Image
-                src="/images/companies/image 95.png"
-                alt="Interactive Learning"
-                width={600}
-                height={450}
-                className="w-full h-auto"
-              />
-            </div>
-            <div className="absolute bottom-8 right-8 bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-lg max-w-xs">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <p className="text-sm font-medium">92% course completion rate</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <p className="text-sm font-medium">4.8/5 average student satisfaction</p>
+          <div className="order-1 lg:order-2 relative flex items-center justify-center">
+            {/* Updated Statistics Display */}
+            <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-xl border border-gray-200 transform transition-all duration-300 hover:scale-105">
+              <h3 className="text-2xl font-bold text-center mb-8 text-gray-800">Our Learner Success</h3>
+              <div className="space-y-6">
+                <div className="flex items-center bg-green-50 p-4 rounded-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-500 mr-4 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <div>
+                    <p className="text-3xl font-bold text-green-600">92%</p>
+                    <p className="text-sm text-gray-600">Course Completion Rate</p>
+                  </div>
+                </div>
+                <div className="flex items-center bg-yellow-50 p-4 rounded-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-yellow-500 mr-4 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                  <div>
+                    <p className="text-3xl font-bold text-yellow-600">4.8/5</p>
+                    <p className="text-sm text-gray-600">Average Student Satisfaction</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
