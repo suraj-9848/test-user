@@ -15,29 +15,34 @@ export default function OurJourney() {
   // Milestones data
   const milestones = [
     {
-      year: "2020",
-      title: "Foundation",
-      description: "Nirudhyog was founded with a vision to bridge the gap between education and employment."
+      date: "Feb 2024", // Changed from "February 2024"
+      title: "Company Founded",
+      description:
+        "Started with a clear mission: to bridge the gap between academic learning and industry demands by empowering students with practical skills and career support.",
     },
     {
-      year: "2021",
-      title: "First Courses",
-      description: "Launched our first set of courses focusing on in-demand skills in technology and business."
+      date: "June 2024",
+      title: "First Training Batch Launched",
+      description:
+        "Officially kicked off the first offline and online training batch focused on Full-Stack Web Development, AI/ML foundations, and Placement Preparation.",
     },
     {
-      year: "2022",
-      title: "Hiring Platform",
-      description: "Introduced our innovative hiring platform connecting qualified candidates with employers."
+      date: "October 2024",
+      title: "Expanded to 5 Colleges",
+      description:
+        "Within a few months, partnered with 5 engineering colleges in Hyderabad for technical workshops, career sessions, and placement-oriented training programs.",
     },
     {
-      year: "2023",
-      title: "Community Growth",
-      description: "Reached 10,000+ learners and partnered with 50+ companies for hiring solutions."
+      date: "March 2025",
+      title: "Crossed 20+ College Partnerships & 17000+ Students Trained",
+      description:
+        "Grew from a single classroom initiative to training 17000+ students (offline and online) across 20+ engineering colleges through regular workshops, training batches, hackathons, and placement drives.",
     },
     {
-      year: "2024",
-      title: "Expansion",
-      description: "Expanded our course offerings and launched specialized career tracks for various industries."
+      date: "June 2025",
+      title: "Scaling New Heights",
+      description:
+        "Continuing to expand into more colleges, increasing student outreach, launching internship opportunities, and building placement-ready career services for students across India.",
     }
   ];
 
@@ -142,8 +147,8 @@ export default function OurJourney() {
                 <div key={index} className="relative z-10">
                   <div className={`flex flex-col md:flex-row items-start ${index % 2 === 0 ? 'md:flex-row-reverse' : ''}`}>
                     {/* Year bubble - always centered on mobile, alternating sides on desktop */}
-                    <div className="absolute top-0 left-0 md:left-1/2 transform -translate-y-1/2 md:-translate-x-1/2 flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 border-4 border-white shadow-lg z-20">
-                      <span className="text-sm font-bold text-white">{milestone.year}</span>
+                    <div className="absolute top-0 left-0 md:left-1/2 transform -translate-y-1/2 md:-translate-x-1/2 flex items-center justify-center px-4 py-2 rounded-full bg-blue-600 border-4 border-white shadow-lg z-20">
+                      <span className="text-sm font-bold text-white">{milestone.date}</span>
                     </div>
                     
                     {/* Content box */}

@@ -6,7 +6,6 @@ import OurValues from "../../components/about/OurValues";
 import OurJourney from "../../components/about/OurJourney";
 import EducationalApproach from "../../components/about/EducationalApproach";
 import TechnologyPlatform from "../../components/about/TechnologyPlatform";
-import AlumniInstructors from "../../components/about/AlumniInstructors";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -23,7 +22,6 @@ const AboutPage = () => {
       <OurValues />
       <EducationalApproach />
       <TechnologyPlatform />
-      <AlumniInstructors />
       <OurTeam />
       <OurJourney />
     </div>
