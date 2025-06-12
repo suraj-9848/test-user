@@ -9,7 +9,7 @@ export default function Footer() {
     { name: "About", href: "/about" },
     { name: "Courses", href: "/courses" },
     { name: "Hiring", href: "/hiring" },
-    { name: "About us", href: "/about-us" },
+    { name: "About Us", href: "/about" },
     { name: "Blogs", href: "/blogs" },
   ];
 
@@ -39,7 +39,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-gray-950 w-full text-gray-300">
+    <footer className="bg-gray-950 w-full text-gray-300 mt-0 border-t-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5">
           {/* Logo, Social Media Icons vertical */}
