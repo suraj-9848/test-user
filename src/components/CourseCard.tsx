@@ -94,19 +94,27 @@ export default function CourseCard({
                       height={20}
                       className="rounded-full"
                     />
-                    <span className="text-xs xl:text-sm">{course.instructor}</span>
+                    <span className="text-xs xl:text-sm">
+                      {course.instructor}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Star className="w-3 h-3 xl:w-4 xl:h-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-medium text-xs xl:text-sm">{course.rating}</span>
+                    <span className="font-medium text-xs xl:text-sm">
+                      {course.rating}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Users className="w-3 h-3 xl:w-4 xl:h-4" />
-                    <span className="text-xs xl:text-sm">{course.studentsEnrolled.toLocaleString()}</span>
+                    <span className="text-xs xl:text-sm">
+                      {course.studentsEnrolled.toLocaleString()}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="w-3 h-3 xl:w-4 xl:h-4" />
-                    <span className="text-xs xl:text-sm">{course.duration}</span>
+                    <span className="text-xs xl:text-sm">
+                      {course.duration}
+                    </span>
                   </div>
                 </div>
 
@@ -132,7 +140,9 @@ export default function CourseCard({
                   )}
                   <div className="flex items-center gap-1">
                     <BookOpen className="w-4 h-4" />
-                    <span className="text-xs xl:text-sm">{course.curriculum.length} Modules</span>
+                    <span className="text-xs xl:text-sm">
+                      {course.curriculum.length} Modules
+                    </span>
                   </div>
                 </div>
                 <button
@@ -194,14 +204,18 @@ export default function CourseCard({
             height={20}
             className="rounded-full"
           />
-          <span className="text-xs sm:text-sm text-gray-600 truncate">{course.instructor}</span>
+          <span className="text-xs sm:text-sm text-gray-600 truncate">
+            {course.instructor}
+          </span>
         </div>
 
         <div className="flex items-center justify-between mb-4 text-xs sm:text-sm text-gray-500">
           <div className="flex items-center gap-1">
             <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400" />
             <span className="font-medium">{course.rating}</span>
-            <span className="hidden sm:inline">({course.studentsEnrolled.toLocaleString()})</span>
+            <span className="hidden sm:inline">
+              ({course.studentsEnrolled.toLocaleString()})
+            </span>
           </div>
           <div className="flex items-center gap-1">
             <Clock className="w-3 h-3 sm:w-4 sm:h-4" />

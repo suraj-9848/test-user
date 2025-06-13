@@ -5,7 +5,6 @@ import {
   X,
   Star,
   Clock,
-  Users,
   Award,
   CheckCircle,
   CreditCard,
@@ -85,10 +84,10 @@ export default function EnrollmentModal({
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Enrollment Successful! 🎉
+            Enrollment Successful!
           </h2>
           <p className="text-gray-600 mb-6">
-            Welcome to <strong>{course.title}</strong>! You'll receive a
+            Welcome to <strong>{course.title}</strong>! You&apos;ll receive a
             confirmation email shortly with your course access details.
           </p>
           <button
@@ -283,7 +282,7 @@ export default function EnrollmentModal({
 
                   <div className="bg-blue-50 rounded-lg p-4">
                     <h4 className="font-semibold text-blue-900 mb-2">
-                      What you'll get:
+                      What you&apos;ll get:
                     </h4>
                     <ul className="space-y-1 text-sm text-blue-800">
                       {course.features.map((feature, index) => (

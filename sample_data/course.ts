@@ -1,5 +1,5 @@
 // sample_data/courses.ts
-import { Course } from "@/types/courses";
+import { Course } from "../types/index";
 
 export const courses: Course[] = [
   {

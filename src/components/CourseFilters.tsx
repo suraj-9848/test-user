@@ -1,6 +1,6 @@
 // src/components/courses/CourseFilters.tsx
 import React from "react";
-import { Search, Filter, Grid3X3, List, SortAsc } from "lucide-react";
+import { Search, Filter, Grid3X3, List } from "lucide-react";
 
 interface CourseFiltersProps {
   searchTerm: string;
