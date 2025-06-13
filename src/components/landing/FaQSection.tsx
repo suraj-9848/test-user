@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { faqs } from "../../sample_data";
+import { faqs } from "../../../sample_data";
 
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);

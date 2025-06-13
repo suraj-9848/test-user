@@ -1,26 +1,25 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import Link from 'next/link';
+import Image from "next/image";
+import Link from "next/link";
 
 export default function HeroSection() {
-    
-
   return (
-    <div className="bg-white">
-      <section className="bg-[#FCF8F1] bg-opacity-30 py-4">
+    <div className="bg-white my-16">
+      <section className="bg-white bg-opacity-30 py-4">
         <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
           <div className="grid items-center grid-cols-1 gap-12 lg:grid-cols-2">
             <div>
-     
               <h1 className="mt-4 text-4xl font-bold text-black lg:mt-8 sm:text-6xl xl:text-7xl leading-tight">
                 <p className="text-base font-semibold tracking-wider text-blue-600 uppercase">
-                Your Future Starts Here
-              </p>
+                  Your Future Starts Here
+                </p>
                 Master In-Demand Skills from Top Instructors
               </h1>
               <p className="mt-4 text-base text-black lg:mt-8 sm:text-xl">
-                Learn at your own pace with industry-relevant courses, hands-on projects, and real-time mentorship. Powered by a vibrant learner community.
+                Learn at your own pace with industry-relevant courses, hands-on
+                projects, and real-time mentorship. Powered by a vibrant learner
+                community.
               </p>
 
               <Link
@@ -45,7 +44,7 @@ export default function HeroSection() {
               </Link>
 
               <p className="mt-5 text-gray-600">
-                Already enrolled?{' '}
+                Already enrolled?{" "}
                 <Link
                   href="#"
                   className="text-black transition-all duration-200 hover:underline"

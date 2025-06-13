@@ -1,4 +1,4 @@
-import { testimonials } from "../../sample_data";
+import { testimonials } from "../../../sample_data";
 import TestimonialCard from "./TestimonialCard";
 
 const Testimonials = () => {
@@ -10,13 +10,19 @@ const Testimonials = () => {
         </h2>
         <div className="mt-6 space-y-4 text-gray-600 text-md leading-relaxed max-w-3xl mx-auto">
           <p>
-            Hear from students who have transformed their learning experience using our LMS. Whether it&rsquo;s mastering a new subject, earning certifications, or preparing for a career, our platform has supported thousands on their educational journeys.
+            Hear from students who have transformed their learning experience
+            using our LMS. Whether it&rsquo;s mastering a new subject, earning
+            certifications, or preparing for a career, our platform has
+            supported thousands on their educational journeys.
           </p>
           <p>
-            These testimonials reflect real feedback from learners across various disciplines &mdash; highlighting how intuitive navigation, interactive content, and instructor support helped them succeed.
+            These testimonials reflect real feedback from learners across
+            various disciplines &mdash; highlighting how intuitive navigation,
+            interactive content, and instructor support helped them succeed.
           </p>
           <p>
-            Your success story could be next. Browse the testimonials below to see how our LMS is making a difference.
+            Your success story could be next. Browse the testimonials below to
+            see how our LMS is making a difference.
           </p>
           <div className="pt-2">
             <a
