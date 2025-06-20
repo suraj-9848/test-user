@@ -19,3 +19,9 @@ export type Testimonial = {
   college: string; // New field
   experience: string;
 };
+
+declare module "next-auth" {
+  interface Session {
+    jwt?: any;
+  }
+}

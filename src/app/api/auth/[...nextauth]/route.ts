@@ -11,11 +11,22 @@ const handler = NextAuth({
   pages: {
     signIn: "/signin",
   },
+  session: {
+    strategy: "jwt",
+  },
+  secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async signIn() {
       return true;
     },
-    async session({ session }) {
+    async jwt({ token, account }) {
+      if (account?.id_token) {
+        token.id_token = account.id_token;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      session.jwt = token.id_token;
       return session;
     },
   },
