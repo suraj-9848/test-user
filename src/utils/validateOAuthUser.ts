@@ -1,6 +1,7 @@
 export async function validateOAuthUser(sessionJwt: string) {
+  const baseURL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL
   try {
-    const response = await fetch("http://localhost:4000/auth/validate-oauth", {
+    const response = await fetch(`${baseURL}/auth/google-login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -14,7 +15,7 @@ export async function validateOAuthUser(sessionJwt: string) {
     }
 
     const data = await response.json();
-    return { valid: true, user: data.user };
+    return { valid: true, data: data };
   } catch (error) {
     return { valid: false, error };
   }
