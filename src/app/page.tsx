@@ -11,7 +11,7 @@ import { validateOAuthUser } from "@/utils/validateOAuthUser";
 import { useSession } from "next-auth/react";
 import React, { useEffect, useState } from "react";
 
-const page = () => {
+const Page = () => {
   const { data: session, status } = useSession();
   const [toast, setToast] = useState<{
     show: boolean;
@@ -39,9 +39,10 @@ const page = () => {
             });
           }
         } catch (error) {
+          console.log(error)
           setToast({
             show: true,
-            message: "Error validating user",
+            message: "Error validating user: ",
             type: "error",
           });
         }
@@ -74,4 +75,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;
