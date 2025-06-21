@@ -1,7 +1,13 @@
 
+
+
 export async function validateOAuthUser(sessionJwt: string) {
+  if(!sessionJwt){
+     return { valid: false, error:"Missing Session, please login again."};
+  }
+  const baseUrl = process.env.BACKEND_BASE_URL
     try {
-      const response = await fetch("http://localhost:4000/auth/validate-oauth", {
+      const response = await fetch(`${baseUrl}+/api/auth/google-login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
