@@ -6,7 +6,7 @@ import FAQ from "@/components/landing/FaQSection";
 import HeroSection from "@/components/landing/Hero";
 import Testimonials from "@/components/landing/Testimonials";
 import Toast from "@/components/Toast";
-import { validateOAuthUser } from "@/utils/validateOAuthUser";
+import { validateOAuthUser } from "@/../utils/auth";
 
 import { useSession } from "next-auth/react";
 import React, { useEffect, useState } from "react";
