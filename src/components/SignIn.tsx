@@ -5,9 +5,7 @@ import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { AiOutlineGoogle } from "react-icons/ai";
 import {
-  BookOpen,
-  Users,
-  Award,
+  
   Shield,
   ArrowRight,
   Sparkles,
@@ -82,9 +80,8 @@ const SignIn = () => {
                 </div>
                 <div className="flex-1">
                   <p className="text-slate-700 italic mb-2 leading-relaxed text-sm">
-                    "Nirudhyog transformed my learning experience. The
-                    structured approach and expert guidance helped me land my
-                    dream job at Microsoft."
+                   &ldquo;Nirudhyog transformed my learning experience. The structured approach and expert guidance helped me land my dream job at Microsoft.&rdquo;
+
                   </p>
                   <div className="flex items-center justify-between">
                     <div>
