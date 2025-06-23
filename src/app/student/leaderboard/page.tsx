@@ -13,9 +13,7 @@ import {
   Target,
   Award,
   BookOpen,
-  Clock,
-  Calendar,
-  Filter
+  Clock
 } from "lucide-react";
 
 interface LeaderboardEntry {
@@ -239,7 +237,7 @@ export default function StudentLeaderboard() {
           <div className="flex items-center space-x-4">
             <select
               value={timeFrame}
-              onChange={(e) => setTimeFrame(e.target.value as any)}
+              onChange={(e) => setTimeFrame(e.target.value as 'weekly' | 'monthly' | 'all-time')}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             >
               <option value="weekly">This Week</option>
@@ -249,7 +247,7 @@ export default function StudentLeaderboard() {
             
             <select
               value={category}
-              onChange={(e) => setCategory(e.target.value as any)}
+              onChange={(e) => setCategory(e.target.value as 'points' | 'courses' | 'hours')}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             >
               <option value="points">By Points</option>

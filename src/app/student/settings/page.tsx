@@ -5,21 +5,25 @@ import {
   Bell, 
   Shield, 
   Palette, 
-  Globe, 
   Monitor, 
   Moon, 
   Sun, 
   Smartphone, 
   Mail, 
   MessageSquare, 
-  Volume2,
-  Eye,
   Lock,
   Download,
   Trash2,
   Save,
   CheckCircle
 } from 'lucide-react';
+
+const getBooleanValue = (value: string | boolean): boolean => {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  return false; // Or handle string-to-boolean conversion if needed, e.g., 'true' -> true
+};
 
 const SettingsPage = () => {
   const [activeTab, setActiveTab] = useState('notifications');
@@ -64,7 +68,7 @@ const SettingsPage = () => {
     }
   });
 
-  const handleSettingChange = (category: string, setting: string, value: any) => {
+  const handleSettingChange = (category: string, setting: string, value: string | boolean) => {
     setSettings(prev => ({
       ...prev,
       [category]: {
@@ -158,7 +162,7 @@ const SettingsPage = () => {
                               <label className="relative inline-flex items-center cursor-pointer">
                                 <input
                                   type="checkbox"
-                                  checked={settings.notifications[item.key as keyof typeof settings.notifications]}
+                                  checked={getBooleanValue(settings.notifications[item.key as keyof typeof settings.notifications])}
                                   onChange={(e) => handleSettingChange('notifications', item.key, e.target.checked)}
                                   className="sr-only peer"
                                 />
@@ -191,7 +195,7 @@ const SettingsPage = () => {
                             <label className="relative inline-flex items-center cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={settings.notifications[item.key as keyof typeof settings.notifications]}
+                                checked={getBooleanValue(settings.notifications[item.key as keyof typeof settings.notifications])}
                                 onChange={(e) => handleSettingChange('notifications', item.key, e.target.checked)}
                                 className="sr-only peer"
                               />
@@ -248,7 +252,7 @@ const SettingsPage = () => {
                             <label className="relative inline-flex items-center cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={settings.privacy[item.key as keyof typeof settings.privacy]}
+                                checked={getBooleanValue(settings.privacy[item.key as keyof typeof settings.privacy])}
                                 onChange={(e) => handleSettingChange('privacy', item.key, e.target.checked)}
                                 className="sr-only peer"
                               />
@@ -275,7 +279,7 @@ const SettingsPage = () => {
                             <label className="relative inline-flex items-center cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={settings.privacy[item.key as keyof typeof settings.privacy]}
+                                checked={getBooleanValue(settings.privacy[item.key as keyof typeof settings.privacy])}
                                 onChange={(e) => handleSettingChange('privacy', item.key, e.target.checked)}
                                 className="sr-only peer"
                               />
@@ -381,7 +385,7 @@ const SettingsPage = () => {
                             <label className="relative inline-flex items-center cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={settings.appearance[item.key as keyof typeof settings.appearance]}
+                                checked={getBooleanValue(settings.appearance[item.key as keyof typeof settings.appearance])}
                                 onChange={(e) => handleSettingChange('appearance', item.key, e.target.checked)}
                                 className="sr-only peer"
                               />

@@ -4,17 +4,11 @@ import { useState, useRef } from "react";
 import Image from "next/image";
 import { 
   User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Calendar,
   Camera,
   Edit3,
   Save,
   X,
   Shield,
-  Bell,
-  Eye,
   Award,
   BookOpen,
   Trophy,
@@ -151,7 +145,7 @@ export default function StudentProfile() {
     }));
   };
 
-  const handlePreferenceChange = (category: 'notifications' | 'privacy', field: string, value: any) => {
+  const handlePreferenceChange = (category: 'notifications' | 'privacy', field: string, value: boolean | string) => {
     setEditedProfile(prev => ({
       ...prev,
       preferences: {
@@ -315,7 +309,7 @@ export default function StudentProfile() {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id as 'profile' | 'preferences' | 'achievements')}
                   className={`flex items-center space-x-2 py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
                     activeTab === tab.id
                       ? 'border-blue-500 text-blue-600'

@@ -11,11 +11,7 @@ import {
   MessageSquare, 
   AlertCircle, 
   Info,
-  CheckCircle,
-  Filter,
-  MoreVertical,
-  Archive,
-  Trash2
+  MoreVertical
 } from 'lucide-react';
 
 const NotificationsPage = () => {
@@ -248,7 +244,7 @@ const NotificationsPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">This Week</p>
-                <p className="text-2xl font-bold text-green-600">{notifications.filter(n => {
+                <p className="text-2xl font-bold text-green-600">{notifications.filter(() => {
                   const notificationDate = new Date();
                   const weekAgo = new Date();
                   weekAgo.setDate(weekAgo.getDate() - 7);
@@ -266,7 +262,7 @@ const NotificationsPage = () => {
             <div className="p-8 text-center">
               <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No notifications</h3>
-              <p className="text-gray-600">You're all caught up! Check back later for updates.</p>
+              <p className="text-gray-600">You&apos;re all caught up! Check back later for updates.</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-200">

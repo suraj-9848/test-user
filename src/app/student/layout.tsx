@@ -34,7 +34,7 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
   // If not authenticated, don't render children (redirect will happen)
   if (!session) return null;
   // If authenticated but not a student, show access denied
-  if ((session.user as any)?.userRole !== "student") {
+  if ((session.user as { userRole?: string })?.userRole !== "student") {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="bg-white p-8 rounded shadow text-center">

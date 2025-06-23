@@ -8,16 +8,14 @@ import {
   TrendingUp, 
   Calendar,
   AlertCircle,
-  CheckCircle,
   PlayCircle,
-  Users,
   Target,
   Award,
   ClipboardList
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { signOut, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 
 export default function StudentDashboard() {
   const { data: session } = useSession();

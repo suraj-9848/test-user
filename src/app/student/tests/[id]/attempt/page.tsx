@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Clock, 
   CheckCircle, 
-  AlertCircle, 
   ArrowLeft, 
   ArrowRight,
   Flag,
@@ -12,22 +11,27 @@ import {
   EyeOff,
   Save,
   Send,
-  ChevronLeft,
-  ChevronRight
+  ChevronLeft
 } from 'lucide-react';
 import Link from 'next/link';
 
-const TestAttemptPage = ({ params }: { params: { id: string } }) => {
+const TestAttemptPage = ({ params }: { params: Promise<{ id: string }> }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<{ [key: number]: string | string[] }>({});
   const [timeLeft, setTimeLeft] = useState(3600); // 60 minutes in seconds
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
   const [showReview, setShowReview] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [resolvedParams, setResolvedParams] = useState<{ id: string } | null>(null);
+
+  // Resolve params promise
+  useEffect(() => {
+    params.then(setResolvedParams);
+  }, [params]);
 
   // Mock test data - replace with actual API call
   const test = {
-    id: params.id,
+    id: resolvedParams?.id || 'loading',
     title: "JavaScript Fundamentals - Final Assessment",
     course: "JavaScript Fundamentals",
     duration: 60, // minutes
@@ -85,6 +89,12 @@ const TestAttemptPage = ({ params }: { params: { id: string } }) => {
     ]
   };
 
+  const handleSubmit = useCallback(() => {
+    setSubmitted(true);
+    // Here you would typically send the answers to your API
+    console.log('Submitting answers:', answers);
+  }, [answers]);
+
   // Timer effect
   useEffect(() => {
     if (!submitted && timeLeft > 0) {
@@ -100,7 +110,7 @@ const TestAttemptPage = ({ params }: { params: { id: string } }) => {
       
       return () => clearInterval(timer);
     }
-  }, [timeLeft, submitted]);
+  }, [timeLeft, submitted, handleSubmit]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -130,12 +140,6 @@ const TestAttemptPage = ({ params }: { params: { id: string } }) => {
       }
       return newSet;
     });
-  };
-
-  const handleSubmit = () => {
-    setSubmitted(true);
-    // Here you would typically send the answers to your API
-    console.log('Submitting answers:', answers);
   };
 
   const getQuestionStatus = (index: number) => {

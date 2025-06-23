@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { 
-  TrendingUp, 
-  TrendingDown,
   Award,
   Calendar,
   BarChart3,
@@ -13,8 +11,6 @@ import {
   Target,
   CheckCircle,
   AlertCircle,
-  Star,
-  Filter,
   Download,
   Eye,
   Trophy
@@ -486,7 +482,7 @@ export default function StudentResults() {
 
           <select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
+            onChange={(e) => setSortBy(e.target.value as 'date' | 'score' | 'course')}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           >
             <option value="date">Sort by Date</option>

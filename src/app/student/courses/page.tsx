@@ -8,14 +8,9 @@ import {
   Clock, 
   Star, 
   PlayCircle, 
-  Users, 
-  Calendar,
   Search,
-  Filter,
   Grid3X3,
   List,
-  TrendingUp,
-  Award,
   CheckCircle
 } from "lucide-react";
 

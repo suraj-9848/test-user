@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { 
-  Calendar,
   Clock,
   BookOpen,
   AlertCircle,
@@ -14,12 +12,8 @@ import {
   Download,
   Eye,
   Edit,
-  Trash2,
-  Filter,
   Search,
-  Plus,
   Target,
-  Flag,
   Users
 } from "lucide-react";
 
@@ -517,7 +511,7 @@ export default function StudentAssignments() {
 
           <select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
+            onChange={(e) => setSortBy(e.target.value as 'dueDate' | 'status' | 'course')}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           >
             <option value="dueDate">Sort by Due Date</option>

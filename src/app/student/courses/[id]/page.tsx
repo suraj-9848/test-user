@@ -1,16 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ArrowLeft, Play, Clock, BookOpen, Users, Star, Download, CheckCircle, Lock, FileText, Video, Headphones } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Clock, BookOpen, Users, Star, CheckCircle, Lock, FileText, Video, Headphones } from 'lucide-react';
 import Link from 'next/link';
 
-const CourseDetailPage = ({ params }: { params: { id: string } }) => {
+const CourseDetailPage = ({ params }: { params: Promise<{ id: string }> }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [expandedModule, setExpandedModule] = useState<number | null>(null);
+  const [resolvedParams, setResolvedParams] = useState<{ id: string } | null>(null);
+
+  // Resolve params promise for Next.js 15
+  useEffect(() => {
+    params.then(setResolvedParams);
+  }, [params]);
 
   // Mock course data - replace with actual API call
   const course = {
-    id: params.id,
+    id: resolvedParams?.id || 'loading',
     title: "Advanced React Development",
     instructor: "Dr. Sarah Johnson",
     duration: "12 weeks",
@@ -126,6 +132,17 @@ const CourseDetailPage = ({ params }: { params: { id: string } }) => {
     }
   };
 
+  if (!resolvedParams) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading course...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -230,9 +247,9 @@ const CourseDetailPage = ({ params }: { params: { id: string } }) => {
             <div className="prose max-w-none">
               <p className="text-gray-700 mb-4">
                 This comprehensive course covers advanced React development techniques used in modern web applications. 
-                You'll learn to build scalable, performant React applications using the latest features and best practices.
+                You&apos;ll learn to build scalable, performant React applications using the latest features and best practices.
               </p>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">What You'll Learn</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">What You&apos;ll Learn</h3>
               <ul className="list-disc list-inside text-gray-700 space-y-1 mb-4">
                 <li>Advanced React Hooks and custom hook patterns</li>
                 <li>Performance optimization techniques</li>
@@ -321,7 +338,7 @@ const CourseDetailPage = ({ params }: { params: { id: string } }) => {
                       <h3 className="font-semibold text-gray-900 mb-2">{assignment.title}</h3>
                       <p className="text-sm text-gray-600 mb-2">Due: {new Date(assignment.dueDate).toLocaleDateString()}</p>
                       {assignment.feedback && (
-                        <p className="text-sm text-gray-700 italic">"{assignment.feedback}"</p>
+                        <p className="text-sm text-gray-700 italic">&quot;{assignment.feedback}&quot;</p>
                       )}
                     </div>
                     <div className="flex items-center space-x-3">

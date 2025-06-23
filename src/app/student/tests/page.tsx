@@ -6,15 +6,11 @@ import {
   Clock, 
   FileText, 
   Trophy, 
-  Calendar,
   Search,
-  Filter,
   Play,
   CheckCircle,
   AlertCircle,
   BookOpen,
-  Target,
-  Award,
   TrendingUp
 } from "lucide-react";
 

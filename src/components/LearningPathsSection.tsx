@@ -1,4 +1,5 @@
-import React from 'react'
+import React from 'react';
+import Image from 'next/image';
 
 const paths = [
   {
@@ -35,7 +36,13 @@ const LearningPathsSection = () => (
         {paths.map(path => (
           <a className="block group" href="#" key={path.title}>
             <div className="relative rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 path-card">
-              <img alt={path.title} className="w-full h-32 sm:h-48 object-cover transform group-hover:scale-105 transition-transform duration-300" src={path.img} />
+              <Image 
+                alt={path.title} 
+                className="w-full h-32 sm:h-48 object-cover transform group-hover:scale-105 transition-transform duration-300" 
+                src={path.img}
+                width={400}
+                height={200}
+              />
               <div className="p-3 sm:p-4 bg-white">
                 <h3 className="text-base sm:text-lg font-semibold text-gray-800">{path.title}</h3>
                 <p className="text-xs sm:text-sm text-gray-500">{path.desc}</p>
