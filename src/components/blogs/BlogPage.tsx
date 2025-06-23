@@ -13,7 +13,6 @@ const tags = [
   "#Alerts",
 ] as const;
 
-
 /* ---------------------  page component  -------------------- */
 export default function BlogPage() {
   const [activeTag, setActiveTag] = useState<(typeof tags)[number]>("#All");
@@ -23,7 +22,7 @@ export default function BlogPage() {
       activeTag === "#All"
         ? dummyPosts
         : dummyPosts.filter((p) => p.tag === activeTag),
-    [activeTag]
+    [activeTag],
   );
 
   return (
@@ -71,9 +70,7 @@ export default function BlogPage() {
       {/* grid of cards */}
       <div className="relative z-10 w-full mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
         {filteredPosts.length
-          ? filteredPosts.map((post) => (
-              <BlogCard key={post.id} {...post} />
-            ))
+          ? filteredPosts.map((post) => <BlogCard key={post.id} {...post} />)
           : /* show three blurred placeholders if no post for the tag */
             Array.from({ length: 3 }).map((_, i) => (
               <BlogCard key={i} isLoading />

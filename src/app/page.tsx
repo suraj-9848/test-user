@@ -28,9 +28,8 @@ const Page = () => {
       if (status === "authenticated" && session?.jwt) {
         try {
           const result = await validateOAuthUser(session.jwt);
-          
-          if(result.valid) {
-            
+
+          if (result.valid) {
           } else {
             setToast({
               show: true,
@@ -39,7 +38,7 @@ const Page = () => {
             });
           }
         } catch (error) {
-          console.log(error)
+          console.log(error);
           setToast({
             show: true,
             message: "Error validating user: ",
@@ -63,13 +62,9 @@ const Page = () => {
       <CountSection />
       <AlumniSection />
       <FAQ />
-      
+
       {toast.show && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={closeToast}
-        />
+        <Toast message={toast.message} type={toast.type} onClose={closeToast} />
       )}
     </div>
   );

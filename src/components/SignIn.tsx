@@ -4,12 +4,7 @@ import React, { useEffect } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { AiOutlineGoogle } from "react-icons/ai";
-import {
-  
-  Shield,
-  ArrowRight,
-  Sparkles,
-} from "lucide-react";
+import { Shield, ArrowRight, Sparkles } from "lucide-react";
 import { validateOAuthUser } from "../../utils/auth";
 
 const SignIn = () => {
@@ -59,7 +54,7 @@ const SignIn = () => {
           <div className="bg-white text-slate-800 flex flex-col justify-center p-8 lg:p-12 relative">
             {/* Logo and branding */}
             <div className="mb-6">
-              <div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg mb-4">  
+              <div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg mb-4">
                 <span className="text-xl font-bold">N</span>
               </div>
               <div className="flex items-center gap-2 mb-2">
@@ -94,8 +89,9 @@ const SignIn = () => {
                 </div>
                 <div className="flex-1">
                   <p className="text-slate-700 italic mb-2 leading-relaxed text-sm">
-                   &ldquo;Nirudhyog transformed my learning experience. The structured approach and expert guidance helped me land my dream job at Microsoft.&rdquo;
-
+                    &ldquo;Nirudhyog transformed my learning experience. The
+                    structured approach and expert guidance helped me land my
+                    dream job at Microsoft.&rdquo;
                   </p>
                   <div className="flex items-center justify-between">
                     <div>

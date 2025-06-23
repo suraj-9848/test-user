@@ -26,7 +26,7 @@ export default function CourseCard({
   const calculateDiscount = () => {
     if (!course.originalPrice) return 0;
     return Math.round(
-      ((course.originalPrice - course.price) / course.originalPrice) * 100
+      ((course.originalPrice - course.price) / course.originalPrice) * 100,
     );
   };
 

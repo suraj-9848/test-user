@@ -55,7 +55,7 @@ const UserBadge: React.FC<UserBadgeProps> = ({ user }) => {
           )}
           <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
         </div>
-          {/* <div className="hidden sm:block text-left max-w-[160px] overflow-hidden">
+        {/* <div className="hidden sm:block text-left max-w-[160px] overflow-hidden">
             <p className="text-xs font-medium text-gray-900 truncate">
               {user?.name || "User"}
             </p>

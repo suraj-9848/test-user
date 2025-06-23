@@ -47,7 +47,6 @@ export interface Course {
   language: string;
   lastUpdated: string;
   tags: string[];
-
 }
 
 export interface EnrollmentData {

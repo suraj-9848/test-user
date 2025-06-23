@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React from "react";
 import AboutHeader from "../../components/about/AboutHeader";
 import OurMission from "../../components/about/OurMission";
@@ -14,7 +14,7 @@ import TechnologyPlatform from "../../components/about/TechnologyPlatform";
 //   description: "Learn about Nirudhyog's mission, educational approach, technology platform, and our elite instructors from top universities committed to transforming education.",
 //   keywords: "Nirudhyog, learning platform, online education, LMS, edutech, educational technology, e-learning, top instructors, university professors",
 // };
-  
+
 const AboutPage = () => {
   return (
     <div className="flex flex-col min-h-screen">

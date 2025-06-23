@@ -1,29 +1,38 @@
-'use client'
+"use client";
 
-import { useState } from 'react';
-import { Question, TestAnswer, QuestionType } from '@/types/test';
-import { CheckCircle, Circle, Square, CheckSquare } from 'lucide-react';
+import { useState } from "react";
+import { Question, TestAnswer, QuestionType } from "@/types/test";
+import { CheckCircle, Circle, Square, CheckSquare } from "lucide-react";
 
 interface QuestionRendererProps {
   question: Question;
   answer: TestAnswer;
-  onAnswerChange: (questionId: string, selectedOptions: string[], textAnswer?: string) => void;
+  onAnswerChange: (
+    questionId: string,
+    selectedOptions: string[],
+    textAnswer?: string,
+  ) => void;
 }
 
 export default function QuestionRenderer({
   question,
   answer,
-  onAnswerChange
+  onAnswerChange,
 }: QuestionRendererProps) {
-  const [textValue, setTextValue] = useState(answer.textAnswer || '');
+  const [textValue, setTextValue] = useState(answer.textAnswer || "");
 
-  const handleOptionChange = (optionId: string, isMultiSelect: boolean = false) => {
+  const handleOptionChange = (
+    optionId: string,
+    isMultiSelect: boolean = false,
+  ) => {
     let newSelectedOptions: string[];
 
     if (isMultiSelect) {
       // For multiple select questions
       if (answer.selectedOptions.includes(optionId)) {
-        newSelectedOptions = answer.selectedOptions.filter(id => id !== optionId);
+        newSelectedOptions = answer.selectedOptions.filter(
+          (id) => id !== optionId,
+        );
       } else {
         newSelectedOptions = [...answer.selectedOptions, optionId];
       }
@@ -54,8 +63,8 @@ export default function QuestionRenderer({
                 key={option.id}
                 className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
                   isSelected
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                 }`}
                 onClick={() => handleOptionChange(option.id)}
               >
@@ -79,9 +88,7 @@ export default function QuestionRenderer({
 
     return (
       <div className="space-y-3">
-        <p className="text-sm text-gray-600 mb-4">
-          Select all that apply:
-        </p>
+        <p className="text-sm text-gray-600 mb-4">Select all that apply:</p>
         {question.options
           .sort((a, b) => a.optionOrder - b.optionOrder)
           .map((option) => {
@@ -91,8 +98,8 @@ export default function QuestionRenderer({
                 key={option.id}
                 className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
                   isSelected
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                 }`}
                 onClick={() => handleOptionChange(option.id, true)}
               >
@@ -113,8 +120,8 @@ export default function QuestionRenderer({
 
   const renderTrueFalseOptions = () => {
     const options = [
-      { id: 'true', text: 'True' },
-      { id: 'false', text: 'False' }
+      { id: "true", text: "True" },
+      { id: "false", text: "False" },
     ];
 
     return (
@@ -126,8 +133,8 @@ export default function QuestionRenderer({
               key={option.id}
               className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
                 isSelected
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
               }`}
               onClick={() => handleOptionChange(option.id)}
             >
@@ -147,9 +154,9 @@ export default function QuestionRenderer({
   };
 
   const renderTextInput = (isLongAnswer: boolean = false) => {
-    const placeholder = isLongAnswer 
-      ? 'Write your detailed answer here...'
-      : 'Write your short answer here...';
+    const placeholder = isLongAnswer
+      ? "Write your detailed answer here..."
+      : "Write your short answer here...";
 
     if (isLongAnswer) {
       return (
@@ -187,17 +194,17 @@ export default function QuestionRenderer({
   const getQuestionTypeLabel = () => {
     switch (question.questionType) {
       case QuestionType.MCQ:
-        return 'Multiple Choice (Select one)';
+        return "Multiple Choice (Select one)";
       case QuestionType.MULTIPLE_SELECT:
-        return 'Multiple Select (Select all that apply)';
+        return "Multiple Select (Select all that apply)";
       case QuestionType.TRUE_FALSE:
-        return 'True/False';
+        return "True/False";
       case QuestionType.SHORT_ANSWER:
-        return 'Short Answer';
+        return "Short Answer";
       case QuestionType.LONG_ANSWER:
-        return 'Long Answer';
+        return "Long Answer";
       default:
-        return 'Question';
+        return "Question";
     }
   };
 
@@ -227,12 +234,12 @@ export default function QuestionRenderer({
             {getQuestionTypeLabel()}
           </span>
           <span className="text-sm text-gray-500">
-            {question.marks} {question.marks === 1 ? 'mark' : 'marks'}
+            {question.marks} {question.marks === 1 ? "mark" : "marks"}
           </span>
         </div>
-        
+
         <div className="prose max-w-none">
-          <div 
+          <div
             className="text-lg text-gray-900 leading-relaxed"
             dangerouslySetInnerHTML={{ __html: question.questionText }}
           />
@@ -240,15 +247,13 @@ export default function QuestionRenderer({
       </div>
 
       {/* Question Content */}
-      <div className="mb-6">
-        {renderQuestionContent()}
-      </div>
+      <div className="mb-6">{renderQuestionContent()}</div>
 
       {/* Answer Status */}
       <div className="border-t pt-4">
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center space-x-2">
-            {(answer.selectedOptions.length > 0 || answer.textAnswer) ? (
+            {answer.selectedOptions.length > 0 || answer.textAnswer ? (
               <>
                 <CheckCircle className="h-4 w-4 text-green-600" />
                 <span className="text-green-600 font-medium">Answered</span>
@@ -260,9 +265,10 @@ export default function QuestionRenderer({
               </>
             )}
           </div>
-          
+
           <div className="text-gray-500">
-            Question {question.order} of {/* This would be passed from parent */}
+            Question {question.order} of{" "}
+            {/* This would be passed from parent */}
           </div>
         </div>
       </div>

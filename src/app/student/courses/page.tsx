@@ -3,15 +3,15 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { 
-  BookOpen, 
-  Clock, 
-  Star, 
-  PlayCircle, 
+import {
+  BookOpen,
+  Clock,
+  Star,
+  PlayCircle,
   Search,
   Grid3X3,
   List,
-  CheckCircle
+  CheckCircle,
 } from "lucide-react";
 
 interface Course {
@@ -29,7 +29,7 @@ interface Course {
   rating: number;
   studentsEnrolled: number;
   nextDeadline?: string;
-  status: 'active' | 'completed' | 'not-started';
+  status: "active" | "completed" | "not-started";
   category: string;
   lastAccessed?: string;
 }
@@ -39,7 +39,7 @@ export default function StudentCourses() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   // Mock data - replace with actual API call
   useEffect(() => {
@@ -48,9 +48,12 @@ export default function StudentCourses() {
         id: "1",
         title: "Full Stack Web Development with MERN",
         instructor: "Rajesh Kumar",
-        instructorImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-        description: "Master modern web development with MongoDB, Express.js, React, and Node.js",
-        image: "https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=400&h=250&fit=crop",
+        instructorImage:
+          "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
+        description:
+          "Master modern web development with MongoDB, Express.js, React, and Node.js",
+        image:
+          "https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=400&h=250&fit=crop",
         progress: 68,
         totalModules: 12,
         completedModules: 8,
@@ -59,17 +62,20 @@ export default function StudentCourses() {
         rating: 4.8,
         studentsEnrolled: 2456,
         nextDeadline: "June 25, 2025",
-        status: 'active',
+        status: "active",
         category: "Web Development",
-        lastAccessed: "2 hours ago"
+        lastAccessed: "2 hours ago",
       },
       {
         id: "2",
         title: "Data Science & Machine Learning",
         instructor: "Dr. Priya Sharma",
-        instructorImage: "https://images.unsplash.com/photo-1494790108755-2616b612b5e5?w=100&h=100&fit=crop&crop=face",
-        description: "Comprehensive course covering Python, statistics, and ML algorithms",
-        image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=250&fit=crop",
+        instructorImage:
+          "https://images.unsplash.com/photo-1494790108755-2616b612b5e5?w=100&h=100&fit=crop&crop=face",
+        description:
+          "Comprehensive course covering Python, statistics, and ML algorithms",
+        image:
+          "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=250&fit=crop",
         progress: 45,
         totalModules: 15,
         completedModules: 7,
@@ -78,17 +84,20 @@ export default function StudentCourses() {
         rating: 4.9,
         studentsEnrolled: 1834,
         nextDeadline: "June 30, 2025",
-        status: 'active',
+        status: "active",
         category: "Data Science",
-        lastAccessed: "1 day ago"
+        lastAccessed: "1 day ago",
       },
       {
         id: "3",
         title: "Mobile App Development with React Native",
         instructor: "Arjun Patel",
-        instructorImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-        description: "Build cross-platform mobile applications with React Native",
-        image: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&h=250&fit=crop",
+        instructorImage:
+          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
+        description:
+          "Build cross-platform mobile applications with React Native",
+        image:
+          "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&h=250&fit=crop",
         progress: 100,
         totalModules: 10,
         completedModules: 10,
@@ -96,17 +105,20 @@ export default function StudentCourses() {
         level: "Intermediate",
         rating: 4.7,
         studentsEnrolled: 987,
-        status: 'completed',
+        status: "completed",
         category: "Mobile Development",
-        lastAccessed: "1 week ago"
+        lastAccessed: "1 week ago",
       },
       {
         id: "4",
         title: "DevOps & Cloud Computing",
         instructor: "Suresh Reddy",
-        instructorImage: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=face",
-        description: "Learn Docker, Kubernetes, AWS, and modern DevOps practices",
-        image: "https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?w=400&h=250&fit=crop",
+        instructorImage:
+          "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=face",
+        description:
+          "Learn Docker, Kubernetes, AWS, and modern DevOps practices",
+        image:
+          "https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?w=400&h=250&fit=crop",
         progress: 0,
         totalModules: 14,
         completedModules: 0,
@@ -115,17 +127,20 @@ export default function StudentCourses() {
         rating: 4.6,
         studentsEnrolled: 1245,
         nextDeadline: "July 5, 2025",
-        status: 'not-started',
+        status: "not-started",
         category: "DevOps",
-        lastAccessed: "Never"
+        lastAccessed: "Never",
       },
       {
         id: "5",
         title: "UI/UX Design Fundamentals",
         instructor: "Neha Gupta",
-        instructorImage: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
-        description: "Master design principles, prototyping, and user experience",
-        image: "https://images.unsplash.com/photo-1559028006-448665bd7c7f?w=400&h=250&fit=crop",
+        instructorImage:
+          "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
+        description:
+          "Master design principles, prototyping, and user experience",
+        image:
+          "https://images.unsplash.com/photo-1559028006-448665bd7c7f?w=400&h=250&fit=crop",
         progress: 30,
         totalModules: 8,
         completedModules: 2,
@@ -134,10 +149,10 @@ export default function StudentCourses() {
         rating: 4.8,
         studentsEnrolled: 1567,
         nextDeadline: "June 28, 2025",
-        status: 'active',
+        status: "active",
         category: "Design",
-        lastAccessed: "3 days ago"
-      }
+        lastAccessed: "3 days ago",
+      },
     ];
 
     setTimeout(() => {
@@ -146,22 +161,36 @@ export default function StudentCourses() {
     }, 1000);
   }, []);
 
-  const filteredCourses = courses.filter(course => {
-    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.instructor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === "all" || course.status === filterStatus;
+  const filteredCourses = courses.filter((course) => {
+    const matchesSearch =
+      course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.instructor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.category.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter =
+      filterStatus === "all" || course.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active':
-        return <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">Active</span>;
-      case 'completed':
-        return <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">Completed</span>;
-      case 'not-started':
-        return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">Not Started</span>;
+      case "active":
+        return (
+          <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+            Active
+          </span>
+        );
+      case "completed":
+        return (
+          <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+            Completed
+          </span>
+        );
+      case "not-started":
+        return (
+          <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+            Not Started
+          </span>
+        );
       default:
         return null;
     }
@@ -184,11 +213,14 @@ export default function StudentCourses() {
             <div className="h-4 bg-gray-200 rounded w-1/2"></div>
           </div>
         </div>
-        
+
         {/* Cards Skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 animate-pulse">
+            <div
+              key={i}
+              className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 animate-pulse"
+            >
               <div className="h-32 bg-gray-200 rounded-lg mb-4"></div>
               <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
               <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
@@ -207,7 +239,9 @@ export default function StudentCourses() {
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div className="mb-4 md:mb-0">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">My Courses</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              My Courses
+            </h1>
             <p className="text-gray-600">
               Track your progress and continue your learning journey
             </p>
@@ -217,7 +251,7 @@ export default function StudentCourses() {
               <div className="flex items-center space-x-2">
                 <BookOpen className="w-4 h-4 text-blue-600" />
                 <span className="text-sm font-medium text-blue-700">
-                  {courses.filter(c => c.status === 'active').length} Active
+                  {courses.filter((c) => c.status === "active").length} Active
                 </span>
               </div>
             </div>
@@ -225,7 +259,8 @@ export default function StudentCourses() {
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-600" />
                 <span className="text-sm font-medium text-green-700">
-                  {courses.filter(c => c.status === 'completed').length} Completed
+                  {courses.filter((c) => c.status === "completed").length}{" "}
+                  Completed
                 </span>
               </div>
             </div>
@@ -265,21 +300,21 @@ export default function StudentCourses() {
           {/* View Mode Toggle */}
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => setViewMode('grid')}
+              onClick={() => setViewMode("grid")}
               className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'grid' 
-                  ? 'bg-blue-100 text-blue-600' 
-                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                viewMode === "grid"
+                  ? "bg-blue-100 text-blue-600"
+                  : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
               }`}
             >
               <Grid3X3 className="w-4 h-4" />
             </button>
             <button
-              onClick={() => setViewMode('list')}
+              onClick={() => setViewMode("list")}
               className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'list' 
-                  ? 'bg-blue-100 text-blue-600' 
-                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                viewMode === "list"
+                  ? "bg-blue-100 text-blue-600"
+                  : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
               }`}
             >
               <List className="w-4 h-4" />
@@ -292,9 +327,13 @@ export default function StudentCourses() {
       {filteredCourses.length === 0 ? (
         <div className="bg-white rounded-xl p-12 shadow-sm border border-gray-100 text-center">
           <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No courses found</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            No courses found
+          </h3>
           <p className="text-gray-600">
-            {searchTerm ? 'Try adjusting your search terms' : 'You haven\'t enrolled in any courses yet'}
+            {searchTerm
+              ? "Try adjusting your search terms"
+              : "You haven't enrolled in any courses yet"}
           </p>
           {!searchTerm && (
             <Link
@@ -306,19 +345,21 @@ export default function StudentCourses() {
           )}
         </div>
       ) : (
-        <div className={`${
-          viewMode === 'grid' 
-            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
-            : 'space-y-4'
-        }`}>
+        <div
+          className={`${
+            viewMode === "grid"
+              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              : "space-y-4"
+          }`}
+        >
           {filteredCourses.map((course) => (
             <div
               key={course.id}
               className={`bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all group ${
-                viewMode === 'list' ? 'p-6' : 'overflow-hidden'
+                viewMode === "list" ? "p-6" : "overflow-hidden"
               }`}
             >
-              {viewMode === 'grid' ? (
+              {viewMode === "grid" ? (
                 <>
                   {/* Course Image */}
                   <div className="relative h-48 overflow-hidden">
@@ -354,16 +395,22 @@ export default function StudentCourses() {
                         height={24}
                         className="rounded-full"
                       />
-                      <span className="text-sm text-gray-600">{course.instructor}</span>
+                      <span className="text-sm text-gray-600">
+                        {course.instructor}
+                      </span>
                     </div>
 
-                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">{course.description}</p>
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                      {course.description}
+                    </p>
 
                     {/* Progress */}
                     <div className="mb-4">
                       <div className="flex items-center justify-between text-sm mb-2">
                         <span className="text-gray-600">Progress</span>
-                        <span className="font-medium text-gray-900">{course.progress}%</span>
+                        <span className="font-medium text-gray-900">
+                          {course.progress}%
+                        </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
@@ -372,7 +419,10 @@ export default function StudentCourses() {
                         ></div>
                       </div>
                       <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
-                        <span>{course.completedModules}/{course.totalModules} modules</span>
+                        <span>
+                          {course.completedModules}/{course.totalModules}{" "}
+                          modules
+                        </span>
                         <span>{course.lastAccessed}</span>
                       </div>
                     </div>
@@ -398,7 +448,11 @@ export default function StudentCourses() {
                         className="flex-1 inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
                       >
                         <PlayCircle className="w-4 h-4 mr-2" />
-                        {course.status === 'completed' ? 'Review' : course.status === 'not-started' ? 'Start' : 'Continue'}
+                        {course.status === "completed"
+                          ? "Review"
+                          : course.status === "not-started"
+                            ? "Start"
+                            : "Continue"}
                       </Link>
                       {course.nextDeadline && (
                         <div className="text-xs text-orange-600 font-medium">
@@ -426,16 +480,23 @@ export default function StudentCourses() {
                         <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                           {course.title}
                         </h3>
-                        <p className="text-sm text-gray-600">by {course.instructor}</p>
+                        <p className="text-sm text-gray-600">
+                          by {course.instructor}
+                        </p>
                       </div>
                       <div className="flex items-center space-x-2">
                         {getStatusBadge(course.status)}
-                        <span className="text-xs text-gray-500">{course.level}</span>
+                        <span className="text-xs text-gray-500">
+                          {course.level}
+                        </span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <span>{course.completedModules}/{course.totalModules} modules</span>
+                        <span>
+                          {course.completedModules}/{course.totalModules}{" "}
+                          modules
+                        </span>
                         <span>{course.progress}% complete</span>
                         <span>Last accessed: {course.lastAccessed}</span>
                       </div>
@@ -444,7 +505,11 @@ export default function StudentCourses() {
                         className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
                       >
                         <PlayCircle className="w-4 h-4 mr-1" />
-                        {course.status === 'completed' ? 'Review' : course.status === 'not-started' ? 'Start' : 'Continue'}
+                        {course.status === "completed"
+                          ? "Review"
+                          : course.status === "not-started"
+                            ? "Start"
+                            : "Continue"}
                       </Link>
                     </div>
                   </div>

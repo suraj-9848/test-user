@@ -31,7 +31,7 @@ const handler = NextAuth({
       let userRole = undefined;
       if (token.id_token && session.user) {
         const result = await validateOAuthUser(token.id_token as string);
-        console.log('validateOAuthUser result:', JSON.stringify(result));
+        console.log("validateOAuthUser result:", JSON.stringify(result));
         if (result.valid && result.data?.user?.userRole) {
           userRole = result.data.user.userRole;
         }

@@ -2,8 +2,8 @@
 
 import { useState, useRef } from "react";
 import Image from "next/image";
-import { 
-  User, 
+import {
+  User,
   Camera,
   Edit3,
   Save,
@@ -12,7 +12,7 @@ import {
   Award,
   BookOpen,
   Trophy,
-  Target
+  Target,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
@@ -40,7 +40,7 @@ interface StudentProfile {
       sms: boolean;
     };
     privacy: {
-      profileVisibility: 'public' | 'private' | 'friends';
+      profileVisibility: "public" | "private" | "friends";
       showProgress: boolean;
       showAchievements: boolean;
     };
@@ -60,7 +60,9 @@ export default function StudentProfile() {
   const { data: session } = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'achievements'>('profile');
+  const [activeTab, setActiveTab] = useState<
+    "profile" | "preferences" | "achievements"
+  >("profile");
 
   // Always use session user data for name, email, avatar if available
   const userName = session?.user?.name || "John Doe";
@@ -83,7 +85,13 @@ export default function StudentProfile() {
     totalPoints: 2450,
     currentRank: 12,
     skills: ["JavaScript", "React", "Node.js", "Python", "SQL", "MongoDB"],
-    interests: ["Web Development", "AI/ML", "Mobile Apps", "DevOps", "UI/UX Design"],
+    interests: [
+      "Web Development",
+      "AI/ML",
+      "Mobile Apps",
+      "DevOps",
+      "UI/UX Design",
+    ],
     achievements: [
       {
         id: "1",
@@ -91,7 +99,7 @@ export default function StudentProfile() {
         description: "Completed all JavaScript modules with 90%+ score",
         icon: "🏆",
         earnedDate: "2025-06-10",
-        category: "skill"
+        category: "skill",
       },
       {
         id: "2",
@@ -99,7 +107,7 @@ export default function StudentProfile() {
         description: "Maintained daily learning for a week",
         icon: "🔥",
         earnedDate: "2025-06-17",
-        category: "streak"
+        category: "streak",
       },
       {
         id: "3",
@@ -107,21 +115,21 @@ export default function StudentProfile() {
         description: "Ranked in top 20 among all students",
         icon: "⭐",
         earnedDate: "2025-06-12",
-        category: "rank"
-      }
+        category: "rank",
+      },
     ],
     preferences: {
       notifications: {
         email: true,
         push: true,
-        sms: false
+        sms: false,
       },
       privacy: {
-        profileVisibility: 'public',
+        profileVisibility: "public",
         showProgress: true,
-        showAchievements: true
-      }
-    }
+        showAchievements: true,
+      },
+    },
   });
 
   // Always use session user data for display, even if profile state is not updated
@@ -132,29 +140,36 @@ export default function StudentProfile() {
   const [editedProfile, setEditedProfile] = useState(profile);
 
   const handleInputChange = (field: string, value: string) => {
-    setEditedProfile(prev => ({
+    setEditedProfile((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
-  const handleArrayChange = (field: 'skills' | 'interests', value: string[]) => {
-    setEditedProfile(prev => ({
+  const handleArrayChange = (
+    field: "skills" | "interests",
+    value: string[],
+  ) => {
+    setEditedProfile((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
-  const handlePreferenceChange = (category: 'notifications' | 'privacy', field: string, value: boolean | string) => {
-    setEditedProfile(prev => ({
+  const handlePreferenceChange = (
+    category: "notifications" | "privacy",
+    field: string,
+    value: boolean | string,
+  ) => {
+    setEditedProfile((prev) => ({
       ...prev,
       preferences: {
         ...prev.preferences,
         [category]: {
           ...prev.preferences[category],
-          [field]: value
-        }
-      }
+          [field]: value,
+        },
+      },
     }));
   };
 
@@ -175,7 +190,7 @@ export default function StudentProfile() {
       const reader = new FileReader();
       reader.onload = (e) => {
         const newAvatar = e.target?.result as string;
-        setEditedProfile(prev => ({ ...prev, avatar: newAvatar }));
+        setEditedProfile((prev) => ({ ...prev, avatar: newAvatar }));
       };
       reader.readAsDataURL(file);
     }
@@ -183,29 +198,37 @@ export default function StudentProfile() {
 
   const addSkill = (skill: string) => {
     if (skill && !editedProfile.skills.includes(skill)) {
-      handleArrayChange('skills', [...editedProfile.skills, skill]);
+      handleArrayChange("skills", [...editedProfile.skills, skill]);
     }
   };
 
   const removeSkill = (skillToRemove: string) => {
-    handleArrayChange('skills', editedProfile.skills.filter(skill => skill !== skillToRemove));
+    handleArrayChange(
+      "skills",
+      editedProfile.skills.filter((skill) => skill !== skillToRemove),
+    );
   };
 
   const addInterest = (interest: string) => {
     if (interest && !editedProfile.interests.includes(interest)) {
-      handleArrayChange('interests', [...editedProfile.interests, interest]);
+      handleArrayChange("interests", [...editedProfile.interests, interest]);
     }
   };
 
   const removeInterest = (interestToRemove: string) => {
-    handleArrayChange('interests', editedProfile.interests.filter(interest => interest !== interestToRemove));
+    handleArrayChange(
+      "interests",
+      editedProfile.interests.filter(
+        (interest) => interest !== interestToRemove,
+      ),
+    );
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
@@ -246,7 +269,7 @@ export default function StudentProfile() {
               )}
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-6">
             <div className="relative">
               <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white/20">
@@ -274,7 +297,7 @@ export default function StudentProfile() {
                 className="hidden"
               />
             </div>
-            
+
             <div>
               <h2 className="text-xl font-semibold mb-2">{profile.name}</h2>
               <div className="flex items-center space-x-6 text-blue-100">
@@ -288,7 +311,9 @@ export default function StudentProfile() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <BookOpen className="w-4 h-4" />
-                  <span>{profile.coursesCompleted}/{profile.coursesEnrolled} courses</span>
+                  <span>
+                    {profile.coursesCompleted}/{profile.coursesEnrolled} courses
+                  </span>
                 </div>
               </div>
             </div>
@@ -301,19 +326,23 @@ export default function StudentProfile() {
         <div className="border-b border-gray-200">
           <nav className="flex space-x-8 px-6">
             {[
-              { id: 'profile', label: 'Personal Info', icon: User },
-              { id: 'preferences', label: 'Preferences', icon: Shield },
-              { id: 'achievements', label: 'Achievements', icon: Award }
+              { id: "profile", label: "Personal Info", icon: User },
+              { id: "preferences", label: "Preferences", icon: Shield },
+              { id: "achievements", label: "Achievements", icon: Award },
             ].map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as 'profile' | 'preferences' | 'achievements')}
+                  onClick={() =>
+                    setActiveTab(
+                      tab.id as "profile" | "preferences" | "achievements",
+                    )
+                  }
                   className={`flex items-center space-x-2 py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
                     activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -326,20 +355,26 @@ export default function StudentProfile() {
 
         <div className="p-6">
           {/* Personal Info Tab */}
-          {activeTab === 'profile' && (
+          {activeTab === "profile" && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Basic Information */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
-                  
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Basic Information
+                  </h3>
+
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Full Name
+                    </label>
                     {isEditing ? (
                       <input
                         type="text"
                         value={editedProfile.name}
-                        onChange={(e) => handleInputChange('name', e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("name", e.target.value)
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     ) : (
@@ -348,12 +383,16 @@ export default function StudentProfile() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email
+                    </label>
                     {isEditing ? (
                       <input
                         type="email"
                         value={editedProfile.email}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("email", e.target.value)
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     ) : (
@@ -362,12 +401,16 @@ export default function StudentProfile() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Phone
+                    </label>
                     {isEditing ? (
                       <input
                         type="tel"
                         value={editedProfile.phone}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("phone", e.target.value)
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     ) : (
@@ -376,26 +419,36 @@ export default function StudentProfile() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Date of Birth
+                    </label>
                     {isEditing ? (
                       <input
                         type="date"
                         value={editedProfile.dateOfBirth}
-                        onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("dateOfBirth", e.target.value)
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     ) : (
-                      <p className="text-gray-900">{formatDate(profile.dateOfBirth)}</p>
+                      <p className="text-gray-900">
+                        {formatDate(profile.dateOfBirth)}
+                      </p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Location
+                    </label>
                     {isEditing ? (
                       <input
                         type="text"
                         value={editedProfile.location}
-                        onChange={(e) => handleInputChange('location', e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("location", e.target.value)
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     ) : (
@@ -406,14 +459,20 @@ export default function StudentProfile() {
 
                 {/* Additional Information */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Additional Information</h3>
-                  
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Additional Information
+                  </h3>
+
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Bio
+                    </label>
                     {isEditing ? (
                       <textarea
                         value={editedProfile.bio}
-                        onChange={(e) => handleInputChange('bio', e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("bio", e.target.value)
+                        }
                         rows={4}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
@@ -423,13 +482,19 @@ export default function StudentProfile() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Member Since</label>
-                    <p className="text-gray-900">{formatDate(profile.joinedDate)}</p>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Member Since
+                    </label>
+                    <p className="text-gray-900">
+                      {formatDate(profile.joinedDate)}
+                    </p>
                   </div>
 
                   {/* Skills */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Skills</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Skills
+                    </label>
                     <div className="flex flex-wrap gap-2 mb-2">
                       {editedProfile.skills.map((skill, index) => (
                         <span
@@ -453,9 +518,9 @@ export default function StudentProfile() {
                         type="text"
                         placeholder="Add a skill and press Enter"
                         onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
+                          if (e.key === "Enter") {
                             addSkill(e.currentTarget.value);
-                            e.currentTarget.value = '';
+                            e.currentTarget.value = "";
                           }
                         }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -465,7 +530,9 @@ export default function StudentProfile() {
 
                   {/* Interests */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Interests</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Interests
+                    </label>
                     <div className="flex flex-wrap gap-2 mb-2">
                       {editedProfile.interests.map((interest, index) => (
                         <span
@@ -489,9 +556,9 @@ export default function StudentProfile() {
                         type="text"
                         placeholder="Add an interest and press Enter"
                         onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
+                          if (e.key === "Enter") {
                             addInterest(e.currentTarget.value);
-                            e.currentTarget.value = '';
+                            e.currentTarget.value = "";
                           }
                         }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -504,55 +571,93 @@ export default function StudentProfile() {
           )}
 
           {/* Preferences Tab */}
-          {activeTab === 'preferences' && (
+          {activeTab === "preferences" && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Notification Preferences */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Notification Preferences</h3>
-                  
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Notification Preferences
+                  </h3>
+
                   <div className="space-y-3">
                     <label className="flex items-center">
                       <input
                         type="checkbox"
                         checked={editedProfile.preferences.notifications.email}
-                        onChange={(e) => handlePreferenceChange('notifications', 'email', e.target.checked)}
+                        onChange={(e) =>
+                          handlePreferenceChange(
+                            "notifications",
+                            "email",
+                            e.target.checked,
+                          )
+                        }
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="ml-3 text-sm text-gray-700">Email notifications</span>
+                      <span className="ml-3 text-sm text-gray-700">
+                        Email notifications
+                      </span>
                     </label>
-                    
+
                     <label className="flex items-center">
                       <input
                         type="checkbox"
                         checked={editedProfile.preferences.notifications.push}
-                        onChange={(e) => handlePreferenceChange('notifications', 'push', e.target.checked)}
+                        onChange={(e) =>
+                          handlePreferenceChange(
+                            "notifications",
+                            "push",
+                            e.target.checked,
+                          )
+                        }
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="ml-3 text-sm text-gray-700">Push notifications</span>
+                      <span className="ml-3 text-sm text-gray-700">
+                        Push notifications
+                      </span>
                     </label>
-                    
+
                     <label className="flex items-center">
                       <input
                         type="checkbox"
                         checked={editedProfile.preferences.notifications.sms}
-                        onChange={(e) => handlePreferenceChange('notifications', 'sms', e.target.checked)}
+                        onChange={(e) =>
+                          handlePreferenceChange(
+                            "notifications",
+                            "sms",
+                            e.target.checked,
+                          )
+                        }
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="ml-3 text-sm text-gray-700">SMS notifications</span>
+                      <span className="ml-3 text-sm text-gray-700">
+                        SMS notifications
+                      </span>
                     </label>
                   </div>
                 </div>
 
                 {/* Privacy Preferences */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Privacy Settings</h3>
-                  
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Privacy Settings
+                  </h3>
+
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Profile Visibility</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Profile Visibility
+                    </label>
                     <select
-                      value={editedProfile.preferences.privacy.profileVisibility}
-                      onChange={(e) => handlePreferenceChange('privacy', 'profileVisibility', e.target.value)}
+                      value={
+                        editedProfile.preferences.privacy.profileVisibility
+                      }
+                      onChange={(e) =>
+                        handlePreferenceChange(
+                          "privacy",
+                          "profileVisibility",
+                          e.target.value,
+                        )
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="public">Public</option>
@@ -560,26 +665,44 @@ export default function StudentProfile() {
                       <option value="friends">Friends Only</option>
                     </select>
                   </div>
-                  
+
                   <div className="space-y-3">
                     <label className="flex items-center">
                       <input
                         type="checkbox"
                         checked={editedProfile.preferences.privacy.showProgress}
-                        onChange={(e) => handlePreferenceChange('privacy', 'showProgress', e.target.checked)}
+                        onChange={(e) =>
+                          handlePreferenceChange(
+                            "privacy",
+                            "showProgress",
+                            e.target.checked,
+                          )
+                        }
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="ml-3 text-sm text-gray-700">Show my progress to others</span>
+                      <span className="ml-3 text-sm text-gray-700">
+                        Show my progress to others
+                      </span>
                     </label>
-                    
+
                     <label className="flex items-center">
                       <input
                         type="checkbox"
-                        checked={editedProfile.preferences.privacy.showAchievements}
-                        onChange={(e) => handlePreferenceChange('privacy', 'showAchievements', e.target.checked)}
+                        checked={
+                          editedProfile.preferences.privacy.showAchievements
+                        }
+                        onChange={(e) =>
+                          handlePreferenceChange(
+                            "privacy",
+                            "showAchievements",
+                            e.target.checked,
+                          )
+                        }
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="ml-3 text-sm text-gray-700">Show my achievements to others</span>
+                      <span className="ml-3 text-sm text-gray-700">
+                        Show my achievements to others
+                      </span>
                     </label>
                   </div>
                 </div>
@@ -588,15 +711,18 @@ export default function StudentProfile() {
           )}
 
           {/* Achievements Tab */}
-          {activeTab === 'achievements' && (
+          {activeTab === "achievements" && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">My Achievements</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  My Achievements
+                </h3>
                 <div className="text-sm text-gray-600">
-                  {profile.achievements.length} achievement{profile.achievements.length !== 1 ? 's' : ''} earned
+                  {profile.achievements.length} achievement
+                  {profile.achievements.length !== 1 ? "s" : ""} earned
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {profile.achievements.map((achievement) => (
                   <div
@@ -606,8 +732,12 @@ export default function StudentProfile() {
                     <div className="flex items-start space-x-3">
                       <div className="text-2xl">{achievement.icon}</div>
                       <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900 mb-1">{achievement.title}</h4>
-                        <p className="text-sm text-gray-600 mb-2">{achievement.description}</p>
+                        <h4 className="font-semibold text-gray-900 mb-1">
+                          {achievement.title}
+                        </h4>
+                        <p className="text-sm text-gray-600 mb-2">
+                          {achievement.description}
+                        </p>
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-500">
                             {formatDate(achievement.earnedDate)}
@@ -621,13 +751,16 @@ export default function StudentProfile() {
                   </div>
                 ))}
               </div>
-              
+
               {profile.achievements.length === 0 && (
                 <div className="text-center py-12">
                   <Award className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No achievements yet</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    No achievements yet
+                  </h3>
                   <p className="text-gray-600">
-                    Keep learning and completing courses to earn your first achievement!
+                    Keep learning and completing courses to earn your first
+                    achievement!
                   </p>
                 </div>
               )}

@@ -1,8 +1,14 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-import { API_ENDPOINTS, apiHelpers } from '@/config/api';
-import { Test, TestAttempt, Question, TestAnswer, MonitoringEvent, TestSubmissionData, SubmitTestResponse } from '@/types/test';
-import { mockTestService } from './mockTestService';
+import { API_ENDPOINTS, apiHelpers } from "@/config/api";
+import {
+  Test,
+  TestAttempt,
+  Question,
+  TestAnswer,
+  MonitoringEvent,
+  TestSubmissionData,
+  SubmitTestResponse,
+} from "@/types/test";
+import { mockTestService } from "./mockTestService";
 
 // Use mock data for demo purposes
 const USE_MOCK_DATA = true;
@@ -53,14 +59,18 @@ export class TestService {
   /**
    * Fetch questions for a specific test attempt
    */
-  static async getTestQuestions(attemptId: string): Promise<{ questions: Question[]; answers: TestAnswer[]; remainingTimeSeconds: number }> {
+  static async getTestQuestions(attemptId: string): Promise<{
+    questions: Question[];
+    answers: TestAnswer[];
+    remainingTimeSeconds: number;
+  }> {
     if (USE_MOCK_DATA) {
       const result = await mockTestService.getTestQuestions(attemptId);
       const attempt = mockTestService.getCurrentAttempt();
-      return { 
-        questions: result.questions, 
-        answers: [], 
-        remainingTimeSeconds: attempt?.timeRemaining || 3600 
+      return {
+        questions: result.questions,
+        answers: [],
+        remainingTimeSeconds: attempt?.timeRemaining || 3600,
       };
     }
     return apiHelpers.get(API_ENDPOINTS.TEST.QUESTIONS(attemptId));
@@ -69,32 +79,46 @@ export class TestService {
   /**
    * Submit completed test
    */
-  static async submitTest(attemptId: string, submissionData: TestSubmissionData): Promise<SubmitTestResponse> {
+  static async submitTest(
+    attemptId: string,
+    submissionData: TestSubmissionData,
+  ): Promise<SubmitTestResponse> {
     if (USE_MOCK_DATA) {
       const result = await mockTestService.submitTest(attemptId);
       return {
         success: result.success,
-        message: 'Test submitted successfully',
-        results: result.results
+        message: "Test submitted successfully",
+        results: result.results,
       };
     }
-    return apiHelpers.post(API_ENDPOINTS.TEST.SUBMIT(attemptId), submissionData);
+    return apiHelpers.post(
+      API_ENDPOINTS.TEST.SUBMIT(attemptId),
+      submissionData,
+    );
   }
 
   /**
    * Save student answers (auto-save functionality)
    */
-  static async saveAnswers(attemptId: string, answers: TestAnswer[]): Promise<void> {
+  static async saveAnswers(
+    attemptId: string,
+    answers: TestAnswer[],
+  ): Promise<void> {
     if (USE_MOCK_DATA) {
       // Convert TestAnswer[] to Record<string, any> for mock service
-      const answersMap = answers.reduce((acc, answer) => {
-        acc[answer.questionId] = answer.selectedAnswer || answer.textAnswer;
-        return acc;
-      }, {} as Record<string, any>);
+      const answersMap = answers.reduce(
+        (acc, answer) => {
+          acc[answer.questionId] = answer.selectedAnswer || answer.textAnswer;
+          return acc;
+        },
+        {} as Record<string, any>,
+      );
       await mockTestService.autoSave(attemptId, answersMap);
       return;
     }
-    return apiHelpers.post(API_ENDPOINTS.ATTEMPT.SAVE_ANSWERS(attemptId), { answers });
+    return apiHelpers.post(API_ENDPOINTS.ATTEMPT.SAVE_ANSWERS(attemptId), {
+      answers,
+    });
   }
 
   /**
@@ -111,14 +135,18 @@ export class TestService {
   /**
    * Upload video recording chunk to S3
    */
-  static async uploadVideoRecording(formData: FormData): Promise<{ success: boolean; url?: string }> {
+  static async uploadVideoRecording(
+    formData: FormData,
+  ): Promise<{ success: boolean; url?: string }> {
     return apiHelpers.postMultipart(API_ENDPOINTS.RECORDING.UPLOAD, formData);
   }
 
   /**
    * Batch upload multiple monitoring events
    */
-  static async logMonitoringEventsBatch(events: MonitoringEvent[]): Promise<void> {
+  static async logMonitoringEventsBatch(
+    events: MonitoringEvent[],
+  ): Promise<void> {
     return apiHelpers.post(API_ENDPOINTS.MONITORING.BATCH_EVENTS, { events });
   }
 }
@@ -165,4 +193,4 @@ export const studentAPI = {
   getProfile: StudentService.getProfile,
   getTestHistory: StudentService.getTestHistory,
   getAttempts: StudentService.getAttempts,
-}; 
+};

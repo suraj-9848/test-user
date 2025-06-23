@@ -19,11 +19,11 @@ export interface Test {
 }
 
 export enum TestStatus {
-  DRAFT = 'DRAFT',
-  PUBLISHED = 'PUBLISHED',
-  ACTIVE = 'ACTIVE',
-  COMPLETED = 'COMPLETED',
-  ARCHIVED = 'ARCHIVED',
+  DRAFT = "DRAFT",
+  PUBLISHED = "PUBLISHED",
+  ACTIVE = "ACTIVE",
+  COMPLETED = "COMPLETED",
+  ARCHIVED = "ARCHIVED",
 }
 
 export interface Question {
@@ -38,11 +38,11 @@ export interface Question {
 }
 
 export enum QuestionType {
-  MCQ = 'MCQ',
-  MULTIPLE_SELECT = 'MULTIPLE_SELECT',
-  TRUE_FALSE = 'TRUE_FALSE',
-  SHORT_ANSWER = 'SHORT_ANSWER',
-  LONG_ANSWER = 'LONG_ANSWER',
+  MCQ = "MCQ",
+  MULTIPLE_SELECT = "MULTIPLE_SELECT",
+  TRUE_FALSE = "TRUE_FALSE",
+  SHORT_ANSWER = "SHORT_ANSWER",
+  LONG_ANSWER = "LONG_ANSWER",
 }
 
 export interface QuizOption {
@@ -66,10 +66,10 @@ export interface TestAttempt {
 }
 
 export enum AttemptStatus {
-  STARTED = 'STARTED',
-  IN_PROGRESS = 'IN_PROGRESS',
-  SUBMITTED = 'SUBMITTED',
-  EVALUATED = 'EVALUATED',
+  STARTED = "STARTED",
+  IN_PROGRESS = "IN_PROGRESS",
+  SUBMITTED = "SUBMITTED",
+  EVALUATED = "EVALUATED",
 }
 
 export interface TestAnswer {
@@ -93,28 +93,28 @@ export interface MonitoringEvent {
 }
 
 export enum MonitoringEventType {
-  TAB_SWITCH = 'TAB_SWITCH',
-  WINDOW_BLUR = 'WINDOW_BLUR',
-  FULLSCREEN_EXIT = 'FULLSCREEN_EXIT',
-  COPY_ATTEMPT = 'COPY_ATTEMPT',
-  PASTE_ATTEMPT = 'PASTE_ATTEMPT',
-  RIGHT_CLICK = 'RIGHT_CLICK',
-  KEYBOARD_SHORTCUT = 'KEYBOARD_SHORTCUT',
-  BROWSER_CLOSE_ATTEMPT = 'BROWSER_CLOSE_ATTEMPT',
-  CAMERA_DISABLED = 'CAMERA_DISABLED',
-  MICROPHONE_DISABLED = 'MICROPHONE_DISABLED',
-  FACE_NOT_DETECTED = 'FACE_NOT_DETECTED',
-  MULTIPLE_FACES = 'MULTIPLE_FACES',
-  SCREEN_RECORDING_DETECTED = 'SCREEN_RECORDING_DETECTED',
-  DEVELOPER_TOOLS_OPENED = 'DEVELOPER_TOOLS_OPENED',
-  SUSPICIOUS_ACTIVITY = 'SUSPICIOUS_ACTIVITY',
+  TAB_SWITCH = "TAB_SWITCH",
+  WINDOW_BLUR = "WINDOW_BLUR",
+  FULLSCREEN_EXIT = "FULLSCREEN_EXIT",
+  COPY_ATTEMPT = "COPY_ATTEMPT",
+  PASTE_ATTEMPT = "PASTE_ATTEMPT",
+  RIGHT_CLICK = "RIGHT_CLICK",
+  KEYBOARD_SHORTCUT = "KEYBOARD_SHORTCUT",
+  BROWSER_CLOSE_ATTEMPT = "BROWSER_CLOSE_ATTEMPT",
+  CAMERA_DISABLED = "CAMERA_DISABLED",
+  MICROPHONE_DISABLED = "MICROPHONE_DISABLED",
+  FACE_NOT_DETECTED = "FACE_NOT_DETECTED",
+  MULTIPLE_FACES = "MULTIPLE_FACES",
+  SCREEN_RECORDING_DETECTED = "SCREEN_RECORDING_DETECTED",
+  DEVELOPER_TOOLS_OPENED = "DEVELOPER_TOOLS_OPENED",
+  SUSPICIOUS_ACTIVITY = "SUSPICIOUS_ACTIVITY",
 }
 
 export enum SecuritySeverity {
-  LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
-  HIGH = 'HIGH',
-  CRITICAL = 'CRITICAL',
+  LOW = "LOW",
+  MEDIUM = "MEDIUM",
+  HIGH = "HIGH",
+  CRITICAL = "CRITICAL",
 }
 
 export interface VideoRecording {
@@ -129,11 +129,11 @@ export interface VideoRecording {
 }
 
 export enum RecordingStatus {
-  RECORDING = 'RECORDING',
-  PROCESSING = 'PROCESSING',
-  COMPLETED = 'COMPLETED',
-  FAILED = 'FAILED',
-  EXPIRED = 'EXPIRED',
+  RECORDING = "RECORDING",
+  PROCESSING = "PROCESSING",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED",
+  EXPIRED = "EXPIRED",
 }
 
 export interface CameraSettings {
@@ -143,7 +143,7 @@ export interface CameraSettings {
     height: number;
   };
   frameRate: number;
-  facingMode: 'user' | 'environment';
+  facingMode: "user" | "environment";
 }
 
 export interface TestSettings {
@@ -167,7 +167,11 @@ export interface TestSubmissionData {
   answers: TestAnswer[];
   monitoringEvents: MonitoringEvent[];
   videoRecordingId?: string;
-  submissionType: 'MANUAL' | 'AUTO_TIME' | 'AUTO_VIOLATION' | 'AUTO_BROWSER_CLOSE';
+  submissionType:
+    | "MANUAL"
+    | "AUTO_TIME"
+    | "AUTO_VIOLATION"
+    | "AUTO_BROWSER_CLOSE";
   finalScore?: number;
   completedAt: string;
 }
@@ -180,7 +184,7 @@ export interface TestUIState {
   isSubmitting: boolean;
   showWarning: boolean;
   warningMessage: string;
-  cameraStatus: 'enabled' | 'disabled' | 'error';
+  cameraStatus: "enabled" | "disabled" | "error";
   recordingStatus: RecordingStatus;
   securityViolations: number;
   lastActivity: string;
@@ -208,4 +212,4 @@ export interface SubmitTestResponse {
   attempt: TestAttempt;
   score?: number;
   passed?: boolean;
-} 
+}

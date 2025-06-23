@@ -38,15 +38,15 @@ export default function CoursesPage() {
               .toLowerCase()
               .includes(searchTerm.toLowerCase()) ||
             course.tags.some((tag) =>
-              tag.toLowerCase().includes(searchTerm.toLowerCase())
-            )
+              tag.toLowerCase().includes(searchTerm.toLowerCase()),
+            ),
         );
       }
 
       // Category filter
       if (selectedCategory !== "All Categories") {
         filtered = filtered.filter(
-          (course) => course.category === selectedCategory
+          (course) => course.category === selectedCategory,
         );
       }
 
@@ -94,14 +94,14 @@ export default function CoursesPage() {
       switch (activeTab) {
         case "trending":
           filtered = filtered.filter(
-            (course) => course.studentsEnrolled > 1000
+            (course) => course.studentsEnrolled > 1000,
           );
           break;
         case "new":
           const thirtyDaysAgo = new Date();
           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
           filtered = filtered.filter(
-            (course) => new Date(course.lastUpdated) > thirtyDaysAgo
+            (course) => new Date(course.lastUpdated) > thirtyDaysAgo,
           );
           break;
       }
@@ -110,7 +110,7 @@ export default function CoursesPage() {
       switch (sortBy) {
         case "popularity":
           return filtered.sort(
-            (a, b) => b.studentsEnrolled - a.studentsEnrolled
+            (a, b) => b.studentsEnrolled - a.studentsEnrolled,
           );
         case "rating":
           return filtered.sort((a, b) => b.rating - a.rating);
@@ -122,7 +122,7 @@ export default function CoursesPage() {
           return filtered.sort(
             (a, b) =>
               new Date(b.lastUpdated).getTime() -
-              new Date(a.lastUpdated).getTime()
+              new Date(a.lastUpdated).getTime(),
           );
         default:
           return filtered;
@@ -136,7 +136,7 @@ export default function CoursesPage() {
       selectedPrice,
       sortBy,
       activeTab,
-    ]
+    ],
   );
 
   useEffect(() => {

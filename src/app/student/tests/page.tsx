@@ -12,7 +12,9 @@ export default function StudentTests() {
   const { data: session } = useSession();
   const [availableTests, setAvailableTests] = useState<Test[]>([]);
   const [selectedTest, setSelectedTest] = useState<Test | null>(null);
-  const [currentAttempt, setCurrentAttempt] = useState<TestAttempt | null>(null);
+  const [currentAttempt, setCurrentAttempt] = useState<TestAttempt | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +26,7 @@ export default function StudentTests() {
       const data = await mockTestService.getAvailableTests();
       setAvailableTests(data.tests || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load tests');
+      setError(err instanceof Error ? err.message : "Failed to load tests");
     } finally {
       setIsLoading(false);
     }
@@ -32,7 +34,10 @@ export default function StudentTests() {
 
   useEffect(() => {
     // Only fetch tests if user is authenticated as student
-    if (session?.user && (session.user as { userRole?: string })?.userRole === "student") {
+    if (
+      session?.user &&
+      (session.user as { userRole?: string })?.userRole === "student"
+    ) {
       fetchAvailableTests();
     }
   }, [session, fetchAvailableTests]);
@@ -48,7 +53,7 @@ export default function StudentTests() {
       const data = await mockTestService.startTest(testId);
       setCurrentAttempt(data.attempt);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start test');
+      setError(err instanceof Error ? err.message : "Failed to start test");
     } finally {
       setIsLoading(false);
     }
@@ -83,7 +88,9 @@ export default function StudentTests() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center max-w-md mx-auto p-6">
           <div className="text-red-500 text-xl mb-4">⚠️</div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Tests</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Error Loading Tests
+          </h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={fetchAvailableTests}
@@ -113,9 +120,12 @@ export default function StudentTests() {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-white rounded-lg shadow-sm p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Available Tests</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          Available Tests
+        </h1>
         <p className="text-gray-600">
-          Select a test to begin your examination. All tests include security monitoring and recording.
+          Select a test to begin your examination. All tests include security
+          monitoring and recording.
         </p>
       </div>
 
@@ -125,8 +135,9 @@ export default function StudentTests() {
           <div className="flex">
             <div className="ml-3">
               <p className="text-sm text-blue-700">
-                <strong>Demo Mode Active:</strong> This is a demonstration of the test system with mock data. 
-                All features including security monitoring, camera recording, and auto-submit are functional.
+                <strong>Demo Mode Active:</strong> This is a demonstration of
+                the test system with mock data. All features including security
+                monitoring, camera recording, and auto-submit are functional.
               </p>
             </div>
           </div>

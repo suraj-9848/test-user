@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 interface BlogCardProps {
-    id?:string | number
+  id?: string | number;
   imageUrl?: string;
   tag?: string;
   postedOn?: string; // e.g. '5 Jun'
@@ -14,7 +14,7 @@ interface BlogCardProps {
 }
 
 export default function BlogCard({
-    id,
+  id,
   imageUrl,
   tag,
   postedOn,
@@ -49,7 +49,7 @@ export default function BlogCard({
   /** ••• REAL CARD ••• */
   return (
     <Link
-    href={`/blogs/${id}`}
+      href={`/blogs/${id}`}
       className="w-full max-w-md rounded-2xl overflow-hidden
                  shadow-md hover:shadow-lg transition-shadow bg-white"
     >
@@ -74,7 +74,9 @@ export default function BlogCard({
       {/* META + TITLE */}
       <div className="p-6 space-y-4 bg-gradient-to-br from-white via-white to-blue-50/30">
         <div className="flex items-center justify-between text-sm">
-          <span className="px-3 py-1 rounded-full bg-pink-200 text-gray-800">{tag}</span>
+          <span className="px-3 py-1 rounded-full bg-pink-200 text-gray-800">
+            {tag}
+          </span>
           <time className="text-gray-500">{postedOn}</time>
         </div>
         <h3 className="text-lg font-semibold text-gray-800">{title}</h3>

@@ -6,4 +6,3 @@
 ## Installation
 
 pnpm i
-

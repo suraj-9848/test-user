@@ -1,13 +1,13 @@
-"use client"
-import BlogSection from '@/components/blogs/BlogPage'
-import React from 'react'
+"use client";
+import BlogSection from "@/components/blogs/BlogPage";
+import React from "react";
 
 const page = () => {
   return (
     <div>
-      <BlogSection/>
+      <BlogSection />
     </div>
-  )
-}
+  );
+};
 
-export default page
+export default page;

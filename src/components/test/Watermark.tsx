@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 interface WatermarkProps {
   text: string;
@@ -49,7 +49,7 @@ export default function Watermark({ text, opacity = 0.05 }: WatermarkProps) {
             <div className="text-gray-400 text-xs whitespace-nowrap mt-1">
               {timestamp}
             </div>
-          </div>
+          </div>,
         );
       }
     }
@@ -60,25 +60,23 @@ export default function Watermark({ text, opacity = 0.05 }: WatermarkProps) {
   return (
     <div className="fixed inset-0 pointer-events-none select-none overflow-hidden">
       {createWatermarkPattern()}
-      
+
       {/* Additional dynamic watermarks */}
       <div
         className="absolute top-1/4 left-1/4 pointer-events-none select-none"
         style={{
-          transform: 'rotate(-30deg)',
+          transform: "rotate(-30deg)",
           opacity: opacity * 0.8,
           zIndex: 1000,
         }}
       >
-        <div className="text-gray-500 font-bold text-2xl">
-          TEST IN PROGRESS
-        </div>
+        <div className="text-gray-500 font-bold text-2xl">TEST IN PROGRESS</div>
       </div>
 
       <div
         className="absolute bottom-1/4 right-1/4 pointer-events-none select-none"
         style={{
-          transform: 'rotate(30deg)',
+          transform: "rotate(30deg)",
           opacity: opacity * 0.8,
           zIndex: 1000,
         }}

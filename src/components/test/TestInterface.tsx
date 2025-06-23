@@ -1,18 +1,24 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable react-hooks/exhaustive-deps */
+"use client";
 
-'use client'
-
-import { useState, useEffect, useRef } from 'react';
-import { Test, TestAttempt, Question, TestAnswer, MonitoringEvent, MonitoringEventType, SecuritySeverity, TestUIState, RecordingStatus } from '@/types/test';
-import { AlertTriangle, ChevronLeft, ChevronRight, Send } from 'lucide-react';
-import { mockTestService } from '@/services/mockTestService';
-import SecurityMonitor from './SecurityMonitor';
-import CameraMonitor from './CameraMonitor';
-import TestTimer from './TestTimer';
-import QuestionRenderer from './QuestionRenderer';
-import Watermark from './Watermark';
+import { useState, useEffect, useRef } from "react";
+import {
+  Test,
+  TestAttempt,
+  Question,
+  TestAnswer,
+  MonitoringEvent,
+  MonitoringEventType,
+  SecuritySeverity,
+  TestUIState,
+  RecordingStatus,
+} from "@/types/test";
+import { AlertTriangle, ChevronLeft, ChevronRight, Send } from "lucide-react";
+import { mockTestService } from "@/services/mockTestService";
+import SecurityMonitor from "./SecurityMonitor";
+import CameraMonitor from "./CameraMonitor";
+import TestTimer from "./TestTimer";
+import QuestionRenderer from "./QuestionRenderer";
+import Watermark from "./Watermark";
 
 interface TestInterfaceProps {
   test: Test;
@@ -25,7 +31,7 @@ export default function TestInterface({
   test,
   attempt,
   onTestComplete,
-  onBack
+  onBack,
 }: TestInterfaceProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<TestAnswer[]>([]);
@@ -35,19 +41,19 @@ export default function TestInterface({
     timeRemaining: 0,
     isSubmitting: false,
     showWarning: false,
-    warningMessage: '',
-    cameraStatus: 'disabled',
+    warningMessage: "",
+    cameraStatus: "disabled",
     recordingStatus: RecordingStatus.RECORDING,
     securityViolations: 0,
     lastActivity: new Date().toISOString(),
   });
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const [isTestSubmitted, setIsTestSubmitted] = useState(false);
-  
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const videoChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
@@ -60,25 +66,28 @@ export default function TestInterface({
     const initializeTest = async () => {
       try {
         setIsLoading(true);
-        
+
         // Fetch test questions using attempt ID
         const data = await mockTestService.getTestQuestions(attempt.id);
         setQuestions(data.questions || []);
-        
+
         // Initialize answers array for new attempt
         const initialAnswers = data.questions.map((q: Question) => ({
           id: `${attempt.id}-${q.id}`,
           questionId: q.id,
           selectedOptions: [],
-          textAnswer: '',
+          textAnswer: "",
           timeSpent: 0,
         }));
         setAnswers(initialAnswers);
 
         // Use remaining time from attempt
-        setUIState(prev => ({
+        const currentAttempt = mockTestService.getCurrentAttempt();
+        setUIState((prev) => ({
           ...prev,
-          timeRemaining: Math.floor(attempt.remainingTime || test.durationInMinutes * 60),
+          timeRemaining: Math.floor(
+            currentAttempt?.timeRemaining || test.durationInMinutes * 60,
+          ),
         }));
 
         // Enter fullscreen and start monitoring
@@ -86,9 +95,10 @@ export default function TestInterface({
         await startCameraMonitoring();
         startSecurityMonitoring();
         startAutoSave();
-
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to initialize test');
+        setError(
+          err instanceof Error ? err.message : "Failed to initialize test",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -107,25 +117,49 @@ export default function TestInterface({
     try {
       if (fullscreenRef.current) {
         const element = fullscreenRef.current;
-        
+
         // Try different fullscreen methods for cross-browser compatibility
         if (element.requestFullscreen) {
           await element.requestFullscreen();
-        } else if ((element as unknown as { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen) {
-          await (element as unknown as { webkitRequestFullscreen: () => Promise<void> }).webkitRequestFullscreen();
-        } else if ((element as unknown as { mozRequestFullScreen?: () => Promise<void> }).mozRequestFullScreen) {
-          await (element as unknown as { mozRequestFullScreen: () => Promise<void> }).mozRequestFullScreen();
-        } else if ((element as unknown as { msRequestFullscreen?: () => Promise<void> }).msRequestFullscreen) {
-          await (element as unknown as { msRequestFullscreen: () => Promise<void> }).msRequestFullscreen();
+        } else if (
+          (
+            element as unknown as {
+              webkitRequestFullscreen?: () => Promise<void>;
+            }
+          ).webkitRequestFullscreen
+        ) {
+          await (
+            element as unknown as {
+              webkitRequestFullscreen: () => Promise<void>;
+            }
+          ).webkitRequestFullscreen();
+        } else if (
+          (element as unknown as { mozRequestFullScreen?: () => Promise<void> })
+            .mozRequestFullScreen
+        ) {
+          await (
+            element as unknown as { mozRequestFullScreen: () => Promise<void> }
+          ).mozRequestFullScreen();
+        } else if (
+          (element as unknown as { msRequestFullscreen?: () => Promise<void> })
+            .msRequestFullscreen
+        ) {
+          await (
+            element as unknown as { msRequestFullscreen: () => Promise<void> }
+          ).msRequestFullscreen();
         }
-        
-        setUIState(prev => ({ ...prev, isFullscreen: true }));
+
+        setUIState((prev) => ({ ...prev, isFullscreen: true }));
       }
     } catch (error) {
-      console.error('Failed to enter fullscreen:', error);
-      logMonitoringEvent(MonitoringEventType.FULLSCREEN_EXIT, SecuritySeverity.HIGH, {
-        error: 'Failed to enter fullscreen',
-      });
+      console.error("Failed to enter fullscreen:", error);
+      logMonitoringEvent(
+        MonitoringEventType.FULLSCREEN_EXIT,
+        SecuritySeverity.HIGH,
+        {
+          error: "Failed to enter fullscreen",
+        },
+      );
     }
   };
 
@@ -136,15 +170,15 @@ export default function TestInterface({
         video: { width: 1280, height: 720 },
         audio: true,
       });
-      
+
       streamRef.current = stream;
-      setUIState(prev => ({ ...prev, cameraStatus: 'enabled' }));
+      setUIState((prev) => ({ ...prev, cameraStatus: "enabled" }));
 
       // Start recording
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9',
+        mimeType: "video/webm;codecs=vp9",
       });
-      
+
       mediaRecorderRef.current = mediaRecorder;
       videoChunksRef.current = [];
 
@@ -155,18 +189,24 @@ export default function TestInterface({
       };
 
       mediaRecorder.onstop = async () => {
-        const videoBlob = new Blob(videoChunksRef.current, { type: 'video/webm' });
+        const videoBlob = new Blob(videoChunksRef.current, {
+          type: "video/webm",
+        });
         await uploadVideoRecording(videoBlob);
       };
 
       mediaRecorder.start(10000); // Record in 10-second chunks
-      
     } catch (error) {
-      console.error('Failed to start camera:', error);
-      setUIState(prev => ({ ...prev, cameraStatus: 'error' }));
-      logMonitoringEvent(MonitoringEventType.CAMERA_DISABLED, SecuritySeverity.CRITICAL, {
-        error: error instanceof Error ? error.message : 'Camera access denied',
-      });
+      console.error("Failed to start camera:", error);
+      setUIState((prev) => ({ ...prev, cameraStatus: "error" }));
+      logMonitoringEvent(
+        MonitoringEventType.CAMERA_DISABLED,
+        SecuritySeverity.CRITICAL,
+        {
+          error:
+            error instanceof Error ? error.message : "Camera access denied",
+        },
+      );
     }
   };
 
@@ -175,12 +215,16 @@ export default function TestInterface({
     // Track tab visibility changes
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        setTabSwitchCount(prev => prev + 1);
-        logMonitoringEvent(MonitoringEventType.TAB_SWITCH, SecuritySeverity.HIGH, {
-          tabSwitchCount: tabSwitchCount + 1,
-        });
-        
-        setUIState(prev => ({
+        setTabSwitchCount((prev) => prev + 1);
+        logMonitoringEvent(
+          MonitoringEventType.TAB_SWITCH,
+          SecuritySeverity.HIGH,
+          {
+            tabSwitchCount: tabSwitchCount + 1,
+          },
+        );
+
+        setUIState((prev) => ({
           ...prev,
           showWarning: true,
           warningMessage: `Tab switching detected! Count: ${tabSwitchCount + 1}`,
@@ -189,14 +233,18 @@ export default function TestInterface({
 
         // Auto-submit if too many violations
         if (tabSwitchCount >= 3) {
-          autoSubmitTest('AUTO_VIOLATION');
+          autoSubmitTest("AUTO_VIOLATION");
         }
       }
     };
 
     // Track window blur/focus
     const handleWindowBlur = () => {
-      logMonitoringEvent(MonitoringEventType.WINDOW_BLUR, SecuritySeverity.MEDIUM, {});
+      logMonitoringEvent(
+        MonitoringEventType.WINDOW_BLUR,
+        SecuritySeverity.MEDIUM,
+        {},
+      );
     };
 
     // Track fullscreen exit - improved cross-platform detection
@@ -208,15 +256,20 @@ export default function TestInterface({
         (document as any).mozFullScreenElement ||
         (document as any).msFullscreenElement
       );
-      
-      setUIState(prev => ({ ...prev, isFullscreen: isFullscreen }));
-      
+
+      setUIState((prev) => ({ ...prev, isFullscreen: isFullscreen }));
+
       if (!isFullscreen && !isTestSubmitted) {
-        logMonitoringEvent(MonitoringEventType.FULLSCREEN_EXIT, SecuritySeverity.HIGH, {});
-        setUIState(prev => ({
+        logMonitoringEvent(
+          MonitoringEventType.FULLSCREEN_EXIT,
+          SecuritySeverity.HIGH,
+          {},
+        );
+        setUIState((prev) => ({
           ...prev,
           showWarning: true,
-          warningMessage: 'Fullscreen mode exited! Please return to fullscreen.',
+          warningMessage:
+            "Fullscreen mode exited! Please return to fullscreen.",
           securityViolations: prev.securityViolations + 1,
         }));
       }
@@ -225,70 +278,91 @@ export default function TestInterface({
     // Track copy/paste attempts
     const handleCopy = (e: ClipboardEvent) => {
       e.preventDefault();
-      logMonitoringEvent(MonitoringEventType.COPY_ATTEMPT, SecuritySeverity.MEDIUM, {});
+      logMonitoringEvent(
+        MonitoringEventType.COPY_ATTEMPT,
+        SecuritySeverity.MEDIUM,
+        {},
+      );
     };
 
     const handlePaste = (e: ClipboardEvent) => {
       e.preventDefault();
-      logMonitoringEvent(MonitoringEventType.PASTE_ATTEMPT, SecuritySeverity.MEDIUM, {});
+      logMonitoringEvent(
+        MonitoringEventType.PASTE_ATTEMPT,
+        SecuritySeverity.MEDIUM,
+        {},
+      );
     };
 
     // Track right-click
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault();
-      logMonitoringEvent(MonitoringEventType.RIGHT_CLICK, SecuritySeverity.LOW, {});
+      logMonitoringEvent(
+        MonitoringEventType.RIGHT_CLICK,
+        SecuritySeverity.LOW,
+        {},
+      );
     };
 
     // Track keyboard shortcuts
     const handleKeyDown = (e: KeyboardEvent) => {
       // Block common shortcuts
       if (
-        (e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'a' || e.key === 'x')) ||
-        (e.ctrlKey && e.shiftKey && e.key === 'I') || // Dev tools
-        e.key === 'F12' || // Dev tools
-        (e.ctrlKey && e.key === 'u') || // View source
-        (e.ctrlKey && e.key === 's') // Save page
+        (e.ctrlKey &&
+          (e.key === "c" || e.key === "v" || e.key === "a" || e.key === "x")) ||
+        (e.ctrlKey && e.shiftKey && e.key === "I") || // Dev tools
+        e.key === "F12" || // Dev tools
+        (e.ctrlKey && e.key === "u") || // View source
+        (e.ctrlKey && e.key === "s") // Save page
       ) {
         e.preventDefault();
-        logMonitoringEvent(MonitoringEventType.KEYBOARD_SHORTCUT, SecuritySeverity.MEDIUM, {
-          key: e.key,
-          ctrlKey: e.ctrlKey,
-          shiftKey: e.shiftKey,
-        });
+        logMonitoringEvent(
+          MonitoringEventType.KEYBOARD_SHORTCUT,
+          SecuritySeverity.MEDIUM,
+          {
+            key: e.key,
+            ctrlKey: e.ctrlKey,
+            shiftKey: e.shiftKey,
+          },
+        );
       }
     };
 
     // Track browser close attempt
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
-      logMonitoringEvent(MonitoringEventType.BROWSER_CLOSE_ATTEMPT, SecuritySeverity.CRITICAL, {});
-      autoSubmitTest('AUTO_BROWSER_CLOSE');
-      return 'Test in progress. Are you sure you want to leave?';
+      logMonitoringEvent(
+        MonitoringEventType.BROWSER_CLOSE_ATTEMPT,
+        SecuritySeverity.CRITICAL,
+        {},
+      );
+      autoSubmitTest("AUTO_BROWSER_CLOSE");
+      return "Test in progress. Are you sure you want to leave?";
     };
 
     // Add event listeners for cross-browser compatibility
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('blur', handleWindowBlur);
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-    document.addEventListener('msfullscreenchange', handleFullscreenChange);
-    document.addEventListener('copy', handleCopy);
-    document.addEventListener('paste', handlePaste);
-    document.addEventListener('contextmenu', handleContextMenu);
-    document.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("blur", handleWindowBlur);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+    document.addEventListener("msfullscreenchange", handleFullscreenChange);
+    document.addEventListener("copy", handleCopy);
+    document.addEventListener("paste", handlePaste);
+    document.addEventListener("contextmenu", handleContextMenu);
+    document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
     // Cleanup function
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('blur', handleWindowBlur);
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('copy', handleCopy);
-      document.removeEventListener('paste', handlePaste);
-      document.removeEventListener('contextmenu', handleContextMenu);
-      document.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", handleWindowBlur);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("copy", handleCopy);
+      document.removeEventListener("paste", handlePaste);
+      document.removeEventListener("contextmenu", handleContextMenu);
+      document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   };
 
@@ -300,7 +374,11 @@ export default function TestInterface({
   };
 
   // Log monitoring events
-    const logMonitoringEvent = (eventType: MonitoringEventType, severity: SecuritySeverity, metadata: Record<string, unknown>) => {
+  const logMonitoringEvent = (
+    eventType: MonitoringEventType,
+    severity: SecuritySeverity,
+    metadata: Record<string, unknown>,
+  ) => {
     const event: MonitoringEvent = {
       id: `${Date.now()}-${Math.random()}`,
       attemptId: attempt.id,
@@ -310,8 +388,8 @@ export default function TestInterface({
       severity,
     };
 
-    setMonitoringEvents(prev => [...prev, event]);
-    
+    setMonitoringEvents((prev) => [...prev, event]);
+
     // Send to mock service
     mockTestService.logMonitoringEvent(event).catch(console.error);
   };
@@ -320,14 +398,20 @@ export default function TestInterface({
   const saveAnswers = async () => {
     try {
       // Convert answers to the format expected by mock service
-      const answersMap = answers.reduce((acc, answer) => {
-        acc[answer.questionId] = answer.selectedOptions.length > 0 ? answer.selectedOptions : answer.textAnswer;
-        return acc;
-      }, {} as Record<string, string | string[]>);
-      
+      const answersMap = answers.reduce(
+        (acc, answer) => {
+          acc[answer.questionId] =
+            answer.selectedOptions.length > 0
+              ? answer.selectedOptions
+              : answer.textAnswer;
+          return acc;
+        },
+        {} as Record<string, string | string[]>,
+      );
+
       await mockTestService.autoSave(attempt.id, answersMap);
     } catch (error) {
-      console.error('Failed to save answers:', error);
+      console.error("Failed to save answers:", error);
     }
   };
 
@@ -336,25 +420,36 @@ export default function TestInterface({
     try {
       await mockTestService.uploadRecording(videoBlob, attempt.id);
     } catch (error) {
-      console.error('Failed to upload video recording:', error);
+      console.error("Failed to upload video recording:", error);
     }
   };
 
   // Auto-submit test
-  const autoSubmitTest = async (submissionType: 'AUTO_TIME' | 'AUTO_VIOLATION' | 'AUTO_BROWSER_CLOSE') => {
+  const autoSubmitTest = async (
+    submissionType: "AUTO_TIME" | "AUTO_VIOLATION" | "AUTO_BROWSER_CLOSE",
+  ) => {
     if (isTestSubmitted) return;
-    
+
     setIsTestSubmitted(true);
-    setUIState(prev => ({ ...prev, isSubmitting: true }));
-    
+    setUIState((prev) => ({ ...prev, isSubmitting: true }));
+
     await submitTest(submissionType);
   };
 
   // Submit test
-  const submitTest = async () => {
+  const submitTest = async (
+    submissionType:
+      | "MANUAL"
+      | "AUTO_TIME"
+      | "AUTO_VIOLATION"
+      | "AUTO_BROWSER_CLOSE" = "MANUAL",
+  ) => {
     try {
       // Stop recording
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state === "recording"
+      ) {
         mediaRecorderRef.current.stop();
       }
 
@@ -368,72 +463,80 @@ export default function TestInterface({
 
       // Clean up
       cleanup();
-      
+
       // Notify parent component
       onTestComplete();
-      
     } catch (error) {
-      console.error('Failed to submit test:', error);
-      setError('Failed to submit test. Please try again.');
-      setUIState(prev => ({ ...prev, isSubmitting: false }));
+      console.error("Failed to submit test:", error);
+      setError("Failed to submit test. Please try again.");
+      setUIState((prev) => ({ ...prev, isSubmitting: false }));
     }
   };
 
   // Clean up resources
   const cleanup = () => {
-    console.log('Cleaning up test resources...');
-    
+    console.log("Cleaning up test resources...");
+
     // Stop camera stream
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => {
+      streamRef.current.getTracks().forEach((track) => {
         track.stop();
         console.log(`Stopped ${track.kind} track`);
       });
       streamRef.current = null;
     }
-    
+
     // Stop media recorder
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state === "recording"
+    ) {
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current = null;
     }
-    
+
     // Clear intervals
     if (autoSaveIntervalRef.current) {
       clearInterval(autoSaveIntervalRef.current);
       autoSaveIntervalRef.current = null;
     }
-    
+
     // Exit fullscreen if active
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(console.error);
     }
-    
+
     // Update camera status to indicate it's disabled
-    setUIState(prev => ({ 
-      ...prev, 
-      cameraStatus: 'disabled',
-      recordingStatus: RecordingStatus.COMPLETED
+    setUIState((prev) => ({
+      ...prev,
+      cameraStatus: "disabled",
+      recordingStatus: RecordingStatus.COMPLETED,
     }));
   };
 
   // Handle answer change
-  const handleAnswerChange = (questionId: string, selectedOptions: string[], textAnswer?: string) => {
-    setAnswers(prev => prev.map(answer => 
-      answer.questionId === questionId 
-        ? { ...answer, selectedOptions, textAnswer: textAnswer || '' }
-        : answer
-    ));
-    
+  const handleAnswerChange = (
+    questionId: string,
+    selectedOptions: string[],
+    textAnswer?: string,
+  ) => {
+    setAnswers((prev) =>
+      prev.map((answer) =>
+        answer.questionId === questionId
+          ? { ...answer, selectedOptions, textAnswer: textAnswer || "" }
+          : answer,
+      ),
+    );
+
     // Update last activity
     lastActivityRef.current = new Date();
-    setUIState(prev => ({ ...prev, lastActivity: new Date().toISOString() }));
+    setUIState((prev) => ({ ...prev, lastActivity: new Date().toISOString() }));
   };
 
   // Navigation functions
   const goToQuestion = (index: number) => {
     if (index >= 0 && index < questions.length) {
-      setUIState(prev => ({ ...prev, currentQuestionIndex: index }));
+      setUIState((prev) => ({ ...prev, currentQuestionIndex: index }));
     }
   };
 
@@ -447,12 +550,12 @@ export default function TestInterface({
 
   // Timer expired callback
   const handleTimeExpired = () => {
-    autoSubmitTest('AUTO_TIME');
+    autoSubmitTest("AUTO_TIME");
   };
 
   // Dismiss warning
   const dismissWarning = () => {
-    setUIState(prev => ({ ...prev, showWarning: false, warningMessage: '' }));
+    setUIState((prev) => ({ ...prev, showWarning: false, warningMessage: "" }));
   };
 
   if (isLoading) {
@@ -485,15 +588,17 @@ export default function TestInterface({
   }
 
   const currentQuestion = questions[uiState.currentQuestionIndex];
-  const currentAnswer = answers.find(a => a.questionId === currentQuestion?.id);
+  const currentAnswer = answers.find(
+    (a) => a.questionId === currentQuestion?.id,
+  );
 
   return (
     <div ref={fullscreenRef} className="min-h-screen bg-gray-50 relative">
       {/* Watermark */}
       <Watermark text={`${test.title} - Student Test`} />
-      
+
       {/* Security Monitor */}
-      <SecurityMonitor 
+      <SecurityMonitor
         violations={uiState.securityViolations}
         tabSwitches={tabSwitchCount}
         isFullscreen={uiState.isFullscreen}
@@ -501,9 +606,9 @@ export default function TestInterface({
       />
 
       {/* Camera Monitor */}
-      <CameraMonitor 
+      <CameraMonitor
         stream={streamRef.current}
-        isRecording={uiState.recordingStatus === 'RECORDING'}
+        isRecording={uiState.recordingStatus === "RECORDING"}
       />
 
       {/* Warning Banner */}
@@ -514,7 +619,10 @@ export default function TestInterface({
               <AlertTriangle className="h-5 w-5 mr-2" />
               <span>{uiState.warningMessage}</span>
             </div>
-            <button onClick={dismissWarning} className="text-white hover:text-gray-200">
+            <button
+              onClick={dismissWarning}
+              className="text-white hover:text-gray-200"
+            >
               ×
             </button>
           </div>
@@ -526,25 +634,28 @@ export default function TestInterface({
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">{test.title}</h1>
+              <h1 className="text-xl font-semibold text-gray-900">
+                {test.title}
+              </h1>
               <p className="text-sm text-gray-600">
-                Question {uiState.currentQuestionIndex + 1} of {questions.length}
+                Question {uiState.currentQuestionIndex + 1} of{" "}
+                {questions.length}
               </p>
             </div>
-            
+
             <div className="flex items-center space-x-6">
-              <TestTimer 
+              <TestTimer
                 initialTime={uiState.timeRemaining}
                 onTimeExpired={handleTimeExpired}
               />
-              
+
               <button
                 onClick={() => setShowSubmitConfirmation(true)}
                 disabled={uiState.isSubmitting}
                 className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center"
               >
                 <Send className="h-4 w-4 mr-2" />
-                {uiState.isSubmitting ? 'Submitting...' : 'Submit Test'}
+                {uiState.isSubmitting ? "Submitting..." : "Submit Test"}
               </button>
             </div>
           </div>
@@ -563,7 +674,7 @@ export default function TestInterface({
               <ChevronLeft className="h-4 w-4 mr-1" />
               Previous
             </button>
-            
+
             <div className="flex space-x-2">
               {questions.map((_, index) => (
                 <button
@@ -571,17 +682,18 @@ export default function TestInterface({
                   onClick={() => goToQuestion(index)}
                   className={`w-8 h-8 rounded text-xs font-medium ${
                     index === uiState.currentQuestionIndex
-                      ? 'bg-blue-600 text-white'
-                      : answers[index]?.selectedOptions.length > 0 || answers[index]?.textAnswer
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? "bg-blue-600 text-white"
+                      : answers[index]?.selectedOptions.length > 0 ||
+                          answers[index]?.textAnswer
+                        ? "bg-green-100 text-green-800"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
                   {index + 1}
                 </button>
               ))}
             </div>
-            
+
             <button
               onClick={nextQuestion}
               disabled={uiState.currentQuestionIndex === questions.length - 1}
@@ -613,7 +725,8 @@ export default function TestInterface({
               Submit Test
             </h3>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to submit your test? This action cannot be undone.
+              Are you sure you want to submit your test? This action cannot be
+              undone.
             </p>
             <div className="flex space-x-3">
               <button
@@ -625,7 +738,7 @@ export default function TestInterface({
               <button
                 onClick={() => {
                   setShowSubmitConfirmation(false);
-                  submitTest('MANUAL');
+                  submitTest("MANUAL");
                 }}
                 className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
               >

@@ -19,7 +19,7 @@ const Page = () => {
   const relatedRandom = useMemo(() => {
     if (!post) return [];
     const pool = dummyPosts.filter(
-      (p) => p.tag === post.tag && p.id !== post.id
+      (p) => p.tag === post.tag && p.id !== post.id,
     );
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -105,10 +105,12 @@ const Page = () => {
                 vitae sapien at quam gravida fringilla...
               </p>
               <p>
-                Cras nec lorem purus. Proin ut felis ut elit malesuada tincidunt...
+                Cras nec lorem purus. Proin ut felis ut elit malesuada
+                tincidunt...
               </p>
               <blockquote>
-                “Learning never exhausts the mind — it only gives it room to grow.”
+                “Learning never exhausts the mind — it only gives it room to
+                grow.”
               </blockquote>
               <p>
                 Aliquam erat volutpat. Aenean ullamcorper libero in cursus...

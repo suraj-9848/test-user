@@ -1,5 +1,5 @@
-import React from 'react';
-import { CheckCircle, Clock, BookOpen, Award } from 'lucide-react';
+import React from "react";
+import { CheckCircle, Clock, BookOpen, Award } from "lucide-react";
 
 interface CourseProgressProps {
   title: string;
@@ -20,7 +20,7 @@ export default function CourseProgress({
   timeSpent,
   nextLesson,
   instructor,
-  certificateEarned = false
+  certificateEarned = false,
 }: CourseProgressProps) {
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 hover:shadow-xl transition-shadow duration-300">
@@ -34,7 +34,9 @@ export default function CourseProgress({
         {certificateEarned && (
           <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full">
             <Award className="w-4 h-4 text-green-600" />
-            <span className="text-xs font-medium text-green-600">Certified</span>
+            <span className="text-xs font-medium text-green-600">
+              Certified
+            </span>
           </div>
         )}
       </div>
@@ -46,7 +48,7 @@ export default function CourseProgress({
           <span className="text-sm font-bold text-blue-600">{progress}%</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
+          <div
             className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300"
             style={{ width: `${progress}%` }}
           ></div>
@@ -67,7 +69,9 @@ export default function CourseProgress({
         <div className="bg-green-50 rounded-lg p-3">
           <div className="flex items-center gap-2 mb-1">
             <Clock className="w-4 h-4 text-green-600" />
-            <span className="text-xs font-medium text-green-600">Time Spent</span>
+            <span className="text-xs font-medium text-green-600">
+              Time Spent
+            </span>
           </div>
           <p className="text-sm font-bold text-gray-900">{timeSpent}</p>
         </div>
@@ -79,7 +83,9 @@ export default function CourseProgress({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-500 mb-1">Next Lesson</p>
-              <p className="text-sm font-medium text-gray-900 line-clamp-1">{nextLesson}</p>
+              <p className="text-sm font-medium text-gray-900 line-clamp-1">
+                {nextLesson}
+              </p>
             </div>
             <button className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors">
               Continue

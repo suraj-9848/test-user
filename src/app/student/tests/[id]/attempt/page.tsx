@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 const TestAttemptPage = () => {
   const router = useRouter();
 
   useEffect(() => {
     // Redirect to main tests page since TestInterface handles the full experience
-    router.replace('/student/tests');
+    router.replace("/student/tests");
   }, [router]);
 
   return (

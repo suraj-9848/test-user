@@ -1,8 +1,16 @@
-'use client'
+"use client";
 
-import { useState } from 'react';
-import { Test } from '@/types/test';
-import { Clock, Calendar, User, BookOpen, AlertTriangle, Camera, Monitor } from 'lucide-react';
+import { useState } from "react";
+import { Test } from "@/types/test";
+import {
+  Clock,
+  Calendar,
+  User,
+  BookOpen,
+  AlertTriangle,
+  Camera,
+  Monitor,
+} from "lucide-react";
 
 interface TestSelectionProps {
   tests: Test[];
@@ -17,7 +25,7 @@ export default function TestSelection({
   onTestSelect,
   onStartTest,
   selectedTest,
-  isLoading
+  isLoading,
 }: TestSelectionProps) {
   const [showStartConfirmation, setShowStartConfirmation] = useState(false);
 
@@ -25,7 +33,7 @@ export default function TestSelection({
   const checkCameraPermission = async (): Promise<boolean> => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       return true;
     } catch {
       return false;
@@ -42,7 +50,9 @@ export default function TestSelection({
     // Check camera permission before starting
     const hasCameraAccess = await checkCameraPermission();
     if (!hasCameraAccess) {
-      alert('Camera access is required for this test. Please enable camera permissions and try again.');
+      alert(
+        "Camera access is required for this test. Please enable camera permissions and try again.",
+      );
       return;
     }
 
@@ -55,9 +65,9 @@ export default function TestSelection({
       try {
         await document.documentElement.requestFullscreen();
       } catch (error) {
-        console.warn('Could not enter fullscreen:', error);
+        console.warn("Could not enter fullscreen:", error);
       }
-      
+
       onStartTest(selectedTest.id);
       setShowStartConfirmation(false);
     }
@@ -88,12 +98,12 @@ export default function TestSelection({
         </span>
       );
     }
-    
+
     if (!isTestActive(test)) {
       const now = new Date();
       const startDate = new Date(test.startDate);
       const endDate = new Date(test.endDate);
-      
+
       if (now < startDate) {
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -108,7 +118,7 @@ export default function TestSelection({
         );
       }
     }
-    
+
     return (
       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
         Active
@@ -120,8 +130,12 @@ export default function TestSelection({
     return (
       <div className="text-center py-12">
         <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No Tests Available</h3>
-        <p className="text-gray-600">There are no tests available for you at the moment.</p>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          No Tests Available
+        </h3>
+        <p className="text-gray-600">
+          There are no tests available for you at the moment.
+        </p>
       </div>
     );
   }
@@ -135,16 +149,20 @@ export default function TestSelection({
             key={test.id}
             className={`bg-white rounded-lg shadow-md border-2 transition-all cursor-pointer ${
               selectedTest?.id === test.id
-                ? 'border-blue-500 ring-2 ring-blue-200'
-                : 'border-gray-200 hover:border-gray-300'
+                ? "border-blue-500 ring-2 ring-blue-200"
+                : "border-gray-200 hover:border-gray-300"
             }`}
             onClick={() => handleTestSelect(test)}
           >
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{test.title}</h3>
-                  <p className="text-sm text-gray-600 mb-2">{test.description}</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    {test.title}
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-2">
+                    {test.description}
+                  </p>
                   <div className="flex items-center space-x-4 text-sm text-gray-500">
                     <span className="flex items-center">
                       <BookOpen className="h-4 w-4 mr-1" />
@@ -171,10 +189,12 @@ export default function TestSelection({
                   <span>Until {formatDate(test.endDate)}</span>
                 </div>
                 <div className="text-gray-600">
-                  <span className="font-medium">Max Marks:</span> {test.maxMarks}
+                  <span className="font-medium">Max Marks:</span>{" "}
+                  {test.maxMarks}
                 </div>
                 <div className="text-gray-600">
-                  <span className="font-medium">Passing:</span> {test.passingMarks}
+                  <span className="font-medium">Passing:</span>{" "}
+                  {test.passingMarks}
                 </div>
               </div>
 
@@ -183,7 +203,9 @@ export default function TestSelection({
                 <div className="flex items-start">
                   <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5" />
                   <div className="text-sm">
-                    <p className="font-medium text-yellow-800 mb-1">Test Security Requirements:</p>
+                    <p className="font-medium text-yellow-800 mb-1">
+                      Test Security Requirements:
+                    </p>
                     <ul className="text-yellow-700 space-y-1">
                       <li className="flex items-center">
                         <Monitor className="h-3 w-3 mr-2" />
@@ -209,9 +231,12 @@ export default function TestSelection({
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="text-lg font-medium text-gray-900">Ready to start?</h4>
+              <h4 className="text-lg font-medium text-gray-900">
+                Ready to start?
+              </h4>
               <p className="text-sm text-gray-600">
-                Selected: <span className="font-medium">{selectedTest.title}</span>
+                Selected:{" "}
+                <span className="font-medium">{selectedTest.title}</span>
               </p>
             </div>
             <button
@@ -219,11 +244,11 @@ export default function TestSelection({
               disabled={isLoading || !isTestActive(selectedTest)}
               className={`px-6 py-3 rounded-lg font-medium transition-colors ${
                 isLoading || !isTestActive(selectedTest)
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
               }`}
             >
-              {isLoading ? 'Starting...' : 'Start Test'}
+              {isLoading ? "Starting..." : "Start Test"}
             </button>
           </div>
         </div>
@@ -237,11 +262,21 @@ export default function TestSelection({
               Confirm Test Start
             </h3>
             <div className="space-y-3 text-sm text-gray-600 mb-6">
-              <p>You are about to start: <span className="font-medium">{selectedTest.title}</span></p>
-              <p>Duration: <span className="font-medium">{formatDuration(selectedTest.durationInMinutes)}</span></p>
-              
+              <p>
+                You are about to start:{" "}
+                <span className="font-medium">{selectedTest.title}</span>
+              </p>
+              <p>
+                Duration:{" "}
+                <span className="font-medium">
+                  {formatDuration(selectedTest.durationInMinutes)}
+                </span>
+              </p>
+
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-4">
-                <p className="font-medium text-red-800 mb-2">Important Reminders:</p>
+                <p className="font-medium text-red-800 mb-2">
+                  Important Reminders:
+                </p>
                 <ul className="text-red-700 text-xs space-y-1">
                   <li>• The test will switch to full-screen mode</li>
                   <li>• Your camera will be activated for monitoring</li>
@@ -251,7 +286,7 @@ export default function TestSelection({
                 </ul>
               </div>
             </div>
-            
+
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowStartConfirmation(false)}
@@ -271,4 +306,4 @@ export default function TestSelection({
       )}
     </div>
   );
-} 
+}
