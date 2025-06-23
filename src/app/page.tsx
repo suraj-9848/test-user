@@ -34,7 +34,7 @@ const Page = () => {
           } else {
             setToast({
               show: true,
-              message: result.error?.toString() || "User validation failed",
+              message: "User validation failed",
               type: "error",
             });
           }

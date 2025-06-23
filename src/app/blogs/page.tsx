@@ -1,3 +1,4 @@
+"use client"
 import BlogSection from '@/components/blogs/BlogPage'
 import React from 'react'
 
