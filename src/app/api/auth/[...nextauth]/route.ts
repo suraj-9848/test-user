@@ -25,6 +25,7 @@ const handler = NextAuth({
         token.id_token = account.id_token;
       }
       return token;
+      
     },
     async session({ session, token }) {
       session.jwt = token.id_token;
