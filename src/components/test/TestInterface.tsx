@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { Test, TestAttempt, Question, TestAnswer, MonitoringEvent, MonitoringEventType, SecuritySeverity, TestUIState, RecordingStatus } from '@/types/test';
 import { AlertTriangle, ChevronLeft, ChevronRight, Send } from 'lucide-react';
 import { mockTestService } from '@/services/mockTestService';
-import { DEMO_CONFIG } from '@/config/demo';
 import SecurityMonitor from './SecurityMonitor';
 import CameraMonitor from './CameraMonitor';
 import TestTimer from './TestTimer';
@@ -26,7 +25,6 @@ export default function TestInterface({
 }: TestInterfaceProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<TestAnswer[]>([]);
-  const [monitoringEvents, setMonitoringEvents] = useState<MonitoringEvent[]>([]);
   const [uiState, setUIState] = useState<TestUIState>({
     currentQuestionIndex: 0,
     isFullscreen: false,
@@ -110,12 +108,12 @@ export default function TestInterface({
         // Try different fullscreen methods for cross-browser compatibility
         if (element.requestFullscreen) {
           await element.requestFullscreen();
-        } else if ((element as any).webkitRequestFullscreen) {
-          await (element as any).webkitRequestFullscreen();
-        } else if ((element as any).mozRequestFullScreen) {
-          await (element as any).mozRequestFullScreen();
-        } else if ((element as any).msRequestFullscreen) {
-          await (element as any).msRequestFullscreen();
+        } else if ((element as unknown as { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen) {
+          await (element as unknown as { webkitRequestFullscreen: () => Promise<void> }).webkitRequestFullscreen();
+        } else if ((element as unknown as { mozRequestFullScreen?: () => Promise<void> }).mozRequestFullScreen) {
+          await (element as unknown as { mozRequestFullScreen: () => Promise<void> }).mozRequestFullScreen();
+        } else if ((element as unknown as { msRequestFullscreen?: () => Promise<void> }).msRequestFullscreen) {
+          await (element as unknown as { msRequestFullscreen: () => Promise<void> }).msRequestFullscreen();
         }
         
         setUIState(prev => ({ ...prev, isFullscreen: true }));

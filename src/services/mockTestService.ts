@@ -1,15 +1,39 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { 
   Test, 
   TestAttempt, 
   Question, 
   MonitoringEvent, 
-  TestStatus, 
-  QuestionType, 
-  AttemptStatus,
-  MonitoringEventType,
-  SecuritySeverity,
-  SubmitTestResponse
+  QuestionType,
+  AttemptStatus
 } from '@/types/test';
+
+interface TestResults {
+  attemptId: string;
+  testId: string;
+  studentId: string;
+  score: number;
+  obtainedMarks: number;
+  maxMarks: number;
+  totalQuestions: number;
+  answeredQuestions: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  unansweredQuestions: number;
+  timeTaken: number;
+  submittedAt: string;
+  grade: string;
+  passed: boolean;
+  violations: number;
+  questionWiseResults: Array<{
+    questionId: string;
+    isCorrect: boolean;
+    marksObtained: number;
+    maxMarks: number;
+  }>;
+}
 
 // Mock Data
 const MOCK_TESTS: Test[] = [
@@ -142,7 +166,7 @@ const MOCK_QUESTIONS: Question[] = [
 ];
 
 let currentAttempt: TestAttempt | null = null;
-let savedAnswers: Record<string, any> = {};
+let savedAnswers: Record<string, unknown> = {};
 let monitoringEvents: MonitoringEvent[] = [];
 
 export const mockTestService = {
@@ -171,9 +195,9 @@ export const mockTestService = {
       studentId: 'student-123',
       startTime: new Date().toISOString(),
       endTime: new Date(Date.now() + test.durationInMinutes * 60 * 1000).toISOString(),
-      status: 'in-progress',
+      status: AttemptStatus.IN_PROGRESS,
       currentQuestionIndex: 0,
-      answers: {},
+      answers: [],
       timeRemaining: test.durationInMinutes * 60,
       violations: [],
       isFullscreen: true,
