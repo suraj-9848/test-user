@@ -10,20 +10,34 @@ import {
   ArrowRight,
   Sparkles,
 } from "lucide-react";
+import { validateOAuthUser } from "../../utils/auth";
 
 const SignIn = () => {
-  const { status } = useSession();
+  const { status, data: session } = useSession();
   const router = useRouter();
 
   useEffect(() => {
-    if (status === "authenticated") {
-      router.push("/");
-    }
-  }, [status, router]);
+    const checkAndRedirect = async () => {
+      if (status === "authenticated" && session?.jwt) {
+        const result = await validateOAuthUser(session.jwt);
+        console.log("validateOAuthUser result:", result); // Debug log
+        if (
+          result.valid &&
+          result.data?.user?.userRole &&
+          result.data.user.userRole.toLowerCase() === "student"
+        ) {
+          router.push("/student");
+        } else {
+          router.push("/"); // fallback for other roles
+        }
+      }
+    };
+    checkAndRedirect();
+  }, [status, session, router]);
 
   const handleGoogleSignIn = () => {
     signIn("google", {
-      callbackUrl: "/",
+      callbackUrl: "/sign-in", // Redirect back to sign-in page so role check runs
     });
   };
 
