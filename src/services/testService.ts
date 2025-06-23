@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { API_ENDPOINTS, apiHelpers } from '@/config/api';
 import { Test, TestAttempt, Question, TestAnswer, MonitoringEvent, TestSubmissionData, SubmitTestResponse } from '@/types/test';
 import { mockTestService } from './mockTestService';
