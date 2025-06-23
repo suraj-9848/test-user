@@ -1,11 +1,11 @@
 "use client"
-import BlogSection from '@/components/blogs/BlogPage'
+import SignIn from '@/components/SignIn'
 import React from 'react'
 
 const page = () => {
   return (
     <div>
-      <BlogSection/>
+      <SignIn/>
     </div>
   )
 }

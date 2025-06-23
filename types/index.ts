@@ -20,6 +20,11 @@ export type Testimonial = {
   experience: string;
 };
 
+declare module "next-auth" {
+  interface Session {
+    jwt?: any;
+  }
+}
 
 export interface Course {
   id: string;
@@ -42,6 +47,7 @@ export interface Course {
   language: string;
   lastUpdated: string;
   tags: string[];
+
 }
 
 export interface EnrollmentData {

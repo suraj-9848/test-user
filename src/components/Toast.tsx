@@ -20,7 +20,7 @@ export default function Toast({
 
   return (
     <div
-      className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded shadow-lg text-white ${bgColor} animate-fade-in`}
+      className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded shadow-lg text-white ${bgColor} animate-pulse`}
     >
       {message}
     </div>
