@@ -17,13 +17,13 @@ const SignIn = () => {
 
   useEffect(() => {
     if (status === "authenticated") {
-      router.push("/");
+      router.push("/blogs");
     }
   }, [status, router]);
 
   const handleGoogleSignIn = () => {
     signIn("google", {
-      callbackUrl: "/",
+      callbackUrl: "/hiring",
     });
   };
 
