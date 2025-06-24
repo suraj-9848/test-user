@@ -19,9 +19,6 @@ const eslintConfig = [
       "react-hooks/exhaustive-deps": "warn",
     },
   },
-  {
-    ignores: ["src/services/mockTestService.ts"], // Temporary ignore for build
-  },
 ];
 
 export default eslintConfig;

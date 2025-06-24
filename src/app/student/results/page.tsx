@@ -184,38 +184,38 @@ export default function ResultsPage() {
       {results.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Tests</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Tests</p>
                 <p className="text-2xl font-bold text-gray-900">{results.length}</p>
-              </div>
+            </div>
               <FileText className="w-8 h-8 text-blue-600" />
-            </div>
           </div>
+        </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tests Passed</p>
-                <p className="text-2xl font-bold text-green-600">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Tests Passed</p>
+              <p className="text-2xl font-bold text-green-600">
                   {results.filter(r => (r.percentage || 0) >= 50).length}
-                </p>
-              </div>
-              <Star className="w-8 h-8 text-green-600" />
+              </p>
             </div>
+              <Star className="w-8 h-8 text-green-600" />
           </div>
+        </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Average Score</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Average Score</p>
                 <p className="text-2xl font-bold text-purple-600">
                   {results.length > 0 
                     ? Math.round(results.reduce((acc, r) => acc + (r.percentage || 0), 0) / results.length)
                     : 0
                   }%
-                </p>
-              </div>
+              </p>
+            </div>
               <TrendingUp className="w-8 h-8 text-purple-600" />
             </div>
           </div>
@@ -275,7 +275,7 @@ export default function ResultsPage() {
                         <p className="font-medium text-gray-900">
                           {result.score}/{result.maxScore}
                         </p>
-                      </div>
+                  </div>
                     )}
                     
                     {result.percentage !== undefined && (
@@ -284,7 +284,7 @@ export default function ResultsPage() {
                         <p className={`font-medium ${getScoreColor(result.percentage)}`}>
                           {result.percentage}%
                         </p>
-                      </div>
+                  </div>
                     )}
 
                     {result.questionsCorrect !== undefined && result.questionsTotal !== undefined && (
@@ -293,7 +293,7 @@ export default function ResultsPage() {
                         <p className="font-medium text-gray-900">
                           {result.questionsCorrect}/{result.questionsTotal}
                         </p>
-                      </div>
+                </div>
                     )}
 
                     <div>
@@ -301,7 +301,7 @@ export default function ResultsPage() {
                       <p className="font-medium text-gray-900">
                         {formatDate(result.completedAt || result.submittedAt)}
                       </p>
-                    </div>
+                  </div>
                   </div>
 
                   {result.duration && (
@@ -310,7 +310,7 @@ export default function ResultsPage() {
                       Duration: {result.duration}
                     </div>
                   )}
-                </div>
+              </div>
 
                 <Link
                   href={`/student/tests/${result.id}/results`}

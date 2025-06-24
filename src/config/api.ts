@@ -1,24 +1,219 @@
+import { mapBackendToFrontendType } from "@/types/test";
+
 // API Configuration
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
-// API Endpoints
+console.log("API Configuration - BASE_URL:", BASE_URL);
+
+// Get JWT token from localStorage
+const getAuthToken = (): string | null => {
+  if (typeof window === "undefined") return null;
+  const token = localStorage.getItem("jwt");
+  console.log("JWT Token found:", token ? "Yes" : "No");
+  return token;
+};
+
+// Transform backend questions to frontend format
+const transformQuestions = (questions: any[]): any[] => {
+  return questions.map(question => {
+    console.log("Transforming question:", question);
+    console.log("Question options/choices:", {
+      options: question.options,
+      choices: question.choices,
+      answers: question.answers,
+      allKeys: Object.keys(question)
+    });
+    
+    // Handle options - they might be in a different format
+    let options = [];
+    
+    // Check all possible field names for options
+    const possibleOptionFields = ['options', 'choices', 'answers', 'alternatives', 'options_list', 'choices_list'];
+    
+    for (const fieldName of possibleOptionFields) {
+      if (question[fieldName] && Array.isArray(question[fieldName])) {
+        console.log(`Found options in field: ${fieldName}`, question[fieldName]);
+        options = question[fieldName];
+        break;
+      }
+    }
+    
+    // If no options found, check if there are nested objects that might contain options
+    if (options.length === 0) {
+      console.log("No options found in standard fields, checking nested objects...");
+      Object.keys(question).forEach(key => {
+        if (typeof question[key] === 'object' && question[key] !== null) {
+          console.log(`Checking nested object in field: ${key}`, question[key]);
+        }
+      });
+    }
+    
+    console.log("Final options array:", options);
+    
+    // Map backend field names to frontend field names
+    const transformedQuestion = {
+      id: question.id,
+      questionText: question.question_text || question.questionText || "",
+      questionType: mapBackendToFrontendType(question.type || question.questionType),
+      marks: question.marks || 0,
+      options: options,
+      correctAnswer: question.correctAnswer,
+      explanation: question.explanation,
+      order: question.order || 0,
+      originalType: question.type || question.questionType, // Preserve original backend type
+      // Keep any other fields that might be useful
+      expectedWordCount: question.expectedWordCount,
+    };
+    
+    console.log("Transformed question:", transformedQuestion);
+    return transformedQuestion;
+  });
+};
+
+// Simple API Service
+export const apiService = {
+  // Get available tests
+  getAvailableTests: async (): Promise<{ tests: any[] }> => {
+    const token = getAuthToken();
+    const response = await fetch(`${BASE_URL}/api/student/tests`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("API Error response:", errorText);
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log("Raw API response:", data);
+    return { tests: data.data.tests || [] };
+  },
+
+  // Get test details
+  getTestDetails: async (testId: string): Promise<{ test: any }> => {
+    const token = getAuthToken();
+    const response = await fetch(`${BASE_URL}/api/student/tests/${testId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("API Error response:", errorText);
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log("Test details response:", data);
+    
+    // Transform questions to frontend format
+    const transformedTest = {
+      ...data.data.test,
+      questions: transformQuestions(data.data.test.questions || [])
+    };
+    
+    console.log("Transformed test:", transformedTest);
+    return { test: transformedTest };
+  },
+
+  // Submit test - FIXED: Use testId instead of attemptId
+  submitTest: async (testId: string, responses: any[]): Promise<any> => {
+    const token = getAuthToken();
+    console.log("Submitting test with testId:", testId, "responses:", responses);
+    
+    const response = await fetch(`${BASE_URL}/api/student/tests/${testId}/submit`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ responses })
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("API Error response:", errorText);
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+    
+    return response.json();
+  },
+
+  // Get test results
+  getTestResults: async (testId: string): Promise<any> => {
+    const token = getAuthToken();
+    const response = await fetch(`${BASE_URL}/api/student/tests/${testId}/results`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("API Error response:", errorText);
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+    
+    return response.json();
+  },
+
+  // Add missing methods that TestInterface is calling
+  logMonitoringEvent: async (event: any): Promise<void> => {
+    // Disabled - endpoint doesn't exist on backend
+    console.log("Monitoring event (disabled):", event);
+    return Promise.resolve();
+  },
+
+  uploadRecording: async (formData: FormData): Promise<{ success: boolean; url?: string }> => {
+    // Disabled - endpoint doesn't exist on backend
+    console.log("Upload recording (disabled):", formData);
+    return Promise.resolve({ success: true });
+  },
+
+  saveAnswers: async (attemptId: string, answers: any[]): Promise<void> => {
+    const token = getAuthToken();
+    try {
+      const response = await fetch(`${BASE_URL}/api/student/tests/attempts/${attemptId}/answers`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ answers })
+      });
+      
+      if (!response.ok) {
+        console.warn("Failed to save answers:", response.status);
+      }
+    } catch (error) {
+      console.warn("Failed to save answers:", error);
+    }
+  }
+};
+
+// Keep the old API_ENDPOINTS for backward compatibility
 export const API_ENDPOINTS = {
   // Test Management
   TEST: {
-    AVAILABLE: `${BASE_URL}/api/test/available`,
-    START: (testId: string) => `${BASE_URL}/api/test/${testId}/start`,
+    AVAILABLE: `${BASE_URL}/api/student/tests`,
+    START: (testId: string) => `${BASE_URL}/api/student/tests/${testId}/start`,
     QUESTIONS: (attemptId: string) =>
-      `${BASE_URL}/api/test/attempts/${attemptId}/questions`,
-    SUBMIT: (attemptId: string) => `${BASE_URL}/api/test/${attemptId}/submit`,
+      `${BASE_URL}/api/student/tests/attempts/${attemptId}/questions`,
+    SUBMIT: (testId: string) => `${BASE_URL}/api/student/tests/${testId}/submit`,
   },
 
   // Test Attempt Management
   ATTEMPT: {
     SAVE_ANSWERS: (attemptId: string) =>
-      `${BASE_URL}/api/test/${attemptId}/save-answers`,
-    AUTO_SAVE: (attemptId: string) =>
-      `${BASE_URL}/api/test/${attemptId}/auto-save`,
+      `${BASE_URL}/api/student/tests/attempts/${attemptId}/answers`,
   },
 
   // Monitoring and Security
@@ -40,104 +235,5 @@ export const API_ENDPOINTS = {
     ATTEMPTS: `${BASE_URL}/api/student/attempts`,
   },
 } as const;
-
-// Request Configuration
-export const API_CONFIG = {
-  headers: {
-    "Content-Type": "application/json",
-  },
-  credentials: "include" as RequestCredentials,
-};
-
-// Multipart form data configuration (for file uploads)
-export const MULTIPART_CONFIG = {
-  credentials: "include" as RequestCredentials,
-  // Don't set Content-Type for multipart, let browser set it
-};
-
-// API Helper Functions
-export const apiHelpers = {
-  // Generic GET request
-  get: async (url: string, options?: RequestInit) => {
-    const response = await fetch(url, {
-      method: "GET",
-      ...API_CONFIG,
-      ...options,
-    });
-
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  },
-
-  // Generic POST request
-  post: async (url: string, data?: unknown, options?: RequestInit) => {
-    const response = await fetch(url, {
-      method: "POST",
-      ...API_CONFIG,
-      body: data ? JSON.stringify(data) : undefined,
-      ...options,
-    });
-
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  },
-
-  // Multipart POST request (for file uploads)
-  postMultipart: async (
-    url: string,
-    formData: FormData,
-    options?: RequestInit,
-  ) => {
-    const response = await fetch(url, {
-      method: "POST",
-      ...MULTIPART_CONFIG,
-      body: formData,
-      ...options,
-    });
-
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  },
-
-  // Generic PUT request
-  put: async (url: string, data?: unknown, options?: RequestInit) => {
-    const response = await fetch(url, {
-      method: "PUT",
-      ...API_CONFIG,
-      body: data ? JSON.stringify(data) : undefined,
-      ...options,
-    });
-
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  },
-
-  // Generic DELETE request
-  delete: async (url: string, options?: RequestInit) => {
-    const response = await fetch(url, {
-      method: "DELETE",
-      ...API_CONFIG,
-      ...options,
-    });
-
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  },
-};
 
 export default API_ENDPOINTS;

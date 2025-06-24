@@ -53,9 +53,8 @@ export default function CameraMonitor({
 
     // Cleanup when stream changes or component unmounts
     return () => {
-      const video = videoRef.current;
-      if (video) {
-        video.srcObject = null;
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
       }
     };
   }, [stream]);

@@ -1,12 +1,6 @@
 // Demo Configuration
-// Set to true to use mock data for demo purposes
-export const DEMO_MODE = true;
-
-// Demo settings
+// Demo settings for testing and demonstration
 export const DEMO_CONFIG = {
-  // Enable mock API responses
-  useMockData: DEMO_MODE,
-
   // Demo user info
   demoUser: {
     id: "demo-student-123",

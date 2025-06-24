@@ -117,7 +117,6 @@ src/
 │   ├── QuestionRenderer.tsx   # Question display
 │   └── Watermark.tsx          # Anti-copying overlay
 ├── services/
-│   ├── mockTestService.ts     # Mock API service
 │   └── testService.ts         # API service layer
 ├── types/test.ts              # TypeScript definitions
 └── config/demo.ts             # Demo configuration
@@ -130,13 +129,6 @@ src/
 - **Tailwind CSS** - Utility-first CSS framework
 - **Lucide React** - Beautiful icon library
 - **Web APIs** - Camera, Fullscreen, Visibility API
-
-### Mock Data System
-
-- **Realistic test data** - Multiple tests with varied content
-- **Dynamic responses** - Simulated API delays and realistic behavior
-- **State management** - Maintains test state across interactions
-- **Event logging** - Comprehensive monitoring event simulation
 
 ## 🎯 Demo Scenarios
 
@@ -177,7 +169,6 @@ src/
 
 ```typescript
 export const DEMO_CONFIG = {
-  useMockData: true, // Enable mock mode
   autoSubmitAfter: 5 * 60, // 5 minutes for demo
   showRealTimer: false, // Show actual countdown
   enableViolationLogging: true, // Log security events
@@ -190,8 +181,7 @@ export const DEMO_CONFIG = {
 ### Customizing Demo
 
 - **Change timer duration** - Modify `autoSubmitAfter` for shorter demos
-- **Add more questions** - Extend `MOCK_QUESTIONS` array in `mockTestService.ts`
-- **Modify test data** - Update `MOCK_TESTS` array for different scenarios
+- **Modify test data** - Update test data from backend API
 - **Adjust monitoring sensitivity** - Modify detection thresholds in components
 
 ## 🔍 What to Look For
@@ -202,11 +192,11 @@ export const DEMO_CONFIG = {
 - Camera monitoring status
 - Auto-save confirmations
 - Video upload simulations
-- API call simulations
+- API call logs
 
 ### Browser DevTools
 
-- Network tab shows no actual API calls (all mocked)
+- Network tab shows API calls to backend
 - Application tab shows local storage usage
 - Console shows comprehensive event logging
 
@@ -252,4 +242,4 @@ This demo shows the frontend capabilities. For production:
 
 ---
 
-**Note:** This is a demonstration system with mock data. All features are functional and ready for backend integration.
+**Note:** This system is connected to a real backend API. All features are functional and production-ready.

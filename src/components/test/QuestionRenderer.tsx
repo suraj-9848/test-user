@@ -50,17 +50,38 @@ export default function QuestionRenderer({
   };
 
   const renderMCQOptions = () => {
-    if (!question.options) return null;
+    console.log("Rendering MCQ options for question:", question);
+    console.log("Available options:", question.options);
+    
+    // Log each option in detail
+    if (question.options && question.options.length > 0) {
+      question.options.forEach((option, index) => {
+        console.log(`Option ${index + 1}:`, option);
+      });
+    }
+    
+    if (!question.options || question.options.length === 0) {
+      console.warn("No options found for MCQ question:", question);
+      return (
+        <div className="text-red-500 p-4 border border-red-300 rounded-lg bg-red-50">
+          <strong>Error:</strong> No options available for this MCQ question.
+          <br />
+          <span className="text-sm">Question ID: {question.id}</span>
+        </div>
+      );
+    }
 
     return (
       <div className="space-y-3">
         {question.options
-          .sort((a, b) => a.optionOrder - b.optionOrder)
-          .map((option) => {
+          .sort((a, b) => (a.optionOrder || 0) - (b.optionOrder || 0))
+          .map((option, index) => {
             const isSelected = answer.selectedOptions.includes(option.id);
+            console.log(`Rendering option ${index + 1}:`, option, "Selected:", isSelected);
+            
             return (
               <div
-                key={option.id}
+                key={option.id || index}
                 className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
                   isSelected
                     ? "border-blue-500 bg-blue-50"
@@ -74,7 +95,9 @@ export default function QuestionRenderer({
                   ) : (
                     <Circle className="h-5 w-5 text-gray-400" />
                   )}
-                  <span className="text-gray-900">{option.optionText}</span>
+                  <span className="text-gray-900">
+                    {option.optionText || option.text || option.label || `Option ${index + 1}`}
+                  </span>
                 </div>
               </div>
             );
@@ -153,20 +176,25 @@ export default function QuestionRenderer({
     );
   };
 
-  const renderTextInput = (isLongAnswer: boolean = false) => {
-    const placeholder = isLongAnswer
+  const renderTextInput = (isLongAnswer: boolean = false, isCode: boolean = false) => {
+    const placeholder = isCode 
+      ? "Write your code here..."
+      : isLongAnswer
       ? "Write your detailed answer here..."
       : "Write your short answer here...";
 
-    if (isLongAnswer) {
+    if (isLongAnswer || isCode) {
       return (
         <div className="space-y-2">
           <textarea
             value={textValue}
             onChange={(e) => handleTextChange(e.target.value)}
             placeholder={placeholder}
-            className="w-full p-4 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none min-h-[200px] resize-vertical"
+            className={`w-full p-4 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none min-h-[200px] resize-vertical ${
+              isCode ? 'font-mono text-sm' : ''
+            }`}
             rows={8}
+            spellCheck={!isCode}
           />
           <div className="text-right text-sm text-gray-500">
             {textValue.length} characters
@@ -202,13 +230,16 @@ export default function QuestionRenderer({
       case QuestionType.SHORT_ANSWER:
         return "Short Answer";
       case QuestionType.LONG_ANSWER:
-        return "Long Answer";
+        // Check if this was originally a CODE type from backend
+        return question.originalType === "CODE" ? "Code Answer" : "Long Answer";
       default:
         return "Question";
     }
   };
 
   const renderQuestionContent = () => {
+    console.log("Rendering question with type:", question.questionType, "Question:", question);
+    
     switch (question.questionType) {
       case QuestionType.MCQ:
         return renderMCQOptions();
@@ -219,9 +250,20 @@ export default function QuestionRenderer({
       case QuestionType.SHORT_ANSWER:
         return renderTextInput(false);
       case QuestionType.LONG_ANSWER:
-        return renderTextInput(true);
+        // Check if this was originally a CODE type from backend
+        const isCode = question.originalType === "CODE";
+        return renderTextInput(true, isCode);
       default:
-        return <div className="text-gray-500">Unsupported question type</div>;
+        console.error("Unsupported question type:", question.questionType, "Question:", question);
+        return (
+          <div className="text-red-500 p-4 border border-red-300 rounded-lg bg-red-50">
+            <strong>Unsupported Question Type:</strong> {question.questionType}
+            <br />
+            <span className="text-sm">Supported types: MCQ, MULTIPLE_SELECT, TRUE_FALSE, SHORT_ANSWER, LONG_ANSWER</span>
+            <br />
+            <span className="text-sm">Please contact support if this is an error.</span>
+          </div>
+        );
     }
   };
 
