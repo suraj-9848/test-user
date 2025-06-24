@@ -1,8 +1,9 @@
 "use client";
 
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useJWT } from "@/context/JWTContext";
+import { decodeJwtPayload } from "../../../utils/jwt";
 import StudentNavbar from "@/components/student/StudentNavbar";
 import StudentSidebar from "@/components/student/StudentSidebar";
 
@@ -11,30 +12,51 @@ interface StudentLayoutProps {
 }
 
 export default function StudentLayout({ children }: StudentLayoutProps) {
-  const { data: session, status } = useSession();
+  const { jwt } = useJWT();
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  const [roleAllowed, setRoleAllowed] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (status === "loading") return;
-    if (!session) {
+    // Hydrate JWT from localStorage if needed
+    const syncJwt = () => {
+      setHydrated(true);
+    };
+    syncJwt();
+    window.addEventListener("storage", syncJwt);
+    window.addEventListener("visibilitychange", syncJwt);
+    return () => {
+      window.removeEventListener("storage", syncJwt);
+      window.removeEventListener("visibilitychange", syncJwt);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!jwt) {
+      setRoleAllowed(null);
       router.replace("/sign-in");
+      return;
     }
-  }, [session, status, router]);
+    const payload = decodeJwtPayload(jwt);
+    console.log("[StudentLayout] JWT payload:", payload);
+    const userRole = payload?.userRole || payload?.role || payload?.user_role;
+    console.log("[StudentLayout] userRole:", userRole);
+    if (userRole && ["student", "admin"].includes(userRole.toLowerCase())) {
+      setRoleAllowed(true);
+    } else {
+      setRoleAllowed(false);
+    }
+  }, [jwt, hydrated, router]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  // DEBUG: Log session to see what is actually present
-  console.log("SESSION OBJECT:", session);
-
-  // If loading, show nothing (or a spinner)
-  if (status === "loading") return null;
-  // If not authenticated, don't render children (redirect will happen)
-  if (!session) return null;
-  // If authenticated but not a student, show access denied
-  if ((session.user as { userRole?: string })?.userRole !== "student") {
+  if (!hydrated) return null;
+  if (!jwt) return null;
+  if (roleAllowed === false) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="bg-white p-8 rounded shadow text-center">
@@ -46,6 +68,7 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
       </div>
     );
   }
+  if (roleAllowed === null) return null;
 
   // Student layout
   return (

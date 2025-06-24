@@ -6,20 +6,101 @@ import {
   Clock,
   Trophy,
   TrendingUp,
-  Calendar,
+  // Calendar, // Removed unused
   AlertCircle,
   PlayCircle,
   Target,
   Award,
-  ClipboardList,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
+import { useJWT } from "@/context/JWTContext";
+
+// API Configuration
+const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
+
+// Create API wrapper for consistency
+const api = {
+  get: async (endpoint: string) => {
+    const token = localStorage.getItem('jwt');
+    const response = await fetch(`${BACKEND_BASE_URL}${endpoint}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`);
+    }
+    
+    return response.json();
+  }
+};
+
+interface Course {
+  id: string;
+  title: string;
+  instructor?: string;
+  progress: number;
+  totalModules: number;
+  completedModules: number;
+  image?: string;
+  status: "active" | "completed" | "not-started";
+  end_date: string;
+  hoursSpent?: number;
+  averageGrade?: number;
+}
+
+interface TestResponse {
+  id: string;
+  title: string;
+  courseName?: string;
+  course?: { title: string };
+  courseId: string;
+  dueDate?: string;
+  endDate?: string;
+  status?: string;
+  attempted?: boolean;
+}
+
+interface DashboardStats {
+  coursesEnrolled: number;
+  hoursLearned: number;
+  testsCompleted: number;
+  averageGrade: number;
+}
+
+interface StudentProfile {
+  streak: number;
+  points: number;
+  rank: number;
+}
+
+interface LeaderboardEntry {
+  userName: string;
+  totalScore: number;
+  percentage: number;
+}
+
+interface LeaderboardResponse {
+  data: LeaderboardEntry[];
+}
 
 export default function StudentDashboard() {
   const { data: session } = useSession();
+  const { jwt } = useJWT();
   const [greeting, setGreeting] = useState("Good day");
+  
+  // State for real data
+  const [courses, setCourses] = useState<Course[]>([]);
+  // const [upcomingTests, setUpcomingTests] = useState<TestResponse[]>([]); // Removed unused
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>("");
 
   // Set greeting based on time of day
   useEffect(() => {
@@ -29,184 +110,195 @@ export default function StudentDashboard() {
     else setGreeting("Good evening");
   }, []);
 
-  // Use session user data if available, fallback to mock
+  // Use Google Auth session data, with reasonable defaults
   const student = session?.user
     ? {
         name: session.user.name || "Student",
         avatar: session.user.image || "/user-placeholder.svg",
-        streak: 7,
-        points: 2450,
-        rank: 12,
+        streak: studentProfile?.streak || 0,
+        points: studentProfile?.points || 0,
+        rank: studentProfile?.rank || 0,
       }
     : {
-        name: "John Doe",
+        name: "Student",
         avatar: "/user-placeholder.svg",
-        streak: 7,
-        points: 2450,
-        rank: 12,
+        streak: studentProfile?.streak || 0,
+        points: studentProfile?.points || 0,
+        rank: studentProfile?.rank || 0,
       };
 
-  const stats = [
+  // Fetch dashboard data from backend
+  useEffect(() => {
+    if (!jwt) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        // Fetch courses
+        const coursesResponse: Course[] = await api.get("/api/student/courses");
+        const transformedCourses = coursesResponse.slice(0, 3).map((course: Course) => ({
+          id: course.id,
+          title: course.title,
+          instructor: course.instructor,
+          progress: course.progress || 0,
+          totalModules: course.totalModules || 0,
+          completedModules: course.completedModules || 0,
+          image: course.image || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=250&fit=crop",
+          status: course.status || (course.progress > 0 ? "active" : "not-started") as "active" | "completed" | "not-started",
+          end_date: course.end_date,
+        }));
+        setCourses(transformedCourses);
+
+        // Fetch tests for upcoming tasks
+        try {
+          const testsResponse: TestResponse[] = await api.get("/api/student/tests");
+          // Removed upcomingTestsData for build
+                      // setUpcomingTests(upcomingTestsData); // Removed
+        } catch (testError) {
+          console.log("Tests not available:", testError);
+          // setUpcomingTests([]); // Removed // Set empty array if tests fail to load
+        }
+
+        // Get real test completion data from results API
+        let actualTestsCompleted = 0;
+        try {
+          const resultsResponse: TestResponse[] = await api.get("/api/student/tests");
+          // Count tests that have been attempted/completed
+          actualTestsCompleted = resultsResponse.filter((test: TestResponse) => 
+            test.status === "completed" || test.attempted === true
+          ).length;
+        } catch (resultsError) {
+          console.log("Results not available:", resultsError);
+        }
+
+        // Calculate stats from real backend data only
+        const coursesEnrolled = coursesResponse.length;
+        const hoursLearned = coursesResponse.reduce((total: number, course: Course) => 
+          total + (course.hoursSpent || 0), 0
+        );
+        
+        // Calculate average grade from actual course data
+        const coursesWithGrades = coursesResponse.filter((course: Course) => (course.averageGrade || 0) > 0);
+        const averageGrade = coursesWithGrades.length > 0 
+          ? coursesWithGrades.reduce((total: number, course: Course) => total + (course.averageGrade || 0), 0) / coursesWithGrades.length
+          : 0;
+
+        // Try to get leaderboard data for student profile
+        try {
+          const leaderboardResponse: LeaderboardResponse = await api.get("/api/student/tests/leaderboard");
+          const apiData = leaderboardResponse.data || [];
+          const sortedData = apiData.sort((a: LeaderboardEntry, b: LeaderboardEntry) => b.percentage - a.percentage);
+          
+          const currentUserIndex = sortedData.findIndex((entry: LeaderboardEntry) => 
+            entry.userName === session?.user?.name || entry.userName === session?.user?.email
+          );
+          
+          if (currentUserIndex >= 0) {
+            const currentUserData = sortedData[currentUserIndex];
+            setStudentProfile({
+              streak: 7, // Default for now, could be from another endpoint
+              points: Math.round(currentUserData.totalScore || 0),
+              rank: currentUserIndex + 1, // Calculate rank based on position in sorted array
+            });
+          }
+        } catch (profileError) {
+          console.log("Profile data not available:", profileError);
+        }
+
+        setStats({
+          coursesEnrolled,
+          hoursLearned,
+          testsCompleted: actualTestsCompleted,
+          averageGrade,
+        });
+
+      } catch (err: unknown) {
+        console.error("Error fetching dashboard data:", err);
+        const errorMessage = err instanceof Error ? err.message : "Failed to load dashboard data";
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [jwt, session?.user?.name, session?.user?.email]);
+
+  const dashboardStats = stats ? [
     {
       label: "Courses Enrolled",
-      value: "5",
-      change: "+2 this month",
+      value: stats.coursesEnrolled.toString(),
       icon: BookOpen,
       color: "bg-blue-50 text-blue-600",
-      trend: "up",
     },
-    {
+    ...(stats.hoursLearned > 0 ? [{
       label: "Hours Learned",
-      value: "87",
-      change: "+12 this week",
+      value: stats.hoursLearned.toString(),
       icon: Clock,
       color: "bg-green-50 text-green-600",
-      trend: "up",
-    },
+    }] : []),
     {
       label: "Tests Completed",
-      value: "24",
-      change: "+3 this week",
+      value: stats.testsCompleted.toString(),
       icon: Trophy,
       color: "bg-purple-50 text-purple-600",
-      trend: "up",
     },
-    {
+    ...(stats.averageGrade > 0 ? [{
       label: "Average Grade",
-      value: "85%",
-      change: "+5% improvement",
+      value: `${Math.round(stats.averageGrade)}%`,
       icon: TrendingUp,
       color: "bg-orange-50 text-orange-600",
-      trend: "up",
-    },
-  ];
+    }] : []),
+  ] : [];
 
-  const activeCourses = [
-    {
-      id: 1,
-      title: "Full Stack Web Development",
-      instructor: "Rajesh Kumar",
-      progress: 68,
-      totalModules: 12,
-      completedModules: 8,
-      nextDeadline: "May 15, 2025",
-      image:
-        "https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=400&h=250&fit=crop",
-      status: "active",
-    },
-    {
-      id: 2,
-      title: "Data Science & Analytics",
-      instructor: "Dr. Priya Sharma",
-      progress: 45,
-      totalModules: 10,
-      completedModules: 4,
-      nextDeadline: "May 18, 2025",
-      image:
-        "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=250&fit=crop",
-      status: "active",
-    },
-    {
-      id: 3,
-      title: "Mobile App Development",
-      instructor: "Arjun Patel",
-      progress: 23,
-      totalModules: 8,
-      completedModules: 2,
-      nextDeadline: "May 22, 2025",
-      image:
-        "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&h=250&fit=crop",
-      status: "new",
-    },
-  ];
+  // Removed unused functions for build
 
-  const upcomingTasks = [
-    {
-      id: 1,
-      title: "React Components Assignment",
-      course: "Full Stack Web Development",
-      dueDate: "May 12, 2025",
-      type: "assignment",
-      priority: "high",
-    },
-    {
-      id: 2,
-      title: "Database Design Quiz",
-      course: "Full Stack Web Development",
-      dueDate: "May 14, 2025",
-      type: "test",
-      priority: "medium",
-    },
-    {
-      id: 3,
-      title: "Python Fundamentals Test",
-      course: "Data Science & Analytics",
-      dueDate: "May 16, 2025",
-      type: "test",
-      priority: "medium",
-    },
-    {
-      id: 4,
-      title: "Final Project Submission",
-      course: "Mobile App Development",
-      dueDate: "May 20, 2025",
-      type: "project",
-      priority: "high",
-    },
-  ];
-
-  const recentAchievements = [
-    {
-      id: 1,
-      title: "JavaScript Master",
-      description: "Completed all JavaScript modules with 90%+ score",
-      icon: Award,
-      date: "2 days ago",
-      type: "skill",
-    },
-    {
-      id: 2,
-      title: "7-Day Streak",
-      description: "Maintained daily learning for a week",
-      icon: Target,
-      date: "Today",
-      type: "streak",
-    },
-    {
-      id: 3,
-      title: "Top 20 Learner",
-      description: "Ranked in top 20 among all students",
-      icon: Trophy,
-      date: "5 days ago",
-      type: "rank",
-    },
-  ];
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return "bg-red-50 text-red-700 border-red-200";
-      case "medium":
-        return "bg-yellow-50 text-yellow-700 border-yellow-200";
-      case "low":
-        return "bg-green-50 text-green-700 border-green-200";
-      default:
-        return "bg-gray-50 text-gray-700 border-gray-200";
-    }
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "No deadline";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "assignment":
-        return ClipboardList;
-      case "test":
-        return Trophy;
-      case "project":
-        return Target;
-      default:
-        return AlertCircle;
-    }
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+          <div className="flex items-center space-x-3">
+            <AlertCircle className="w-6 h-6 text-red-600" />
+            <div>
+              <h3 className="text-lg font-medium text-red-800">Error Loading Dashboard</h3>
+              <p className="text-red-700 mt-1">{error}</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -224,24 +316,30 @@ export default function StudentDashboard() {
               Ready to continue your learning journey? You&apos;re doing great!
             </p>
             <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                  <Target className="w-4 h-4" />
+              {student.streak > 0 && (
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                    <Target className="w-4 h-4" />
+                  </div>
+                  <span className="text-sm">{student.streak} day streak</span>
                 </div>
-                <span className="text-sm">{student.streak} day streak</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                  <Trophy className="w-4 h-4" />
+              )}
+              {student.rank > 0 && (
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                    <Trophy className="w-4 h-4" />
+                  </div>
+                  <span className="text-sm">Rank #{student.rank}</span>
                 </div>
-                <span className="text-sm">Rank #{student.rank}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                  <Award className="w-4 h-4" />
+              )}
+              {student.points > 0 && (
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                    <Award className="w-4 h-4" />
+                  </div>
+                  <span className="text-sm">{student.points} points</span>
                 </div>
-                <span className="text-sm">{student.points} points</span>
-              </div>
+              )}
             </div>
           </div>
           <div className="hidden md:block">
@@ -260,7 +358,7 @@ export default function StudentDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => {
+        {dashboardStats.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <div
@@ -279,10 +377,6 @@ export default function StudentDashboard() {
                   </div>
                   <div className="text-xs text-gray-500">{stat.label}</div>
                 </div>
-              </div>
-              <div className="flex items-center text-sm text-green-600">
-                <TrendingUp className="w-4 h-4 mr-1" />
-                {stat.change}
               </div>
             </div>
           );
@@ -307,159 +401,219 @@ export default function StudentDashboard() {
               </div>
             </div>
             <div className="p-6 space-y-4">
-              {activeCourses.map((course) => (
-                <div
-                  key={course.id}
-                  className="group border border-gray-200 rounded-lg p-4 hover:border-blue-200 hover:shadow-sm transition-all"
-                >
-                  <div className="flex items-start space-x-4">
-                    <div className="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0">
-                      <Image
-                        src={course.image}
-                        alt={course.title}
-                        width={64}
-                        height={48}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">
-                          {course.title}
-                        </h3>
-                        {course.status === "new" && (
-                          <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
-                            New
-                          </span>
+              {courses.length === 0 ? (
+                <div className="text-center py-8">
+                  <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Courses Yet</h3>
+                  <p className="text-gray-600 mb-4">Start your learning journey by enrolling in a course.</p>
+                  <Link
+                    href="/student/courses"
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Browse Courses
+                  </Link>
+                </div>
+              ) : (
+                courses.map((course) => (
+                  <div
+                    key={course.id}
+                    className="group border border-gray-200 rounded-lg p-4 hover:border-blue-200 hover:shadow-sm transition-all"
+                  >
+                    <div className="flex items-start space-x-4">
+                      <div className="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                        <Image
+                          src={course.image || "/hero-image.png"}
+                          alt={course.title}
+                          width={64}
+                          height={48}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                            {course.title}
+                          </h3>
+                          {course.status === "not-started" && (
+                            <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+                              New
+                            </span>
+                          )}
+                        </div>
+                        {course.instructor && (
+                          <p className="text-sm text-gray-600 mb-2">
+                            by {course.instructor}
+                          </p>
                         )}
-                      </div>
-                      <p className="text-sm text-gray-600 mb-2">
-                        by {course.instructor}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4 text-sm text-gray-500">
-                          <span>
-                            {course.completedModules}/{course.totalModules}{" "}
-                            modules
-                          </span>
-                          <span>Due: {course.nextDeadline}</span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4 text-sm text-gray-500">
+                            <span>
+                              {course.completedModules}/{course.totalModules} modules
+                            </span>
+                            {course.end_date && (
+                              <span>Due: {formatDate(course.end_date)}</span>
+                            )}
+                          </div>
+                          <Link
+                            href={`/student/courses/${course.id}`}
+                            className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
+                          >
+                            <PlayCircle className="w-4 h-4 mr-1" />
+                            Continue
+                          </Link>
                         </div>
-                        <Link
-                          href={`/student/courses/${course.id}`}
-                          className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
-                        >
-                          <PlayCircle className="w-4 h-4 mr-1" />
-                          Continue
-                        </Link>
-                      </div>
-                      <div className="mt-3">
-                        <div className="flex items-center justify-between text-sm mb-1">
-                          <span className="text-gray-600">Progress</span>
-                          <span className="font-medium text-gray-900">
-                            {course.progress}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                            style={{ width: `${course.progress}%` }}
-                          ></div>
-                        </div>
+                        {course.totalModules > 0 && (
+                          <div className="mt-3">
+                            <div className="flex items-center justify-between text-sm mb-1">
+                              <span className="text-gray-600">Progress</span>
+                              <span className="font-medium text-gray-900">
+                                {course.progress}%
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                                style={{ width: `${course.progress}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
 
         {/* Right Column */}
         <div className="space-y-6">
-          {/* Upcoming Tasks */}
+          {/* Quick Actions */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100">
             <div className="p-6 border-b border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900">
-                Upcoming Tasks
+                Quick Actions
               </h2>
             </div>
-            <div className="p-6 space-y-3">
-              {upcomingTasks.slice(0, 4).map((task) => {
-                const TypeIcon = getTypeIcon(task.type);
-                return (
-                  <div
-                    key={task.id}
-                    className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center ${getPriorityColor(task.priority)}`}
-                    >
-                      <TypeIcon className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-gray-900 truncate">
-                        {task.title}
-                      </h4>
-                      <p className="text-xs text-gray-600 truncate">
-                        {task.course}
-                      </p>
-                      <div className="flex items-center mt-1">
-                        <Calendar className="w-3 h-3 text-gray-400 mr-1" />
-                        <span className="text-xs text-gray-500">
-                          {task.dueDate}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="p-6 space-y-4">
               <Link
-                href="/student/assignments"
-                className="block w-full text-center py-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                href="/student/tests"
+                className="block w-full p-4 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors group"
               >
-                View All Tasks →
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <Trophy className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-medium text-blue-900 group-hover:text-blue-700">
+                      Take Tests
+                    </h3>
+                    <p className="text-xs text-blue-600">
+                      Practice and evaluate your skills
+                    </p>
+                  </div>
+                  <PlayCircle className="w-5 h-5 text-blue-600 group-hover:text-blue-700" />
+                </div>
+              </Link>
+
+              <Link
+                href="/student/leaderboard"
+                className="block w-full p-4 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors group"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                    <Award className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-medium text-purple-900 group-hover:text-purple-700">
+                      View Leaderboard
+                    </h3>
+                    <p className="text-xs text-purple-600">
+                      See how you rank among peers
+                    </p>
+                  </div>
+                  <Target className="w-5 h-5 text-purple-600 group-hover:text-purple-700" />
+                </div>
+              </Link>
+
+              <Link
+                href="/student/results"
+                className="block w-full p-4 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors group"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-medium text-green-900 group-hover:text-green-700">
+                      Check Results
+                    </h3>
+                    <p className="text-xs text-green-600">
+                      Review your test performance
+                    </p>
+                  </div>
+                  <AlertCircle className="w-5 h-5 text-green-600 group-hover:text-green-700" />
+                </div>
               </Link>
             </div>
           </div>
 
-          {/* Recent Achievements */}
+          {/* Progress Overview */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100">
             <div className="p-6 border-b border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900">
-                Recent Achievements
+                Your Progress
               </h2>
             </div>
             <div className="p-6 space-y-4">
-              {recentAchievements.map((achievement) => {
-                const Icon = achievement.icon;
-                return (
-                  <div
-                    key={achievement.id}
-                    className="flex items-start space-x-3"
+              {courses.length > 0 ? (
+                <div className="space-y-3">
+                  {courses.slice(0, 2).map((course) => (
+                    <div key={course.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-medium text-gray-900 truncate">
+                          {course.title}
+                        </h4>
+                        <div className="flex items-center mt-1">
+                          <div className="flex-1 bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                              style={{ width: `${course.progress}%` }}
+                            ></div>
+                          </div>
+                          <span className="ml-2 text-xs text-gray-600">{course.progress}%</span>
+                        </div>
+                      </div>
+                      <Link
+                        href={`/student/courses/${course.id}`}
+                        className="ml-3 text-blue-600 hover:text-blue-800"
+                      >
+                        <PlayCircle className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  ))}
+                  <Link
+                    href="/student/courses"
+                    className="block w-full text-center py-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
                   >
-                    <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                      <Icon className="w-5 h-5 text-yellow-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-900">
-                        {achievement.title}
-                      </h4>
-                      <p className="text-xs text-gray-600">
-                        {achievement.description}
-                      </p>
-                      <span className="text-xs text-gray-400">
-                        {achievement.date}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-              <Link
-                href="/student/achievements"
-                className="block w-full text-center py-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
-              >
-                View All Achievements →
-              </Link>
+                    View All Courses →
+                  </Link>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <BookOpen className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600 mb-3">No courses enrolled yet</p>
+                  <Link
+                    href="/student/courses"
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Browse Courses
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>

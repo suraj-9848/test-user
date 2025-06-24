@@ -3,15 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  Menu,
-  Bell,
-  Search,
-  User,
-  Settings,
-  LogOut,
-  ChevronDown,
-} from "lucide-react";
+import { Menu, Search, User, Settings, LogOut, ChevronDown } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 
 interface StudentNavbarProps {
@@ -20,7 +12,6 @@ interface StudentNavbarProps {
 
 export default function StudentNavbar({ onToggleSidebar }: StudentNavbarProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const { data: session } = useSession();
 
   // Use session user data if available, fallback to mock
@@ -37,30 +28,6 @@ export default function StudentNavbar({ onToggleSidebar }: StudentNavbarProps) {
         avatar: "/user-placeholder.svg",
         notifications: 3,
       };
-
-  const notifications = [
-    {
-      id: 1,
-      title: "New assignment available",
-      message: "JavaScript Fundamentals - Module 3 is now available",
-      time: "2 hours ago",
-      unread: true,
-    },
-    {
-      id: 2,
-      title: "Test reminder",
-      message: "React Components test is due tomorrow",
-      time: "5 hours ago",
-      unread: true,
-    },
-    {
-      id: 3,
-      title: "Course completed",
-      message: "Congratulations! You completed HTML/CSS Basics",
-      time: "1 day ago",
-      unread: false,
-    },
-  ];
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
@@ -107,67 +74,6 @@ export default function StudentNavbar({ onToggleSidebar }: StudentNavbarProps) {
               <Search className="w-5 h-5" />
             </button>
 
-            {/* Notifications */}
-            <div className="relative">
-              <button
-                onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-                className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors relative"
-              >
-                <Bell className="w-5 h-5" />
-                {student.notifications > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {student.notifications}
-                  </span>
-                )}
-              </button>
-
-              {/* Notifications dropdown */}
-              {isNotificationOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                  <div className="px-4 py-2 border-b border-gray-100">
-                    <h3 className="text-sm font-semibold text-gray-900">
-                      Notifications
-                    </h3>
-                  </div>
-                  <div className="max-h-80 overflow-y-auto">
-                    {notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className={`px-4 py-3 hover:bg-gray-50 cursor-pointer ${
-                          notification.unread ? "bg-blue-50" : ""
-                        }`}
-                      >
-                        <div className="flex items-start">
-                          <div className="flex-1">
-                            <h4 className="text-sm font-medium text-gray-900">
-                              {notification.title}
-                            </h4>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {notification.message}
-                            </p>
-                            <p className="text-xs text-gray-400 mt-1">
-                              {notification.time}
-                            </p>
-                          </div>
-                          {notification.unread && (
-                            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="px-4 py-2 border-t border-gray-100">
-                    <Link
-                      href="/student/notifications"
-                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      View all notifications
-                    </Link>
-                  </div>
-                </div>
-              )}
-            </div>
-
             {/* Profile dropdown */}
             <div className="relative">
               <button
@@ -209,13 +115,6 @@ export default function StudentNavbar({ onToggleSidebar }: StudentNavbarProps) {
                     >
                       <User className="w-4 h-4 mr-3" />
                       My Profile
-                    </Link>
-                    <Link
-                      href="/student/settings"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      <Settings className="w-4 h-4 mr-3" />
-                      Settings
                     </Link>
                   </div>
 

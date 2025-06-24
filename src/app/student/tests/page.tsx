@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useSession } from "next-auth/react";
 import TestSelection from "@/components/test/TestSelection";
 import TestInterface from "@/components/test/TestInterface";
 import { Test, TestAttempt } from "@/types/test";
@@ -9,12 +8,9 @@ import { mockTestService } from "@/services/mockTestService";
 import { DEMO_CONFIG } from "@/config/demo";
 
 export default function StudentTests() {
-  const { data: session } = useSession();
   const [availableTests, setAvailableTests] = useState<Test[]>([]);
   const [selectedTest, setSelectedTest] = useState<Test | null>(null);
-  const [currentAttempt, setCurrentAttempt] = useState<TestAttempt | null>(
-    null,
-  );
+  const [currentAttempt, setCurrentAttempt] = useState<TestAttempt | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,6 +21,7 @@ export default function StudentTests() {
       // Use mock service directly for demo
       const data = await mockTestService.getAvailableTests();
       setAvailableTests(data.tests || []);
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load tests");
     } finally {
@@ -33,14 +30,8 @@ export default function StudentTests() {
   }, []);
 
   useEffect(() => {
-    // Only fetch tests if user is authenticated as student
-    if (
-      session?.user &&
-      (session.user as { userRole?: string })?.userRole === "student"
-    ) {
-      fetchAvailableTests();
-    }
-  }, [session, fetchAvailableTests]);
+    fetchAvailableTests();
+  }, [fetchAvailableTests]);
 
   const handleTestSelect = (test: Test) => {
     setSelectedTest(test);
@@ -52,6 +43,7 @@ export default function StudentTests() {
       // Use mock service directly for demo
       const data = await mockTestService.startTest(testId);
       setCurrentAttempt(data.attempt);
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to start test");
     } finally {
@@ -70,7 +62,7 @@ export default function StudentTests() {
     setCurrentAttempt(null);
   };
 
-  // Loading state
+  // Show spinner only while loading
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">

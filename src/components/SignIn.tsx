@@ -1,38 +1,88 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation"; // Removed unused
 import { AiOutlineGoogle } from "react-icons/ai";
 import { Shield, ArrowRight, Sparkles } from "lucide-react";
-import { validateOAuthUser } from "../../utils/auth";
+import { useJWT } from "@/context/JWTContext";
+
+const BACKEND_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
 
 const SignIn = () => {
   const { status, data: session } = useSession();
-  const router = useRouter();
+      // Removed unused router
+  const { setJwt } = useJWT();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const checkAndRedirect = async () => {
-      if (status === "authenticated" && session?.jwt) {
-        const result = await validateOAuthUser(session.jwt);
-        console.log("validateOAuthUser result:", result); // Debug log
-        if (
-          result.valid &&
-          result.data?.user?.userRole &&
-          result.data.user.userRole.toLowerCase() === "student"
-        ) {
-          router.push("/student");
-        } else {
-          router.push("/"); // fallback for other roles
+    // const didRedirect = false; // Removed unused
+    const exchangeGoogleJwt = async (googleJwt: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        console.log("[SignIn] Exchanging Google JWT for backend JWT:", googleJwt);
+        const res = await fetch(`${BACKEND_BASE_URL}/api/auth/exchange`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: googleJwt }),
+          credentials: "include",
+        });
+        console.log("[SignIn] /api/auth/exchange response status:", res.status);
+        let data = null;
+        try {
+          data = await res.json();
+        } catch {
+          data = null;
         }
+        console.log("[SignIn] /api/auth/exchange response data:", data);
+        if (!res.ok) {
+          setError(data?.message || "Failed to authenticate with backend");
+          setJwt(null);
+          localStorage.removeItem("jwt");
+          return;
+        }
+        if (data && data.token) {
+          setJwt(data.token);
+          localStorage.setItem("jwt", data.token);
+          console.log("[SignIn] Stored backend JWT:", data.token);
+          // Force a hard reload to guarantee correct JWT is loaded everywhere
+          window.location.replace("/student");
+          return;
+        } else {
+          setError("No backend token received");
+          setJwt(null);
+          localStorage.removeItem("jwt");
+        }
+      } catch (e: any) {
+        setError(e?.message || "Failed to authenticate with backend");
+        setJwt(null);
+        localStorage.removeItem("jwt");
+      } finally {
+        setLoading(false);
       }
     };
-    checkAndRedirect();
-  }, [status, session, router]);
+
+    // Only ever store backend JWT, never Google JWT
+    if (status === "authenticated" && session?.jwt) {
+      setJwt(null);
+      localStorage.removeItem("jwt");
+      console.log("[SignIn] Google JWT from session:", session.jwt);
+      exchangeGoogleJwt(session.jwt);
+    } else if (status === "unauthenticated") {
+      setJwt(null);
+      localStorage.removeItem("jwt");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, session]);
 
   const handleGoogleSignIn = () => {
+    setError(null);
+    setLoading(true);
     signIn("google", {
-      callbackUrl: "/sign-in", // Redirect back to sign-in page so role check runs
+      callbackUrl: "/sign-in", // Redirect back to sign-in page so exchange runs
     });
   };
 
@@ -143,14 +193,20 @@ const SignIn = () => {
               <button
                 onClick={handleGoogleSignIn}
                 className="w-full group relative flex items-center justify-center gap-3 py-3 px-6 bg-white text-slate-900 rounded-2xl font-semibold text-base shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-white hover:border-blue-100"
+                disabled={loading}
               >
                 <div className="absolute inset-0 bg-blue-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div className="relative flex items-center gap-3">
                   <AiOutlineGoogle size={20} />
-                  <span>Continue with Google</span>
+                  <span>{loading ? "Signing in..." : "Continue with Google"}</span>
                   <ArrowRight className="w-4 h-4 text-blue-600 group-hover:translate-x-1 transition-transform duration-300" />
                 </div>
               </button>
+              {error && (
+                <div className="mt-4 text-center text-red-500 text-sm font-semibold">
+                  {error}
+                </div>
+              )}
 
               {/* Divider */}
               <div className="flex items-center my-6">

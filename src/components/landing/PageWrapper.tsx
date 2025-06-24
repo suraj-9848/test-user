@@ -4,6 +4,7 @@ import React from "react";
 import { usePathname } from "next/navigation";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
+import AuthSyncProvider from "@/components/AuthSyncProvider";
 
 const PageWrapper = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
@@ -16,11 +17,13 @@ const PageWrapper = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar />
-      <div className="flex-grow flex flex-col">{children}</div>
-      <Footer />
-    </div>
+    <AuthSyncProvider>
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <div className="flex-grow flex flex-col">{children}</div>
+        <Footer />
+      </div>
+    </AuthSyncProvider>
   );
 };
 

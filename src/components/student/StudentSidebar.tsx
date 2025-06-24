@@ -5,13 +5,13 @@ import Link from "next/link";
 import {
   Home,
   BookOpen,
-  ClipboardList,
   Trophy,
   BarChart3,
   User,
-  Settings,
-  Bell,
+  // Settings, // Removed unused
+  // Bell, // Removed unused
   X,
+  Users,
 } from "lucide-react";
 
 interface StudentSidebarProps {
@@ -33,52 +33,30 @@ export default function StudentSidebar({
       description: "Overview & progress",
     },
     {
-      name: "My Courses",
-      href: "/student/courses",
       icon: BookOpen,
-      description: "Your enrolled courses",
+      name: "Courses",
+      href: "/student/courses",
     },
     {
-      name: "Assignments",
-      href: "/student/assignments",
-      icon: ClipboardList,
-      description: "Pending & completed tasks",
-    },
-    {
+      icon: Trophy,
       name: "Tests",
       href: "/student/tests",
-      icon: ClipboardList,
-      description: "Quizzes & assessments",
     },
     {
-      name: "Leaderboard",
-      href: "/student/leaderboard",
-      icon: Trophy,
-      description: "Your ranking & achievements",
-    },
-    {
+      icon: BarChart3,
       name: "Results",
       href: "/student/results",
-      icon: BarChart3,
-      description: "Grades & performance",
+    },
+    {
+      icon: Users,
+      name: "Leaderboard",
+      href: "/student/leaderboard",
     },
     {
       name: "Profile",
       href: "/student/profile",
       icon: User,
       description: "Personal information",
-    },
-    {
-      name: "Notifications",
-      href: "/student/notifications",
-      icon: Bell,
-      description: "Updates & alerts",
-    },
-    {
-      name: "Settings",
-      href: "/student/settings",
-      icon: Settings,
-      description: "Account preferences",
     },
   ];
 
@@ -150,33 +128,6 @@ export default function StudentSidebar({
             })}
           </nav>
 
-          {/* Quick Stats */}
-          <div className="p-4 mt-4 border-t border-gray-200">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">
-                Quick Stats
-              </h3>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-600">
-                    Courses Enrolled
-                  </span>
-                  <span className="text-sm font-medium text-blue-600">5</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-600">
-                    Assignments Pending
-                  </span>
-                  <span className="text-sm font-medium text-orange-600">3</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-600">Tests Completed</span>
-                  <span className="text-sm font-medium text-green-600">12</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Support section */}
           <div className="p-4 mt-4 border-t border-gray-200">
             <div className="bg-gray-50 rounded-lg p-4">
@@ -186,12 +137,12 @@ export default function StudentSidebar({
               <p className="text-xs text-gray-600 mb-3">
                 Get support from our team or browse the knowledge base.
               </p>
-              <Link
-                href="/student/support"
+              <a
+                href="mailto:contact@nirudhyog.com"
                 className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 font-medium"
               >
-                Contact Support →
-              </Link>
+                contact@nirudhyog.com
+              </a>
             </div>
           </div>
         </div>

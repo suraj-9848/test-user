@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import PageWrapper from "@/components/landing/PageWrapper";
-import SessionProvider from "@/components/SessionProvider";
+import SessionWrapper from "@/components/SessionProvider";
+import { JWTProvider } from "@/context/JWTContext";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -31,9 +32,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SessionProvider>
-          <PageWrapper>{children}</PageWrapper>
-        </SessionProvider>
+        <SessionWrapper>
+          <JWTProvider>
+            <PageWrapper>{children}</PageWrapper>
+          </JWTProvider>
+        </SessionWrapper>
       </body>
     </html>
   );

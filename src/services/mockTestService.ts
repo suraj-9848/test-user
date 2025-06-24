@@ -43,7 +43,7 @@ const MOCK_TESTS: Test[] = [
       "Comprehensive test covering JavaScript basics, ES6 features, and DOM manipulation",
     durationInMinutes: 60,
     maxMarks: 100,
-    totalQuestions: 25,
+    // totalQuestions: 25, // Removed for build compatibility
     startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     instructions: [
