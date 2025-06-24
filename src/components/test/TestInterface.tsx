@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Test,
   TestAttempt,
@@ -110,10 +110,10 @@ export default function TestInterface({
     return () => {
       cleanup();
     };
-  }, [test.id, attempt.id]);
+  }, [test.id, attempt.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Enter fullscreen mode - improved cross-platform support
-  const enterFullscreen = async () => {
+  const enterFullscreen = useCallback(async () => {
     try {
       if (fullscreenRef.current) {
         const element = fullscreenRef.current;
@@ -161,10 +161,10 @@ export default function TestInterface({
         },
       );
     }
-  };
+  }, []);
 
   // Start camera monitoring and recording
-  const startCameraMonitoring = async () => {
+  const startCameraMonitoring = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 1280, height: 720 },
@@ -208,10 +208,10 @@ export default function TestInterface({
         },
       );
     }
-  };
+  }, []);
 
   // Start security monitoring
-  const startSecurityMonitoring = () => {
+  const startSecurityMonitoring = useCallback(() => {
     // Track tab visibility changes
     const handleVisibilityChange = () => {
       if (document.hidden) {
@@ -252,9 +252,9 @@ export default function TestInterface({
       // Check multiple fullscreen properties for cross-browser compatibility
       const isFullscreen = !!(
         document.fullscreenElement ||
-        (document as any).webkitFullscreenElement ||
-        (document as any).mozFullScreenElement ||
-        (document as any).msFullscreenElement
+        (document as unknown as { webkitFullscreenElement?: Element }).webkitFullscreenElement ||
+        (document as unknown as { mozFullScreenElement?: Element }).mozFullScreenElement ||
+        (document as unknown as { msFullscreenElement?: Element }).msFullscreenElement
       );
 
       setUIState((prev) => ({ ...prev, isFullscreen: isFullscreen }));
@@ -364,14 +364,14 @@ export default function TestInterface({
       document.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  };
+  }, [tabSwitchCount, isTestSubmitted]);
 
   // Auto-save answers periodically
-  const startAutoSave = () => {
+  const startAutoSave = useCallback(() => {
     autoSaveIntervalRef.current = setInterval(() => {
       saveAnswers();
     }, 30000); // Save every 30 seconds
-  };
+  }, []);
 
   // Log monitoring events
   const logMonitoringEvent = (
@@ -445,6 +445,8 @@ export default function TestInterface({
       | "AUTO_BROWSER_CLOSE" = "MANUAL",
   ) => {
     try {
+      console.log(`Submitting test with type: ${submissionType}`);
+      
       // Stop recording
       if (
         mediaRecorderRef.current &&
