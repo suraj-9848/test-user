@@ -10,7 +10,7 @@ interface QuestionRendererProps {
   onAnswerChange: (
     questionId: string,
     selectedOptions: string[],
-    textAnswer?: string,
+    textAnswer?: string
   ) => void;
 }
 
@@ -23,7 +23,7 @@ export default function QuestionRenderer({
 
   const handleOptionChange = (
     optionId: string,
-    isMultiSelect: boolean = false,
+    isMultiSelect: boolean = false
   ) => {
     let newSelectedOptions: string[];
 
@@ -31,7 +31,7 @@ export default function QuestionRenderer({
       // For multiple select questions
       if (answer.selectedOptions.includes(optionId)) {
         newSelectedOptions = answer.selectedOptions.filter(
-          (id) => id !== optionId,
+          (id) => id !== optionId
         );
       } else {
         newSelectedOptions = [...answer.selectedOptions, optionId];
@@ -73,6 +73,7 @@ export default function QuestionRenderer({
 
     return (
       <div className="space-y-3">
+        <p className="text-sm text-gray-600 mb-4">Select all that apply:</p>
         {question.options
           .sort((a, b) => (a.optionOrder || 0) - (b.optionOrder || 0))
           .map((option, index) => {
@@ -87,13 +88,13 @@ export default function QuestionRenderer({
                     ? "border-blue-500 bg-blue-50"
                     : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                 }`}
-                onClick={() => handleOptionChange(option.id)}
+                onClick={() => handleOptionChange(option.id, true)}
               >
                 <div className="flex items-center space-x-3">
                   {isSelected ? (
-                    <CheckCircle className="h-5 w-5 text-blue-600" />
+                    <CheckSquare className="h-5 w-5 text-blue-600" />
                   ) : (
-                    <Circle className="h-5 w-5 text-gray-400" />
+                    <Square className="h-5 w-5 text-gray-400" />
                   )}
                   <span className="text-gray-900">
                     {option.optionText || option.text || option.label || `Option ${index + 1}`}
@@ -280,7 +281,7 @@ export default function QuestionRenderer({
           </span>
         </div>
 
-        <div className="prose max-w-none">
+        <div className="prose max-w-none prose-blue prose-code:font-mono prose-code:bg-gray-100 prose-code:px-1 prose-code:rounded prose-strong:font-bold prose-li:marker:text-blue-600 prose-li:pl-2 prose-li:mb-1">
           <div
             className="text-lg text-gray-900 leading-relaxed"
             dangerouslySetInnerHTML={{ __html: question.questionText }}

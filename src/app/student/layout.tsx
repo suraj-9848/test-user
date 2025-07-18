@@ -40,7 +40,7 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
       return;
     }
     const payload = decodeJwtPayload(jwt);
-    console.log("[StudentLayout] JWT payload:", payload);
+    console.log("[StudentLayout] JWT payload:", jwt);
     const userRole = payload?.userRole || payload?.role || payload?.user_role;
     console.log("[StudentLayout] userRole:", userRole);
     if (userRole && ["student", "admin"].includes(userRole.toLowerCase())) {

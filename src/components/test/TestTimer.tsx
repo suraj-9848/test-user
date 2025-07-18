@@ -22,18 +22,15 @@ export default function TestTimer({
     setTimeRemaining(initialTime);
     hasExpiredRef.current = false;
 
-    // Start the timer
     intervalRef.current = setInterval(() => {
       setTimeRemaining((prev) => {
         const newTime = prev - 1;
 
         // Update warning states
         if (newTime <= 300 && newTime > 60) {
-          // 5 minutes
           setIsWarning(true);
           setIsCritical(false);
         } else if (newTime <= 60) {
-          // 1 minute
           setIsWarning(true);
           setIsCritical(true);
         } else {
@@ -41,7 +38,6 @@ export default function TestTimer({
           setIsCritical(false);
         }
 
-        // Check if time expired
         if (newTime <= 0 && !hasExpiredRef.current) {
           hasExpiredRef.current = true;
           onTimeExpired();
@@ -61,7 +57,9 @@ export default function TestTimer({
         clearInterval(intervalRef.current);
       }
     };
-  }, [initialTime, onTimeExpired]);
+    // Only run on mount/unmount, not on initialTime change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const formatTime = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);
@@ -69,9 +67,13 @@ export default function TestTimer({
     const secs = seconds % 60;
 
     if (hours > 0) {
-      return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+      return `${hours.toString().padStart(2, "0")}:${minutes
+        .toString()
+        .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
     } else {
-      return `${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+      return `${minutes.toString().padStart(2, "0")}:${secs
+        .toString()
+        .padStart(2, "0")}`;
     }
   };
 
@@ -103,7 +105,9 @@ export default function TestTimer({
         className={`flex items-center space-x-2 px-3 py-2 rounded-lg border ${getBackgroundColor()}`}
       >
         <Clock
-          className={`h-5 w-5 ${getTimerColor()} ${isCritical ? "animate-pulse" : ""}`}
+          className={`h-5 w-5 ${getTimerColor()} ${
+            isCritical ? "animate-pulse" : ""
+          }`}
         />
         <div className="text-right">
           <div className={`text-lg font-mono font-bold ${getTimerColor()}`}>
@@ -134,8 +138,8 @@ export default function TestTimer({
             isCritical
               ? "bg-red-500"
               : isWarning
-                ? "bg-yellow-500"
-                : "bg-blue-500"
+              ? "bg-yellow-500"
+              : "bg-blue-500"
           }`}
           style={{
             width: `${(timeRemaining / initialTime) * 100}%`,
