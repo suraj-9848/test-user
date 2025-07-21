@@ -7,7 +7,7 @@ export function decodeJwtPayload(token: string): any {
     let payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
     // Pad base64 if needed
     while (payload.length % 4 !== 0) payload += "=";
-    // Use atob in browser, Buffer in Node
+    // Use atob in browser, Buffer in Node.js
     let decoded;
     if (typeof window !== "undefined" && typeof window.atob === "function") {
       decoded = window.atob(payload);
