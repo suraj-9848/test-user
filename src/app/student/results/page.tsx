@@ -7,33 +7,53 @@ import {
   Clock,
   FileText,
   Star,
-  ArrowRight,
   AlertCircle,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useJWT } from "@/context/JWTContext";
 
 // API Configuration
-const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
+const BACKEND_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
 
 // Create API wrapper for consistency
 const api = {
   get: async (endpoint: string) => {
-    const token = localStorage.getItem('jwt');
+    const token = localStorage.getItem("jwt");
     const response = await fetch(`${BACKEND_BASE_URL}${endpoint}`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Authorization': token ? `Bearer ${token}` : '',
-        'Content-Type': 'application/json',
+        Authorization: token ? `Bearer ${token}` : "",
+        "Content-Type": "application/json",
       },
     });
-    
+
     if (!response.ok) {
       throw new Error(`API Error: ${response.status}`);
     }
-    
+
     return response.json();
-  }
+  },
 };
+
+interface Option {
+  id: string;
+  text: string;
+  correct: boolean;
+}
+
+interface Response {
+  questionId: string;
+  questionText: string;
+  type: string;
+  answer: string;
+  score: number;
+  maxMarks: number;
+  evaluationStatus: string;
+  evaluatorComments: string | null;
+  options: Option[];
+}
 
 interface TestResult {
   id: string;
@@ -51,6 +71,7 @@ interface TestResult {
   questionsTotal?: number;
   questionsCorrect?: number;
   attempted?: boolean;
+  responses?: Response[];
 }
 
 export default function ResultsPage() {
@@ -59,6 +80,7 @@ export default function ResultsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const [filter, setFilter] = useState<"all" | "passed" | "failed">("all");
+  const [expandedResult, setExpandedResult] = useState<string | null>(null);
 
   useEffect(() => {
     if (!jwt) {
@@ -70,44 +92,74 @@ export default function ResultsPage() {
       try {
         setLoading(true);
         setError("");
-        const response = await api.get("/api/student/tests");
-        
-        // Handle different response structures
-        let testResults: TestResult[];
-        if (Array.isArray(response)) {
-          testResults = response;
-        } else if (response && response.data && Array.isArray(response.data)) {
-          testResults = response.data;
-        } else if (response && response.tests && Array.isArray(response.tests)) {
-          testResults = response.tests;
-        } else {
-          console.warn("Unexpected API response structure:", response);
-          testResults = [];
+
+        const testsResponse = await api.get("/api/student/tests");
+        const tests = testsResponse?.data?.tests || [];
+
+        const allResults: TestResult[] = [];
+        for (const test of tests) {
+          try {
+            const resultsResponse = await api.get(
+              `/api/student/tests/${test.id}/results`
+            );
+            const submissions = resultsResponse?.data?.submissions || [];
+
+            submissions.forEach((submission: any) => {
+              const questionsTotal = submission.responses?.length || 0;
+              const questionsCorrect =
+                submission.responses?.filter(
+                  (response: any) => response.score > 0
+                ).length || 0;
+
+              allResults.push({
+                id: submission.submissionId,
+                title: submission.testTitle,
+                courseName: test.course?.title,
+                course: { title: test.course?.title },
+                courseId: submission.testId,
+                score: submission.totalScore ,
+                maxScore: submission.maxMarks,
+                percentage: (submission.totalScore && submission.maxMarks
+                    ? (submission.totalScore / submission.maxMarks) * 100
+                    : undefined),
+                status: submission.status,
+                submittedAt: submission.submittedAt,
+                completedAt: submission.submittedAt,
+                duration: test.durationInMinutes
+                  ? `${test.durationInMinutes} minutes`
+                  : undefined,
+                questionsTotal,
+                questionsCorrect,
+                attempted: submission.status === "FULLY_EVALUATED",
+                responses: submission.responses,
+              });
+            });
+          } catch (err) {
+            console.warn(`Failed to fetch results for test ${test.id}:`, err);
+          }
         }
-        
-        // Filter only tests that have been attempted/completed
-        const completedTests = testResults.filter((test: TestResult) => 
-          test.status === "completed" || test.attempted === true
+
+        const completedTests = allResults.filter(
+          (test) => test.status === "FULLY_EVALUATED" || test.attempted
         );
-        
         setResults(completedTests);
       } catch (err: unknown) {
         console.error("Error fetching results:", err);
-        const errorMessage = err instanceof Error ? err.message : "Failed to load results";
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load results";
         setError(errorMessage);
-      } finally {
-        setLoading(false);
       }
+
+      setLoading(false);
     };
 
     fetchResults();
   }, [jwt]);
 
-  // Filter results based on status
-  const filteredResults = results.filter(result => {
+  const filteredResults = results.filter((result) => {
     if (filter === "all") return true;
-    if (filter === "passed") return (result.percentage || 0) >= 50;
-    if (filter === "failed") return (result.percentage || 0) < 50;
+    if (filter === "passed") return (result.percentage || 0) >= 40;
+    if (filter === "failed") return (result.percentage || 0) < 40;
     return true;
   });
 
@@ -118,10 +170,18 @@ export default function ResultsPage() {
   };
 
   const getStatusBadge = (percentage: number) => {
-    if (percentage >= 50) {
-      return <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">Passed</span>;
+    if (percentage >= 40) {
+      return (
+        <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+          Passed
+        </span>
+      );
     }
-    return <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">Failed</span>;
+    return (
+      <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">
+        Failed
+      </span>
+    );
   };
 
   const formatDate = (dateString?: string) => {
@@ -133,6 +193,16 @@ export default function ResultsPage() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  const stripHtml = (html: string) => {
+    const div = document.createElement("div");
+    div.innerHTML = html;
+    return div.textContent || div.innerText || "";
+  };
+
+  const toggleDetails = (resultId: string) => {
+    setExpandedResult(expandedResult === resultId ? null : resultId);
   };
 
   if (loading) {
@@ -153,12 +223,14 @@ export default function ResultsPage() {
           <div className="flex items-center space-x-3">
             <AlertCircle className="w-6 h-6 text-red-600" />
             <div>
-              <h3 className="text-lg font-medium text-red-800">Error Loading Results</h3>
+              <h3 className="text-lg font-medium text-red-800">
+                Error Loading Results
+              </h3>
               <p className="text-red-700 mt-1">{error}</p>
             </div>
           </div>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
           >
             Try Again
@@ -170,7 +242,6 @@ export default function ResultsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Test Results</h1>
@@ -180,52 +251,63 @@ export default function ResultsPage() {
         </div>
       </div>
 
-      {/* Overview Cards */}
       {results.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Tests</p>
-                <p className="text-2xl font-bold text-gray-900">{results.length}</p>
-            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Tests</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {results.length}
+                </p>
+              </div>
               <FileText className="w-8 h-8 text-blue-600" />
+            </div>
           </div>
-        </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Tests Passed</p>
-              <p className="text-2xl font-bold text-green-600">
-                  {results.filter(r => (r.percentage || 0) >= 50).length}
-              </p>
-            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  Tests Passed
+                </p>
+                <p className="text-2xl font-bold text-green-600">
+                  {results.filter((r) => (r.percentage || 0) >= 40).length}
+                </p>
+              </div>
               <Star className="w-8 h-8 text-green-600" />
+            </div>
           </div>
-        </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Average Score</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  Average Score
+                </p>
                 <p className="text-2xl font-bold text-purple-600">
-                  {results.length > 0 
-                    ? Math.round(results.reduce((acc, r) => acc + (r.percentage || 0), 0) / results.length)
-                    : 0
-                  }%
-              </p>
-            </div>
+                  {results.length > 0
+                    ? Math.round(
+                        results.reduce(
+                          (acc, r) => acc + (r.percentage || 0),
+                          0
+                        ) / results.length
+                      )
+                    : 0}
+                  %
+                </p>
+              </div>
               <TrendingUp className="w-8 h-8 text-purple-600" />
             </div>
           </div>
         </div>
       )}
 
-      {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center space-x-4">
-          <span className="text-sm font-medium text-gray-700">Filter by result:</span>
+          <span className="text-sm font-medium text-gray-700">
+            Filter by result:
+          </span>
           <div className="flex space-x-2">
             {[
               { key: "all", label: "All Tests" },
@@ -234,7 +316,9 @@ export default function ResultsPage() {
             ].map((option) => (
               <button
                 key={option.key}
-                onClick={() => setFilter(option.key as "all" | "passed" | "failed")}
+                onClick={() =>
+                  setFilter(option.key as "all" | "passed" | "failed")
+                }
                 className={`px-3 py-1 text-sm rounded-lg transition-colors ${
                   filter === option.key
                     ? "bg-blue-100 text-blue-700 font-medium"
@@ -248,7 +332,6 @@ export default function ResultsPage() {
         </div>
       </div>
 
-      {/* Results List */}
       {filteredResults.length > 0 ? (
         <div className="space-y-4">
           {filteredResults.map((result) => (
@@ -260,48 +343,60 @@ export default function ResultsPage() {
                 <div className="flex-1">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{result.title}</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {result.title}
+                      </h3>
                       <p className="text-sm text-gray-600">
-                        Course: {result.courseName || result.course?.title || "Unknown"}
+                        Course:{" "}
+                        {result.courseName || result.course?.title || "Unknown"}
                       </p>
                     </div>
-                    {result.percentage !== undefined && getStatusBadge(result.percentage)}
+                    {result.percentage !== undefined &&
+                      result.percentage !== null &&
+                      getStatusBadge(result.percentage)}
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    {result.score !== undefined && result.maxScore !== undefined && (
-                      <div>
-                        <p className="text-xs text-gray-500">Score</p>
-                        <p className="font-medium text-gray-900">
-                          {result.score}/{result.maxScore}
-                        </p>
-                  </div>
-                    )}
-                    
-                    {result.percentage !== undefined && (
-                      <div>
-                        <p className="text-xs text-gray-500">Percentage</p>
-                        <p className={`font-medium ${getScoreColor(result.percentage)}`}>
-                          {result.percentage}%
-                        </p>
-                  </div>
-                    )}
+                    {result.score !== undefined &&
+                      result.maxScore !== undefined && (
+                        <div>
+                          <p className="text-xs text-gray-500">Score</p>
+                          <p className="font-medium text-gray-900">
+                            {result.score}/{result.maxScore}
+                          </p>
+                        </div>
+                      )}
 
-                    {result.questionsCorrect !== undefined && result.questionsTotal !== undefined && (
-                      <div>
-                        <p className="text-xs text-gray-500">Questions</p>
-                        <p className="font-medium text-gray-900">
-                          {result.questionsCorrect}/{result.questionsTotal}
-                        </p>
-                </div>
-                    )}
+                    {result.percentage !== undefined &&
+                      result.percentage !== null && (
+                        <div>
+                          <p className="text-xs text-gray-500">Percentage</p>
+                          <p
+                            className={`font-medium ${getScoreColor(
+                              result.percentage
+                            )}`}
+                          >
+                            {Math.round(result.percentage)}%
+                          </p>
+                        </div>
+                      )}
+
+                    {result.questionsCorrect !== undefined &&
+                      result.questionsTotal !== undefined && (
+                        <div>
+                          <p className="text-xs text-gray-500">Questions</p>
+                          <p className="font-medium text-gray-900">
+                            {result.questionsCorrect}/{result.questionsTotal}
+                          </p>
+                        </div>
+                      )}
 
                     <div>
                       <p className="text-xs text-gray-500">Completed</p>
                       <p className="font-medium text-gray-900">
                         {formatDate(result.completedAt || result.submittedAt)}
                       </p>
-                  </div>
+                    </div>
                   </div>
 
                   {result.duration && (
@@ -310,16 +405,84 @@ export default function ResultsPage() {
                       Duration: {result.duration}
                     </div>
                   )}
-              </div>
+                </div>
 
-                <Link
-                  href={`/student/tests/${result.id}/results`}
+                <button
+                  onClick={() => toggleDetails(result.id)}
                   className="ml-4 inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
                 >
-                  View Details
-                  <ArrowRight className="w-4 h-4 ml-1" />
-                </Link>
+                  {expandedResult === result.id
+                    ? "Hide Details"
+                    : "Show Details"}
+                  {expandedResult === result.id ? (
+                    <ChevronUp className="w-4 h-4 ml-1" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 ml-1" />
+                  )}
+                </button>
               </div>
+
+              {expandedResult === result.id && result.responses && (
+                <div className="mt-6 border-t border-gray-200 pt-4">
+                  <h4 className="text-lg font-medium text-gray-900 mb-4">
+                    Question Details
+                  </h4>
+                  <div className="space-y-4">
+                    {result.responses.map((response, index) => (
+                      <div
+                        key={response.questionId}
+                        className="bg-gray-50 p-4 rounded-lg"
+                      >
+                        <h5 className="text-sm font-medium text-gray-900">
+                          Question {index + 1}:{" "}
+                          {stripHtml(response.questionText)}
+                        </h5>
+                        <div className="mt-2 grid grid-cols-1 md:grid-cols-1 gap-2">
+                          <div>
+                            <p className="text-xs text-gray-500">Your Answer</p>
+                            <p className="text-sm text-gray-900">
+                              {response.answer}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">
+                              Correct Answer(s)
+                            </p>
+                            <p className="text-sm text-gray-900">
+                              {response.options
+                                .filter((opt) => opt.correct)
+                                .map((opt) => opt.text)
+                                .join(", ")}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Score</p>
+                            <p
+                              className={`text-sm font-medium ${
+                                response.score > 0
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {response.score}/{response.maxMarks}
+                            </p>
+                          </div>
+                          {response.evaluatorComments && (
+                            <div>
+                              <p className="text-xs text-gray-500">
+                                Evaluator Comments
+                              </p>
+                              <p className="text-sm text-gray-900">
+                                {response.evaluatorComments}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -327,16 +490,14 @@ export default function ResultsPage() {
         <div className="text-center py-12">
           <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {filter === "all" 
-              ? "No test results available" 
-              : `No ${filter} tests found`
-            }
+            {filter === "all"
+              ? "No test results available"
+              : `No ${filter} tests found`}
           </h3>
           <p className="text-gray-600 mb-6">
             {filter === "all"
               ? "Complete some tests to see your results here."
-              : "Try changing the filter to see different results."
-            }
+              : "Try changing the filter to see different results."}
           </p>
           {filter === "all" && (
             <Link
