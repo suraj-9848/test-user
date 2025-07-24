@@ -12,45 +12,47 @@ import {
   PlayCircle,
   AlertCircle,
 } from "lucide-react";
+import MCQReview from "./mcq/MCQReview";
 
 // API Configuration
-const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
+const BACKEND_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
 
 // Create API helper
 const api = {
   get: async (endpoint: string) => {
-    const token = localStorage.getItem('jwt');
+    const token = localStorage.getItem("jwt");
     const response = await fetch(`${BACKEND_BASE_URL}${endpoint}`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Authorization': token ? `Bearer ${token}` : '',
-        'Content-Type': 'application/json',
+        Authorization: token ? `Bearer ${token}` : "",
+        "Content-Type": "application/json",
       },
     });
-    
+
     if (!response.ok) {
       throw new Error(`API Error: ${response.status}`);
     }
-    
+
     return response.json();
   },
   patch: async (endpoint: string, data?: Record<string, unknown>) => {
-    const token = localStorage.getItem('jwt');
+    const token = localStorage.getItem("jwt");
     const response = await fetch(`${BACKEND_BASE_URL}${endpoint}`, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: {
-        'Authorization': token ? `Bearer ${token}` : '',
-        'Content-Type': 'application/json',
+        Authorization: token ? `Bearer ${token}` : "",
+        "Content-Type": "application/json",
       },
       body: data ? JSON.stringify(data) : undefined,
     });
-    
+
     if (!response.ok) {
       throw new Error(`API Error: ${response.status}`);
     }
-    
+
     return response.json();
-  }
+  },
 };
 
 interface DayContent {
@@ -90,6 +92,12 @@ interface ModuleResult {
   passed: boolean;
 }
 
+interface MCQRetakeStatus {
+  canRetake: boolean;
+  attemptsLeft: number;
+  hasFailed: boolean;
+}
+
 export default function ModuleDetail() {
   const router = useRouter();
   const params = useParams();
@@ -99,8 +107,12 @@ export default function ModuleDetail() {
   const [module, setModule] = useState<Module | null>(null);
   const [course, setCourse] = useState<Course | null>(null);
   const [moduleResult, setModuleResult] = useState<ModuleResult | null>(null);
+  const [mcqRetakeStatus, setMcqRetakeStatus] =
+    useState<MCQRetakeStatus | null>(null);
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
+  const [markingDayId, setMarkingDayId] = useState<string | null>(null);
+  const [markError, setMarkError] = useState<string>("");
 
   useEffect(() => {
     if (!courseId || !moduleId) {
@@ -115,11 +127,15 @@ export default function ModuleDetail() {
         setError("");
 
         // Fetch module details
-        const moduleData: ModuleData = await api.get(`/api/student/courses/${courseId}/modules/${moduleId}`);
+        const moduleData: ModuleData = await api.get(
+          `/api/student/modules/${moduleId}`,
+        );
         if (!moduleData) throw new Error("Module not found");
 
         // Fetch course details
-        const courseResponse = await api.get(`/api/student/courses/${courseId}`);
+        const courseResponse = await api.get(
+          `/api/student/courses/${courseId}`,
+        );
         if (!courseResponse) throw new Error("Course data not found");
 
         // Mark all days as completed and fetch completion status
@@ -134,21 +150,21 @@ export default function ModuleDetail() {
               // Proceed with completed status to avoid blocking
               return { ...day, completed: true };
             }
-          })
+          }),
         );
 
         setModule({
           ...moduleData,
           days: daysWithCompletion,
-          mcqAccessible: true, // Ensure MCQ is accessible
           mcqAttempted: moduleData.mcqAttempted || false,
+          mcqAccessible: moduleData.days.every((d) => d.completed),
         });
         setCourse(courseResponse);
 
         // Fetch module result (test score & pass status)
         try {
           const resultResponse = await api.get(
-            `/api/student/modules/${moduleId}/mcq/results`
+            `/api/student/modules/${moduleId}/mcq/results`,
           );
           if (resultResponse && resultResponse.score != null) {
             setModuleResult({
@@ -164,8 +180,23 @@ export default function ModuleDetail() {
           setModuleResult(null);
         }
 
-              } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : "Failed to load module";
+        // Fetch MCQ retake status
+        try {
+          const retakeResponse = await api.get(
+            `/api/student/modules/${moduleId}/mcq/retake-status`,
+          );
+          setMcqRetakeStatus({
+            canRetake: retakeResponse.canRetake || false,
+            attemptsLeft: retakeResponse.attemptsLeft || 0,
+            hasFailed: retakeResponse.hasFailed || false,
+          });
+        } catch (err: unknown) {
+          console.warn("No MCQ retake status found:", err);
+          setMcqRetakeStatus(null);
+        }
+      } catch (err: unknown) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load module";
         setError(errorMessage);
         console.error("Error fetching module:", err);
       } finally {
@@ -184,10 +215,36 @@ export default function ModuleDetail() {
     router.push(`/student/courses/${courseId}/modules/${moduleId}/mcq`);
   };
 
+  // Add function to mark a day as completed
+  const handleMarkDayCompleted = async (dayId: string) => {
+    setMarkingDayId(dayId);
+    setMarkError("");
+    try {
+      await api.patch(`/api/student/day-contents/${dayId}/complete`);
+      // Refresh module data
+      if (courseId && moduleId) {
+        // Re-fetch module data
+        const moduleData: ModuleData = await api.get(
+          `/api/student/modules/${moduleId}`,
+        );
+        setModule({
+          ...moduleData,
+          days: moduleData.days,
+          mcqAttempted: moduleData.mcqAttempted || false,
+          mcqAccessible: moduleData.days.every((d) => d.completed),
+        });
+      }
+    } catch (err: unknown) {
+      setMarkError("Failed to mark day as completed. Please try again.");
+    } finally {
+      setMarkingDayId(null);
+    }
+  };
+
   // Update the document title using the browser API
   useEffect(() => {
     if (module) {
-      document.title = `${module.title} - ${course?.title || 'Course'}`;
+      document.title = `${module.title} - ${course?.title || "Course"}`;
     }
   }, [module, course]);
 
@@ -198,7 +255,9 @@ export default function ModuleDetail() {
           <div className="flex items-center space-x-3">
             <AlertCircle className="w-6 h-6 text-red-600" />
             <div>
-              <h3 className="text-lg font-medium text-red-800">Invalid Parameters</h3>
+              <h3 className="text-lg font-medium text-red-800">
+                Invalid Parameters
+              </h3>
               <p className="text-red-700 mt-1">Invalid course or module ID</p>
             </div>
           </div>
@@ -225,18 +284,20 @@ export default function ModuleDetail() {
           <div className="flex items-center space-x-3">
             <AlertCircle className="w-6 h-6 text-red-600" />
             <div>
-              <h3 className="text-lg font-medium text-red-800">Error Loading Module</h3>
+              <h3 className="text-lg font-medium text-red-800">
+                Error Loading Module
+              </h3>
               <p className="text-red-700 mt-1">{error}</p>
             </div>
           </div>
           <div className="mt-4 flex space-x-3">
-            <button 
-              onClick={() => window.location.reload()} 
+            <button
+              onClick={() => window.location.reload()}
               className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
             >
               Try Again
             </button>
-            <button 
+            <button
               onClick={handleBackToCourse}
               className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
             >
@@ -251,9 +312,13 @@ export default function ModuleDetail() {
   if (!module || !course) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Module Not Found</h2>
-        <p className="text-gray-600 mb-4">The module you&apos;re looking for doesn&apos;t exist.</p>
-        <button 
+        <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+          Module Not Found
+        </h2>
+        <p className="text-gray-600 mb-4">
+          The module you&apos;re looking for doesn&apos;t exist.
+        </p>
+        <button
           onClick={handleBackToCourse}
           className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
         >
@@ -263,14 +328,18 @@ export default function ModuleDetail() {
     );
   }
 
-  const completedDays = module.days.filter(day => day.completed).length;
-  const progressPercentage = module.days.length > 0 ? (completedDays / module.days.length) * 100 : 0;
+  const completedDays = module.days.filter((day) => day.completed).length;
+  const progressPercentage =
+    module.days.length > 0 ? (completedDays / module.days.length) * 100 : 0;
 
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center space-x-2 text-sm text-gray-600">
-        <button onClick={handleBackToCourse} className="hover:text-blue-600 transition-colors">
+        <button
+          onClick={handleBackToCourse}
+          className="hover:text-blue-600 transition-colors"
+        >
           {course.title}
         </button>
         <span>/</span>
@@ -289,18 +358,18 @@ export default function ModuleDetail() {
               Back to {course.title}
             </button>
           </div>
-          
-          <h1 className="text-2xl lg:text-3xl font-bold mb-3">{module.title}</h1>
-          
+
+          <h1 className="text-2xl lg:text-3xl font-bold mb-3">
+            {module.title}
+          </h1>
+
           {module.description && (
-            <p className="text-indigo-100 text-lg mb-4 max-w-3xl">{module.description}</p>
+            <p className="text-indigo-100 text-lg mb-4 max-w-3xl">
+              {module.description}
+            </p>
           )}
 
           <div className="flex flex-wrap items-center gap-6 text-sm">
-            <div className="flex items-center space-x-2">
-              <Clock className="w-4 h-4" />
-              <span>Duration: {module.duration}</span>
-            </div>
             <div className="flex items-center space-x-2">
               <BookOpen className="w-4 h-4" />
               <span>{module.days.length} days of content</span>
@@ -316,7 +385,9 @@ export default function ModuleDetail() {
         <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
           <div className="flex items-center justify-between text-sm mb-2">
             <span className="font-medium text-gray-700">Progress</span>
-            <span className="font-medium text-gray-900">{Math.round(progressPercentage)}%</span>
+            <span className="font-medium text-gray-900">
+              {Math.round(progressPercentage)}%
+            </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
@@ -332,38 +403,81 @@ export default function ModuleDetail() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Module Assessment</h3>
-              <p className="text-gray-600">
-                {moduleResult 
-                  ? `Test completed with score: ${moduleResult.testScore}% (${moduleResult.passed ? 'Passed' : 'Failed'})`
-                  : module.mcqAttempted 
-                    ? "You have already attempted this test" 
-                    : "Take the MCQ test to complete this module"
-                }
-              </p>
-            </div>
-            <div className="flex items-center space-x-3">
-              {moduleResult && (
-                <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  moduleResult.passed 
-                    ? 'bg-green-100 text-green-700' 
-                    : 'bg-red-100 text-red-700'
-                }`}>
-                  {moduleResult.testScore}% - {moduleResult.passed ? 'Passed' : 'Failed'}
-                </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Module Assessment
+              </h3>
+              {moduleResult ? (
+                <>
+                  <p className="text-gray-600 mb-2">
+                    Test completed with score: {moduleResult.testScore}% (
+                    <span
+                      className={
+                        moduleResult.passed
+                          ? "text-green-600 font-medium"
+                          : "text-red-600 font-medium"
+                      }
+                    >
+                      {moduleResult.passed ? "Passed" : "Failed"}
+                    </span>
+                    )
+                  </p>
+                  {!moduleResult.passed && mcqRetakeStatus?.canRetake && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                      <div className="flex">
+                        <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
+                        <div>
+                          <p className="text-yellow-800 font-medium text-sm">
+                            You can retake this assessment
+                          </p>
+                          <p className="text-yellow-700 text-sm mt-1">
+                            You have {mcqRetakeStatus.attemptsLeft} attempt(s)
+                            remaining.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {/* MCQ Review UI */}
+                  <MCQReview moduleId={moduleId} />
+                </>
+              ) : (
+                <p className="text-gray-600">
+                  {module.mcqAttempted
+                    ? "You have already attempted this test"
+                    : "Take the MCQ test to complete this module"}
+                </p>
               )}
+            </div>
+            {/* Show appropriate button based on test status */}
+            {!moduleResult && (
               <button
                 onClick={handleTakeMCQ}
-                className={`inline-flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${
-                  moduleResult
-                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                }`}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
               >
                 <PlayCircle className="w-4 h-4 mr-2" />
-                {moduleResult ? 'Review Test' : module.mcqAttempted ? 'Retake Test' : 'Take MCQ Test'}
+                {module.mcqAttempted ? "Retake Test" : "Take Test"}
               </button>
-            </div>
+            )}
+            {moduleResult &&
+              !moduleResult.passed &&
+              mcqRetakeStatus?.canRetake && (
+                <button
+                  onClick={handleTakeMCQ}
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 rounded-lg transition-colors"
+                >
+                  <PlayCircle className="w-4 h-4 mr-2" />
+                  Retake Test
+                </button>
+              )}
+            {moduleResult && moduleResult.passed && (
+              <button
+                onClick={handleTakeMCQ}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-green-600 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors"
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                Review Test
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -371,7 +485,9 @@ export default function ModuleDetail() {
       {/* Day Content */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Day-by-Day Content</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            Day-by-Day Content
+          </h2>
           <p className="text-gray-600 mt-1">
             Complete each day's content to progress through the module
           </p>
@@ -380,8 +496,12 @@ export default function ModuleDetail() {
         {module.days.length === 0 ? (
           <div className="text-center py-12">
             <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Content Available</h3>
-            <p className="text-gray-600">Day content will appear here once it's published.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No Content Available
+            </h3>
+            <p className="text-gray-600">
+              Day content will appear here once it's published.
+            </p>
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
@@ -389,9 +509,13 @@ export default function ModuleDetail() {
               <div key={day.id} className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      day.completed ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
-                    }`}>
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        day.completed
+                          ? "bg-green-100 text-green-600"
+                          : "bg-gray-100 text-gray-400"
+                      }`}
+                    >
                       {day.completed ? (
                         <CheckCircle className="w-5 h-5" />
                       ) : (
@@ -402,66 +526,42 @@ export default function ModuleDetail() {
                       <h3 className="text-lg font-semibold text-gray-900">
                         Day {day.dayNumber}
                       </h3>
-                      <div className={`text-sm font-medium ${
-                        day.completed ? 'text-green-600' : 'text-gray-500'
-                      }`}>
-                        {day.completed ? 'Completed' : 'Not Completed'}
+                      <div
+                        className={`text-sm font-medium ${
+                          day.completed ? "text-green-600" : "text-gray-500"
+                        }`}
+                      >
+                        {day.completed ? "Completed" : "Not Completed"}
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="prose max-w-none">
-                  <div className="markdown-content">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={{
-                        h1: ({ children }) => (
-                          <h1 className="text-2xl font-bold text-gray-900 mb-4">{children}</h1>
-                        ),
-                        h2: ({ children }) => (
-                          <h2 className="text-xl font-semibold text-gray-900 mb-3 mt-6">{children}</h2>
-                        ),
-                        h3: ({ children }) => (
-                          <h3 className="text-lg font-medium text-gray-900 mb-2 mt-4">{children}</h3>
-                        ),
-                        p: ({ children }) => (
-                          <p className="text-gray-700 mb-4 leading-relaxed">{children}</p>
-                        ),
-                        ul: ({ children }) => (
-                          <ul className="list-disc list-inside text-gray-700 space-y-1 mb-4 ml-4">{children}</ul>
-                        ),
-                        ol: ({ children }) => (
-                          <ol className="list-decimal list-inside text-gray-700 space-y-1 mb-4 ml-4">{children}</ol>
-                        ),
-                        code: ({ children, ...props }) => {
-                          const isInline = !props.className;
-                          if (isInline) {
-                            return (
-                              <code className="px-1.5 py-0.5 bg-gray-100 text-gray-800 rounded text-sm font-mono" {...props}>
-                                {children}
-                              </code>
-                            );
-                          }
-                          return (
-                            <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto mb-4">
-                              <code className="font-mono text-sm" {...props}>
-                                {children}
-                              </code>
-                            </pre>
-                          );
-                        },
-                        blockquote: ({ children }) => (
-                          <blockquote className="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50 text-gray-700 mb-4">
-                            {children}
-                          </blockquote>
-                        ),
-                      }}
-                    >
-                      {day.content}
-                    </ReactMarkdown>
-                  </div>
+                  <div
+                    className="html-content"
+                    dangerouslySetInnerHTML={{ __html: day.content }}
+                  />
                 </div>
+                {/* Mark as Completed Button */}
+                {!day.completed && (
+                  <div className="mt-4">
+                    <button
+                      onClick={() => handleMarkDayCompleted(day.id)}
+                      disabled={markingDayId === day.id}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    >
+                      {markingDayId === day.id
+                        ? "Marking..."
+                        : "Mark as Completed"}
+                    </button>
+                    {markError && markingDayId === day.id && (
+                      <div className="text-red-600 mt-2 text-sm">
+                        {markError}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

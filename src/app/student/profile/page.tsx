@@ -2,31 +2,43 @@
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { User, Camera, Edit3, Save, X, Award, BookOpen, Trophy, Target, AlertCircle } from "lucide-react";
+import {
+  User,
+  Camera,
+  Edit3,
+  Save,
+  X,
+  Award,
+  BookOpen,
+  Trophy,
+  Target,
+  AlertCircle,
+} from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useJWT } from "@/context/JWTContext";
 
 // API Configuration
-const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
+const BACKEND_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
 
 // Create API wrapper for consistency
 const api = {
   get: async (endpoint: string) => {
-    const token = localStorage.getItem('jwt');
+    const token = localStorage.getItem("jwt");
     const response = await fetch(`${BACKEND_BASE_URL}${endpoint}`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Authorization': token ? `Bearer ${token}` : '',
-        'Content-Type': 'application/json',
+        Authorization: token ? `Bearer ${token}` : "",
+        "Content-Type": "application/json",
       },
     });
-    
+
     if (!response.ok) {
       throw new Error(`API Error: ${response.status}`);
     }
-    
+
     return response.json();
-  }
+  },
 };
 
 interface ProfileStats {
@@ -82,31 +94,39 @@ export default function StudentProfile() {
           status: string;
           progress: number;
         }
-        
-        const coursesCompleted = coursesResponse.filter((course: Course) => 
-          course.status === "completed" || course.progress >= 100
+
+        const coursesCompleted = coursesResponse.filter(
+          (course: Course) =>
+            course.status === "completed" || course.progress >= 100,
         ).length;
 
         // Try to get leaderboard data for rank and score
         let rank = 0;
         let score = 0;
         let percentage = 0;
-        
+
         try {
           interface LeaderboardEntry {
             userName: string;
             totalScore: number;
             percentage: number;
           }
-          
-          const leaderboardResponse = await api.get("/api/student/tests/leaderboard");
-          const apiData = leaderboardResponse.data || [];
-          const sortedData = apiData.sort((a: LeaderboardEntry, b: LeaderboardEntry) => b.percentage - a.percentage);
-          
-          const currentUserIndex = sortedData.findIndex((entry: LeaderboardEntry) => 
-            entry.userName === session?.user?.name || entry.userName === session?.user?.email
+
+          const leaderboardResponse = await api.get(
+            "/api/student/tests/leaderboard",
           );
-          
+          const apiData = leaderboardResponse.data || [];
+          const sortedData = apiData.sort(
+            (a: LeaderboardEntry, b: LeaderboardEntry) =>
+              b.percentage - a.percentage,
+          );
+
+          const currentUserIndex = sortedData.findIndex(
+            (entry: LeaderboardEntry) =>
+              entry.userName === session?.user?.name ||
+              entry.userName === session?.user?.email,
+          );
+
           if (currentUserIndex >= 0) {
             const currentUserData = sortedData[currentUserIndex];
             rank = currentUserIndex + 1; // Calculate rank based on position in sorted array
@@ -125,10 +145,10 @@ export default function StudentProfile() {
           coursesEnrolled,
           memberSince: new Date().toLocaleDateString(), // Could be from user creation date if available from backend
         });
-
       } catch (err: unknown) {
         console.error("Error fetching profile stats:", err);
-        const errorMessage = err instanceof Error ? err.message : "Failed to load profile data";
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load profile data";
         setError(errorMessage);
       } finally {
         setLoading(false);
@@ -190,12 +210,14 @@ export default function StudentProfile() {
           <div className="flex items-center space-x-3">
             <AlertCircle className="w-6 h-6 text-red-600" />
             <div>
-              <h3 className="text-lg font-medium text-red-800">Error Loading Profile</h3>
+              <h3 className="text-lg font-medium text-red-800">
+                Error Loading Profile
+              </h3>
               <p className="text-red-700 mt-1">{error}</p>
             </div>
           </div>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
           >
             Try Again
@@ -290,7 +312,8 @@ export default function StudentProfile() {
                   <div className="flex items-center space-x-2">
                     <BookOpen className="w-4 h-4" />
                     <span>
-                      {profileStats.coursesCompleted}/{profileStats.coursesEnrolled} courses
+                      {profileStats.coursesCompleted}/
+                      {profileStats.coursesEnrolled} courses
                     </span>
                   </div>
                 )}
@@ -304,9 +327,7 @@ export default function StudentProfile() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="border-b border-gray-200">
           <nav className="flex space-x-8 px-6">
-            {[
-              { id: "profile", label: "Profile", icon: User },
-            ].map((tab) => {
+            {[{ id: "profile", label: "Profile", icon: User }].map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
@@ -399,9 +420,13 @@ export default function StudentProfile() {
                       <div className="bg-blue-50 rounded-lg p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm font-medium text-blue-600">Current Rank</p>
+                            <p className="text-sm font-medium text-blue-600">
+                              Current Rank
+                            </p>
                             <p className="text-2xl font-bold text-blue-900">
-                              {profileStats.rank > 0 ? `#${profileStats.rank}` : "Not ranked yet"}
+                              {profileStats.rank > 0
+                                ? `#${profileStats.rank}`
+                                : "Not ranked yet"}
                             </p>
                           </div>
                           <Trophy className="w-8 h-8 text-blue-600" />
@@ -411,7 +436,9 @@ export default function StudentProfile() {
                       <div className="bg-green-50 rounded-lg p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm font-medium text-green-600">Test Score</p>
+                            <p className="text-sm font-medium text-green-600">
+                              Test Score
+                            </p>
                             <p className="text-2xl font-bold text-green-900">
                               {profileStats.score}
                             </p>
@@ -423,7 +450,9 @@ export default function StudentProfile() {
                       <div className="bg-yellow-50 rounded-lg p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm font-medium text-yellow-600">Average %</p>
+                            <p className="text-sm font-medium text-yellow-600">
+                              Average %
+                            </p>
                             <p className="text-2xl font-bold text-yellow-900">
                               {profileStats.percentage}%
                             </p>
@@ -435,9 +464,12 @@ export default function StudentProfile() {
                       <div className="bg-purple-50 rounded-lg p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm font-medium text-purple-600">Courses Progress</p>
+                            <p className="text-sm font-medium text-purple-600">
+                              Courses Progress
+                            </p>
                             <p className="text-2xl font-bold text-purple-900">
-                              {profileStats.coursesCompleted}/{profileStats.coursesEnrolled}
+                              {profileStats.coursesCompleted}/
+                              {profileStats.coursesEnrolled}
                             </p>
                           </div>
                           <BookOpen className="w-8 h-8 text-purple-600" />
@@ -451,7 +483,8 @@ export default function StudentProfile() {
                       Member Since
                     </label>
                     <p className="text-gray-900">
-                      {profileStats?.memberSince || new Date().toLocaleDateString()}
+                      {profileStats?.memberSince ||
+                        new Date().toLocaleDateString()}
                     </p>
                   </div>
                 </div>

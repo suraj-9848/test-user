@@ -3,7 +3,14 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, Search, User, Settings, LogOut, ChevronDown } from "lucide-react";
+import {
+  Menu,
+  Search,
+  User,
+  Settings,
+  LogOut,
+  ChevronDown,
+} from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 
 interface StudentNavbarProps {

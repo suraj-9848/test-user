@@ -18,26 +18,27 @@ import { useSession } from "next-auth/react";
 import { useJWT } from "@/context/JWTContext";
 
 // API Configuration
-const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
+const BACKEND_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
 
 // Create API wrapper for consistency
 const api = {
   get: async (endpoint: string) => {
-    const token = localStorage.getItem('jwt');
+    const token = localStorage.getItem("jwt");
     const response = await fetch(`${BACKEND_BASE_URL}${endpoint}`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Authorization': token ? `Bearer ${token}` : '',
-        'Content-Type': 'application/json',
+        Authorization: token ? `Bearer ${token}` : "",
+        "Content-Type": "application/json",
       },
     });
-    
+
     if (!response.ok) {
       throw new Error(`API Error: ${response.status}`);
     }
-    
+
     return response.json();
-  }
+  },
 };
 
 interface Course {
@@ -93,12 +94,14 @@ export default function StudentDashboard() {
   const { data: session } = useSession();
   const { jwt } = useJWT();
   const [greeting, setGreeting] = useState("Good day");
-  
+
   // State for real data
   const [courses, setCourses] = useState<Course[]>([]);
   // const [upcomingTests, setUpcomingTests] = useState<TestResponse[]>([]); // Removed unused
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
+  const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
 
@@ -139,65 +142,60 @@ export default function StudentDashboard() {
         setLoading(true);
         setError("");
 
-        // Fetch courses
+        // Fetch dashboard stats from new endpoint
+        const statsResponse = await api.get("/api/student/dashboard/stats");
+        setStats(statsResponse.stats);
+
+        // Fetch courses for the course cards
         const coursesResponse: Course[] = await api.get("/api/student/courses");
-        const transformedCourses = coursesResponse.slice(0, 3).map((course: Course) => ({
-          id: course.id,
-          title: course.title,
-          instructor: course.instructor,
-          progress: course.progress || 0,
-          totalModules: course.totalModules || 0,
-          completedModules: course.completedModules || 0,
-          image: course.image || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=250&fit=crop",
-          status: course.status || (course.progress > 0 ? "active" : "not-started") as "active" | "completed" | "not-started",
-          end_date: course.end_date,
-        }));
+        const transformedCourses = coursesResponse
+          .slice(0, 3)
+          .map((course: Course) => ({
+            id: course.id,
+            title: course.title,
+            instructor: course.instructor,
+            progress: course.progress || 0,
+            totalModules: course.totalModules || 0,
+            completedModules: course.completedModules || 0,
+            image:
+              course.image ||
+              "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=250&fit=crop",
+            status:
+              course.status ||
+              ((course.progress > 0 ? "active" : "not-started") as
+                | "active"
+                | "completed"
+                | "not-started"),
+            end_date: course.end_date,
+          }));
         setCourses(transformedCourses);
 
         // Fetch tests for upcoming tasks
         try {
-          const testsResponse: TestResponse[] = await api.get("/api/student/tests");
-          // Removed upcomingTestsData for build
-                      // setUpcomingTests(upcomingTestsData); // Removed
+          const testsResponse: TestResponse[] =
+            await api.get("/api/student/tests");
+          // Tests data is available in testsResponse if needed for future features
         } catch (testError) {
           console.log("Tests not available:", testError);
-          // setUpcomingTests([]); // Removed // Set empty array if tests fail to load
         }
-
-        // Get real test completion data from results API
-        let actualTestsCompleted = 0;
-        try {
-          const resultsResponse: TestResponse[] = await api.get("/api/student/tests");
-          // Count tests that have been attempted/completed
-          actualTestsCompleted = resultsResponse.filter((test: TestResponse) => 
-            test.status === "completed" || test.attempted === true
-          ).length;
-        } catch (resultsError) {
-          console.log("Results not available:", resultsError);
-        }
-
-        // Calculate stats from real backend data only
-        const coursesEnrolled = coursesResponse.length;
-        const hoursLearned = coursesResponse.reduce((total: number, course: Course) => 
-          total + (course.hoursSpent || 0), 0
-        );
-        
-        // Calculate average grade from actual course data
-        const coursesWithGrades = coursesResponse.filter((course: Course) => (course.averageGrade || 0) > 0);
-        const averageGrade = coursesWithGrades.length > 0 
-          ? coursesWithGrades.reduce((total: number, course: Course) => total + (course.averageGrade || 0), 0) / coursesWithGrades.length
-          : 0;
 
         // Try to get leaderboard data for student profile
         try {
-          const leaderboardResponse: LeaderboardResponse = await api.get("/api/student/tests/leaderboard");
-          const apiData = leaderboardResponse.data || [];
-          const sortedData = apiData.sort((a: LeaderboardEntry, b: LeaderboardEntry) => b.percentage - a.percentage);
-          
-          const currentUserIndex = sortedData.findIndex((entry: LeaderboardEntry) => 
-            entry.userName === session?.user?.name || entry.userName === session?.user?.email
+          const leaderboardResponse: LeaderboardResponse = await api.get(
+            "/api/student/tests/leaderboard",
           );
-          
+          const apiData = leaderboardResponse.data || [];
+          const sortedData = apiData.sort(
+            (a: LeaderboardEntry, b: LeaderboardEntry) =>
+              b.percentage - a.percentage,
+          );
+
+          const currentUserIndex = sortedData.findIndex(
+            (entry: LeaderboardEntry) =>
+              entry.userName === session?.user?.name ||
+              entry.userName === session?.user?.email,
+          );
+
           if (currentUserIndex >= 0) {
             const currentUserData = sortedData[currentUserIndex];
             setStudentProfile({
@@ -209,17 +207,10 @@ export default function StudentDashboard() {
         } catch (profileError) {
           console.log("Profile data not available:", profileError);
         }
-
-        setStats({
-          coursesEnrolled,
-          hoursLearned,
-          testsCompleted: actualTestsCompleted,
-          averageGrade,
-        });
-
       } catch (err: unknown) {
         console.error("Error fetching dashboard data:", err);
-        const errorMessage = err instanceof Error ? err.message : "Failed to load dashboard data";
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load dashboard data";
         setError(errorMessage);
       } finally {
         setLoading(false);
@@ -229,32 +220,42 @@ export default function StudentDashboard() {
     fetchDashboardData();
   }, [jwt, session?.user?.name, session?.user?.email]);
 
-  const dashboardStats = stats ? [
-    {
-      label: "Courses Enrolled",
-      value: stats.coursesEnrolled.toString(),
-      icon: BookOpen,
-      color: "bg-blue-50 text-blue-600",
-    },
-    ...(stats.hoursLearned > 0 ? [{
-      label: "Hours Learned",
-      value: stats.hoursLearned.toString(),
-      icon: Clock,
-      color: "bg-green-50 text-green-600",
-    }] : []),
-    {
-      label: "Tests Completed",
-      value: stats.testsCompleted.toString(),
-      icon: Trophy,
-      color: "bg-purple-50 text-purple-600",
-    },
-    ...(stats.averageGrade > 0 ? [{
-      label: "Average Grade",
-      value: `${Math.round(stats.averageGrade)}%`,
-      icon: TrendingUp,
-      color: "bg-orange-50 text-orange-600",
-    }] : []),
-  ] : [];
+  const dashboardStats = stats
+    ? [
+        {
+          label: "Courses Enrolled",
+          value: stats.coursesEnrolled.toString(),
+          icon: BookOpen,
+          color: "bg-blue-50 text-blue-600",
+        },
+        ...(stats.hoursLearned > 0
+          ? [
+              {
+                label: "Hours Learned",
+                value: stats.hoursLearned.toString(),
+                icon: Clock,
+                color: "bg-green-50 text-green-600",
+              },
+            ]
+          : []),
+        {
+          label: "Tests Completed",
+          value: stats.testsCompleted.toString(),
+          icon: Trophy,
+          color: "bg-purple-50 text-purple-600",
+        },
+        ...(stats.averageGrade > 0
+          ? [
+              {
+                label: "Average Grade",
+                value: `${Math.round(stats.averageGrade)}%`,
+                icon: TrendingUp,
+                color: "bg-orange-50 text-orange-600",
+              },
+            ]
+          : []),
+      ]
+    : [];
 
   // Removed unused functions for build
 
@@ -285,12 +286,14 @@ export default function StudentDashboard() {
           <div className="flex items-center space-x-3">
             <AlertCircle className="w-6 h-6 text-red-600" />
             <div>
-              <h3 className="text-lg font-medium text-red-800">Error Loading Dashboard</h3>
+              <h3 className="text-lg font-medium text-red-800">
+                Error Loading Dashboard
+              </h3>
               <p className="text-red-700 mt-1">{error}</p>
             </div>
           </div>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
           >
             Try Again
@@ -404,8 +407,12 @@ export default function StudentDashboard() {
               {courses.length === 0 ? (
                 <div className="text-center py-8">
                   <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Courses Yet</h3>
-                  <p className="text-gray-600 mb-4">Start your learning journey by enrolling in a course.</p>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    No Courses Yet
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    Start your learning journey by enrolling in a course.
+                  </p>
                   <Link
                     href="/student/courses"
                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -449,7 +456,8 @@ export default function StudentDashboard() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-4 text-sm text-gray-500">
                             <span>
-                              {course.completedModules}/{course.totalModules} modules
+                              {course.completedModules}/{course.totalModules}{" "}
+                              modules
                             </span>
                             {course.end_date && (
                               <span>Due: {formatDate(course.end_date)}</span>
@@ -571,7 +579,10 @@ export default function StudentDashboard() {
               {courses.length > 0 ? (
                 <div className="space-y-3">
                   {courses.slice(0, 2).map((course) => (
-                    <div key={course.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div
+                      key={course.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
                       <div className="flex-1 min-w-0">
                         <h4 className="text-sm font-medium text-gray-900 truncate">
                           {course.title}
@@ -583,7 +594,9 @@ export default function StudentDashboard() {
                               style={{ width: `${course.progress}%` }}
                             ></div>
                           </div>
-                          <span className="ml-2 text-xs text-gray-600">{course.progress}%</span>
+                          <span className="ml-2 text-xs text-gray-600">
+                            {course.progress}%
+                          </span>
                         </div>
                       </div>
                       <Link
@@ -604,7 +617,9 @@ export default function StudentDashboard() {
               ) : (
                 <div className="text-center py-4">
                   <BookOpen className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600 mb-3">No courses enrolled yet</p>
+                  <p className="text-sm text-gray-600 mb-3">
+                    No courses enrolled yet
+                  </p>
                   <Link
                     href="/student/courses"
                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"

@@ -10,7 +10,7 @@ interface QuestionRendererProps {
   onAnswerChange: (
     questionId: string,
     selectedOptions: string[],
-    textAnswer?: string
+    textAnswer?: string,
   ) => void;
 }
 
@@ -23,7 +23,7 @@ export default function QuestionRenderer({
 
   const handleOptionChange = (
     optionId: string,
-    isMultiSelect: boolean = false
+    isMultiSelect: boolean = false,
   ) => {
     let newSelectedOptions: string[];
 
@@ -31,7 +31,7 @@ export default function QuestionRenderer({
       // For multiple select questions
       if (answer.selectedOptions.includes(optionId)) {
         newSelectedOptions = answer.selectedOptions.filter(
-          (id) => id !== optionId
+          (id) => id !== optionId,
         );
       } else {
         newSelectedOptions = [...answer.selectedOptions, optionId];
@@ -52,14 +52,14 @@ export default function QuestionRenderer({
   const renderMCQOptions = () => {
     console.log("Rendering MCQ options for question:", question);
     console.log("Available options:", question.options);
-    
+
     // Log each option in detail
     if (question.options && question.options.length > 0) {
       question.options.forEach((option, index) => {
         console.log(`Option ${index + 1}:`, option);
       });
     }
-    
+
     if (!question.options || question.options.length === 0) {
       console.warn("No options found for MCQ question:", question);
       return (
@@ -78,8 +78,13 @@ export default function QuestionRenderer({
           .sort((a, b) => (a.optionOrder || 0) - (b.optionOrder || 0))
           .map((option, index) => {
             const isSelected = answer.selectedOptions.includes(option.id);
-            console.log(`Rendering option ${index + 1}:`, option, "Selected:", isSelected);
-            
+            console.log(
+              `Rendering option ${index + 1}:`,
+              option,
+              "Selected:",
+              isSelected,
+            );
+
             return (
               <div
                 key={option.id || index}
@@ -97,7 +102,10 @@ export default function QuestionRenderer({
                     <Square className="h-5 w-5 text-gray-400" />
                   )}
                   <span className="text-gray-900">
-                    {option.optionText || option.text || option.label || `Option ${index + 1}`}
+                    {option.optionText ||
+                      option.text ||
+                      option.label ||
+                      `Option ${index + 1}`}
                   </span>
                 </div>
               </div>
@@ -177,12 +185,15 @@ export default function QuestionRenderer({
     );
   };
 
-  const renderTextInput = (isLongAnswer: boolean = false, isCode: boolean = false) => {
-    const placeholder = isCode 
+  const renderTextInput = (
+    isLongAnswer: boolean = false,
+    isCode: boolean = false,
+  ) => {
+    const placeholder = isCode
       ? "Write your code here..."
       : isLongAnswer
-      ? "Write your detailed answer here..."
-      : "Write your short answer here...";
+        ? "Write your detailed answer here..."
+        : "Write your short answer here...";
 
     if (isLongAnswer || isCode) {
       return (
@@ -192,7 +203,7 @@ export default function QuestionRenderer({
             onChange={(e) => handleTextChange(e.target.value)}
             placeholder={placeholder}
             className={`w-full p-4 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none min-h-[200px] resize-vertical ${
-              isCode ? 'font-mono text-sm' : ''
+              isCode ? "font-mono text-sm" : ""
             }`}
             rows={8}
             spellCheck={!isCode}
@@ -239,8 +250,13 @@ export default function QuestionRenderer({
   };
 
   const renderQuestionContent = () => {
-    console.log("Rendering question with type:", question.questionType, "Question:", question);
-    
+    console.log(
+      "Rendering question with type:",
+      question.questionType,
+      "Question:",
+      question,
+    );
+
     switch (question.questionType) {
       case QuestionType.MCQ:
         return renderMCQOptions();
@@ -255,14 +271,24 @@ export default function QuestionRenderer({
         const isCode = question.originalType === "CODE";
         return renderTextInput(true, isCode);
       default:
-        console.error("Unsupported question type:", question.questionType, "Question:", question);
+        console.error(
+          "Unsupported question type:",
+          question.questionType,
+          "Question:",
+          question,
+        );
         return (
           <div className="text-red-500 p-4 border border-red-300 rounded-lg bg-red-50">
             <strong>Unsupported Question Type:</strong> {question.questionType}
             <br />
-            <span className="text-sm">Supported types: MCQ, MULTIPLE_SELECT, TRUE_FALSE, SHORT_ANSWER, LONG_ANSWER</span>
+            <span className="text-sm">
+              Supported types: MCQ, MULTIPLE_SELECT, TRUE_FALSE, SHORT_ANSWER,
+              LONG_ANSWER
+            </span>
             <br />
-            <span className="text-sm">Please contact support if this is an error.</span>
+            <span className="text-sm">
+              Please contact support if this is an error.
+            </span>
           </div>
         );
     }

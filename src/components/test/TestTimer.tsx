@@ -138,8 +138,8 @@ export default function TestTimer({
             isCritical
               ? "bg-red-500"
               : isWarning
-              ? "bg-yellow-500"
-              : "bg-blue-500"
+                ? "bg-yellow-500"
+                : "bg-blue-500"
           }`}
           style={{
             width: `${(timeRemaining / initialTime) * 100}%`,

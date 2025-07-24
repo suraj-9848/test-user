@@ -16,26 +16,27 @@ import {
 } from "lucide-react";
 
 // API Configuration
-const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
+const BACKEND_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
 
 // Create API wrapper for consistency
 const api = {
   get: async (endpoint: string) => {
-    const token = localStorage.getItem('jwt');
+    const token = localStorage.getItem("jwt");
     const response = await fetch(`${BACKEND_BASE_URL}${endpoint}`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Authorization': token ? `Bearer ${token}` : '',
-        'Content-Type': 'application/json',
+        Authorization: token ? `Bearer ${token}` : "",
+        "Content-Type": "application/json",
       },
     });
-    
+
     if (!response.ok) {
       throw new Error(`API Error: ${response.status}`);
     }
-    
+
     return response.json();
-  }
+  },
 };
 
 interface Module {
@@ -70,13 +71,15 @@ interface CourseDetail {
 export default function CourseDetailPage() {
   const params = useParams();
   const courseId = params.id as string;
-  
+
   const [course, setCourse] = useState<CourseDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<"overview" | "modules">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "modules">(
+    "overview",
+  );
 
-    // Only show tabs with real backend data
+  // Only show tabs with real backend data
 
   useEffect(() => {
     if (!courseId) return;
@@ -85,8 +88,10 @@ export default function CourseDetailPage() {
       try {
         setLoading(true);
         setError("");
-        const courseData: CourseDetail = await api.get(`/api/student/courses/${courseId}`);
-        
+        const courseData: CourseDetail = await api.get(
+          `/api/student/courses/${courseId}`,
+        );
+
         // Transform API data to match UI expectations
         const transformedCourse: CourseDetail = {
           id: courseData.id,
@@ -106,11 +111,12 @@ export default function CourseDetailPage() {
           end_date: courseData.end_date,
           modules: courseData.modules || [],
         };
-        
+
         setCourse(transformedCourse);
       } catch (err: unknown) {
         console.error("Error fetching course:", err);
-        const errorMessage = err instanceof Error ? err.message : "Failed to load course";
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load course";
         setError(errorMessage);
       } finally {
         setLoading(false);
@@ -118,6 +124,15 @@ export default function CourseDetailPage() {
     };
 
     fetchCourse();
+
+    // Refetch on window focus
+    const handleFocus = () => {
+      fetchCourse();
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
   }, [courseId]);
 
   const formatDate = (dateString: string) => {
@@ -146,12 +161,14 @@ export default function CourseDetailPage() {
           <div className="flex items-center space-x-3">
             <AlertCircle className="w-6 h-6 text-red-600" />
             <div>
-              <h3 className="text-lg font-medium text-red-800">Error Loading Course</h3>
+              <h3 className="text-lg font-medium text-red-800">
+                Error Loading Course
+              </h3>
               <p className="text-red-700 mt-1">{error}</p>
             </div>
           </div>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
           >
             Try Again
@@ -166,8 +183,12 @@ export default function CourseDetailPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Course Not Found</h3>
-          <p className="text-gray-600 mb-4">The course you&apos;re looking for doesn&apos;t exist.</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Course Not Found
+          </h3>
+          <p className="text-gray-600 mb-4">
+            The course you&apos;re looking for doesn&apos;t exist.
+          </p>
           <Link
             href="/student/courses"
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -196,13 +217,13 @@ export default function CourseDetailPage() {
                 className="w-full h-full object-cover"
               />
             </div>
-            
+
             <div className="flex-1">
               <h1 className="text-2xl font-bold mb-2">{course.title}</h1>
               {course.instructor && (
                 <p className="text-blue-100 mb-4">by {course.instructor}</p>
               )}
-              
+
               <div className="flex items-center space-x-6 text-blue-100 text-sm">
                 {course.level && (
                   <div className="flex items-center space-x-2">
@@ -213,7 +234,7 @@ export default function CourseDetailPage() {
                 {course.duration && (
                   <div className="flex items-center space-x-2">
                     <Clock className="w-4 h-4" />
-                    <span>{course.duration}</span>
+                    <span>Duration: {course.duration} days</span>
                   </div>
                 )}
                 {course.studentsEnrolled && (
@@ -223,16 +244,18 @@ export default function CourseDetailPage() {
                   </div>
                 )}
               </div>
-              
+
               <div className="mt-4">
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="text-blue-100">Progress</span>
                   <span className="font-medium">{course.progress}%</span>
                 </div>
-                <div className="w-full bg-white/20 rounded-full h-3">
+                <div className="w-full bg-gray-200 rounded-full h-3">
                   <div
-                    className="bg-white h-3 rounded-full transition-all duration-500"
-                    style={{ width: `${course.progress}%` }}
+                    className="bg-yellow-400 h-3 rounded-full transition-all duration-500"
+                    style={{
+                      width: `${!isNaN(Number(course.progress)) ? Number(course.progress) : 0}%`,
+                    }}
                   ></div>
                 </div>
               </div>
@@ -286,8 +309,12 @@ export default function CourseDetailPage() {
                 <div className="bg-blue-50 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-blue-600">Total Modules</p>
-                      <p className="text-2xl font-bold text-blue-900">{course.totalModules}</p>
+                      <p className="text-sm font-medium text-blue-600">
+                        Total Modules
+                      </p>
+                      <p className="text-2xl font-bold text-blue-900">
+                        {course.totalModules}
+                      </p>
                     </div>
                     <BookOpen className="w-8 h-8 text-blue-600" />
                   </div>
@@ -296,8 +323,12 @@ export default function CourseDetailPage() {
                 <div className="bg-green-50 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-green-600">Completed</p>
-                      <p className="text-2xl font-bold text-green-900">{course.completedModules}</p>
+                      <p className="text-sm font-medium text-green-600">
+                        Completed
+                      </p>
+                      <p className="text-2xl font-bold text-green-900">
+                        {course.completedModules}
+                      </p>
                     </div>
                     <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
@@ -306,8 +337,12 @@ export default function CourseDetailPage() {
                 <div className="bg-purple-50 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-purple-600">Progress</p>
-                      <p className="text-2xl font-bold text-purple-900">{course.progress}%</p>
+                      <p className="text-sm font-medium text-purple-600">
+                        Progress
+                      </p>
+                      <p className="text-2xl font-bold text-purple-900">
+                        {course.progress}%
+                      </p>
                     </div>
                     <BarChart3 className="w-8 h-8 text-purple-600" />
                   </div>
@@ -316,15 +351,25 @@ export default function CourseDetailPage() {
 
               {/* Course Timeline */}
               <div className="bg-gray-50 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Course Timeline</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Course Timeline
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Start Date</p>
-                    <p className="text-lg text-gray-900">{formatDate(course.start_date)}</p>
+                    <p className="text-sm font-medium text-gray-600">
+                      Start Date
+                    </p>
+                    <p className="text-lg text-gray-900">
+                      {formatDate(course.start_date)}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-600">End Date</p>
-                    <p className="text-lg text-gray-900">{formatDate(course.end_date)}</p>
+                    <p className="text-sm font-medium text-gray-600">
+                      End Date
+                    </p>
+                    <p className="text-lg text-gray-900">
+                      {formatDate(course.end_date)}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -350,24 +395,32 @@ export default function CourseDetailPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
                           <div className="flex-shrink-0">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                              module.status === "completed"
-                                ? "bg-green-100 text-green-600"
-                                : module.status === "in-progress"
-                                ? "bg-blue-100 text-blue-600"
-                                : "bg-gray-100 text-gray-600"
-                            }`}>
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                module.status === "completed"
+                                  ? "bg-green-100 text-green-600"
+                                  : module.status === "in-progress"
+                                    ? "bg-blue-100 text-blue-600"
+                                    : "bg-gray-100 text-gray-600"
+                              }`}
+                            >
                               {module.status === "completed" ? (
                                 <CheckCircle className="w-4 h-4" />
                               ) : (
-                                <span className="text-sm font-medium">{index + 1}</span>
+                                <span className="text-sm font-medium">
+                                  {index + 1}
+                                </span>
                               )}
                             </div>
                           </div>
                           <div className="flex-1">
-                            <h3 className="font-medium text-gray-900">{module.title}</h3>
+                            <h3 className="font-medium text-gray-900">
+                              {module.title}
+                            </h3>
                             {module.description && (
-                              <p className="text-sm text-gray-600 mt-1">{module.description}</p>
+                              <p className="text-sm text-gray-600 mt-1">
+                                {module.description}
+                              </p>
                             )}
                             {module.duration && (
                               <div className="flex items-center mt-2 text-sm text-gray-500">
@@ -379,14 +432,27 @@ export default function CourseDetailPage() {
                         </div>
                         <div className="flex items-center space-x-3">
                           {module.status === "completed" ? (
-                            <span className="text-sm text-green-600 font-medium">Completed</span>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-green-600 font-medium">
+                                Completed
+                              </span>
+                              <Link
+                                href={`/student/courses/${courseId}/modules/${module.id}`}
+                                className="inline-flex items-center px-3 py-1 text-sm font-medium text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md transition-colors border border-green-200"
+                              >
+                                <BookOpen className="w-4 h-4 mr-1" />
+                                Review
+                              </Link>
+                            </div>
                           ) : (
                             <Link
                               href={`/student/courses/${courseId}/modules/${module.id}`}
                               className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
                             >
                               <Play className="w-4 h-4 mr-1" />
-                              {module.status === "in-progress" ? "Continue" : "Start"}
+                              {module.status === "in-progress"
+                                ? "Continue"
+                                : "Start"}
                             </Link>
                           )}
                         </div>
@@ -396,8 +462,13 @@ export default function CourseDetailPage() {
                 ) : (
                   <div className="text-center py-8">
                     <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Modules Yet</h3>
-                    <p className="text-gray-600">Modules will appear here when they&apos;re added to the course.</p>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No Modules Yet
+                    </h3>
+                    <p className="text-gray-600">
+                      Modules will appear here when they&apos;re added to the
+                      course.
+                    </p>
                   </div>
                 )}
               </div>

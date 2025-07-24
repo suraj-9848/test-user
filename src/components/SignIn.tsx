@@ -12,7 +12,7 @@ const BACKEND_BASE_URL =
 
 const SignIn = () => {
   const { status, data: session } = useSession();
-      // Removed unused router
+  // Removed unused router
   const { setJwt } = useJWT();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -23,7 +23,10 @@ const SignIn = () => {
       setLoading(true);
       setError(null);
       try {
-        console.log("[SignIn] Exchanging Google JWT for backend JWT:", googleJwt);
+        console.log(
+          "[SignIn] Exchanging Google JWT for backend JWT:",
+          googleJwt,
+        );
         const res = await fetch(`${BACKEND_BASE_URL}/api/auth/exchange`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -198,7 +201,9 @@ const SignIn = () => {
                 <div className="absolute inset-0 bg-blue-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div className="relative flex items-center gap-3">
                   <AiOutlineGoogle size={20} />
-                  <span>{loading ? "Signing in..." : "Continue with Google"}</span>
+                  <span>
+                    {loading ? "Signing in..." : "Continue with Google"}
+                  </span>
                   <ArrowRight className="w-4 h-4 text-blue-600 group-hover:translate-x-1 transition-transform duration-300" />
                 </div>
               </button>

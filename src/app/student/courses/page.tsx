@@ -15,26 +15,27 @@ import {
 } from "lucide-react";
 
 // API Configuration
-const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
+const BACKEND_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
 
 // Create API wrapper for consistency
 const api = {
   get: async (endpoint: string) => {
-    const token = localStorage.getItem('jwt');
+    const token = localStorage.getItem("jwt");
     const response = await fetch(`${BACKEND_BASE_URL}${endpoint}`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Authorization': token ? `Bearer ${token}` : '',
-        'Content-Type': 'application/json',
+        Authorization: token ? `Bearer ${token}` : "",
+        "Content-Type": "application/json",
       },
     });
-    
+
     if (!response.ok) {
       throw new Error(`API Error: ${response.status}`);
     }
-    
+
     return response.json();
-  }
+  },
 };
 
 interface Course {
@@ -61,7 +62,9 @@ export default function CoursesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "completed" | "not-started">("all");
+  const [filterStatus, setFilterStatus] = useState<
+    "all" | "active" | "completed" | "not-started"
+  >("all");
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -69,18 +72,25 @@ export default function CoursesPage() {
         setLoading(true);
         setError("");
         const coursesData: Course[] = await api.get("/api/student/courses");
-        
+
         // Transform the data to match our interface
         const transformedCourses = coursesData.map((course: Course) => ({
           id: course.id,
           title: course.title,
           description: course.description || "No description available",
           instructor: course.instructor,
-          image: course.image || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=250&fit=crop",
+          image:
+            course.image ||
+            "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=250&fit=crop",
           progress: course.progress || 0,
           totalModules: course.totalModules || 0,
           completedModules: course.completedModules || 0,
-          status: course.status || (course.progress > 0 ? "active" : "not-started") as "active" | "completed" | "not-started",
+          status:
+            course.status ||
+            ((course.progress > 0 ? "active" : "not-started") as
+              | "active"
+              | "completed"
+              | "not-started"),
           level: course.level,
           duration: course.duration,
           rating: course.rating,
@@ -88,12 +98,13 @@ export default function CoursesPage() {
           start_date: course.start_date,
           end_date: course.end_date,
         }));
-        
+
         setCourses(transformedCourses);
         setFilteredCourses(transformedCourses);
       } catch (err: unknown) {
         console.error("Error fetching courses:", err);
-        const errorMessage = err instanceof Error ? err.message : "Failed to load courses";
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load courses";
         setError(errorMessage);
       } finally {
         setLoading(false);
@@ -109,16 +120,17 @@ export default function CoursesPage() {
 
     // Filter by search term
     if (searchTerm) {
-      filtered = filtered.filter(course =>
-        course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        course.instructor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        course.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (course) =>
+          course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          course.instructor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          course.description?.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
 
     // Filter by status
     if (filterStatus !== "all") {
-      filtered = filtered.filter(course => course.status === filterStatus);
+      filtered = filtered.filter((course) => course.status === filterStatus);
     }
 
     setFilteredCourses(filtered);
@@ -127,11 +139,23 @@ export default function CoursesPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
-        return <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">Completed</span>;
+        return (
+          <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+            Completed
+          </span>
+        );
       case "active":
-        return <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">In Progress</span>;
+        return (
+          <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+            In Progress
+          </span>
+        );
       default:
-        return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">Not Started</span>;
+        return (
+          <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+            Not Started
+          </span>
+        );
     }
   };
 
@@ -161,12 +185,14 @@ export default function CoursesPage() {
           <div className="flex items-center space-x-3">
             <AlertCircle className="w-6 h-6 text-red-600" />
             <div>
-              <h3 className="text-lg font-medium text-red-800">Error Loading Courses</h3>
+              <h3 className="text-lg font-medium text-red-800">
+                Error Loading Courses
+              </h3>
               <p className="text-red-700 mt-1">{error}</p>
             </div>
           </div>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
           >
             Try Again
@@ -183,7 +209,7 @@ export default function CoursesPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">My Courses</h1>
           <p className="text-gray-600 mt-1">
-            {courses.length} course{courses.length !== 1 ? 's' : ''} enrolled
+            {courses.length} course{courses.length !== 1 ? "s" : ""} enrolled
           </p>
         </div>
       </div>
@@ -208,7 +234,15 @@ export default function CoursesPage() {
             <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <select
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as "all" | "active" | "completed" | "not-started")}
+              onChange={(e) =>
+                setFilterStatus(
+                  e.target.value as
+                    | "all"
+                    | "active"
+                    | "completed"
+                    | "not-started",
+                )
+              }
               className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
             >
               <option value="all">All Status</option>
@@ -256,7 +290,9 @@ export default function CoursesPage() {
                 </div>
 
                 {course.instructor && (
-                  <p className="text-sm text-gray-600 mb-3">by {course.instructor}</p>
+                  <p className="text-sm text-gray-600 mb-3">
+                    by {course.instructor}
+                  </p>
                 )}
 
                 <p className="text-gray-600 text-sm mb-4 line-clamp-2">
@@ -289,7 +325,9 @@ export default function CoursesPage() {
                 <div className="mb-4">
                   <div className="flex items-center justify-between text-sm mb-2">
                     <span className="text-gray-600">Progress</span>
-                    <span className="font-medium text-gray-900">{course.progress}%</span>
+                    <span className="font-medium text-gray-900">
+                      {course.progress}%
+                    </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
@@ -299,7 +337,9 @@ export default function CoursesPage() {
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
                     <span>{course.completedModules} completed</span>
-                    <span>{course.totalModules - course.completedModules} remaining</span>
+                    <span>
+                      {course.totalModules - course.completedModules} remaining
+                    </span>
                   </div>
                 </div>
 
@@ -315,7 +355,11 @@ export default function CoursesPage() {
                   className="w-full inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   <PlayCircle className="w-4 h-4 mr-2" />
-                  {course.status === "completed" ? "Review Course" : course.status === "active" ? "Continue Learning" : "Start Course"}
+                  {course.status === "completed"
+                    ? "Review Course"
+                    : course.status === "active"
+                      ? "Continue Learning"
+                      : "Start Course"}
                 </Link>
               </div>
             </div>
@@ -325,15 +369,16 @@ export default function CoursesPage() {
         <div className="text-center py-12">
           <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {searchTerm || filterStatus !== "all" ? "No courses found" : "No courses enrolled"}
+            {searchTerm || filterStatus !== "all"
+              ? "No courses found"
+              : "No courses enrolled"}
           </h3>
           <p className="text-gray-600 mb-6">
-            {searchTerm || filterStatus !== "all" 
+            {searchTerm || filterStatus !== "all"
               ? "Try adjusting your search or filters to find courses."
-              : "Enroll in courses to start your learning journey."
-            }
+              : "Enroll in courses to start your learning journey."}
           </p>
-          {(!searchTerm && filterStatus === "all") && (
+          {!searchTerm && filterStatus === "all" && (
             <Link
               href="/courses"
               className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"

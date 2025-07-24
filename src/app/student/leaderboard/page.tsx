@@ -5,7 +5,8 @@ import { useJWT } from "@/context/JWTContext";
 import { useRouter } from "next/navigation";
 // No need to import clearJwtEverywhere, we'll handle auth differently
 
-const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
+const BACKEND_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
 
 interface LeaderboardEntry {
   userName: string;
@@ -79,13 +80,16 @@ export default function StudentLeaderboard() {
       try {
         setLoading(true);
         setError("");
-        const response = await fetch(`${BACKEND_BASE_URL}/api/student/tests/leaderboard`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${jwt}`,
-            "Content-Type": "application/json",
+        const response = await fetch(
+          `${BACKEND_BASE_URL}/api/student/tests/leaderboard`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${jwt}`,
+              "Content-Type": "application/json",
+            },
           },
-        });
+        );
         console.log("[Leaderboard] Response status:", response.status);
         if (response.status === 304) {
           // Not Modified: do not update leaderboard, just stop loading
@@ -128,17 +132,23 @@ export default function StudentLeaderboard() {
         if (cancelled) return;
         console.log("[Leaderboard] Data received:", data);
         const apiData = data.data || [];
-        const sortedData = apiData.sort((a: LeaderboardEntry, b: LeaderboardEntry) => b.percentage - a.percentage);
-        const dataWithRanks = sortedData.map((entry: LeaderboardEntry, index: number) => ({
-          ...entry,
-          rank: index + 1,
-        }));
+        const sortedData = apiData.sort(
+          (a: LeaderboardEntry, b: LeaderboardEntry) =>
+            b.percentage - a.percentage,
+        );
+        const dataWithRanks = sortedData.map(
+          (entry: LeaderboardEntry, index: number) => ({
+            ...entry,
+            rank: index + 1,
+          }),
+        );
         setLeaderboard(dataWithRanks);
       } catch (err: unknown) {
         console.error("Error fetching leaderboard:", err);
-        const errorMessage = err instanceof Error ? err.message : "Failed to load leaderboard";
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load leaderboard";
         setError(errorMessage);
-        
+
         // Error handling without clearJwtEverywhere call
       } finally {
         setLoading(false);
@@ -266,10 +276,10 @@ export default function StudentLeaderboard() {
                       entry.rank === 1
                         ? "#fffbe6"
                         : entry.rank === 2
-                        ? "#f0f6ff"
-                        : entry.rank === 3
-                        ? "#f9f5ff"
-                        : "inherit",
+                          ? "#f0f6ff"
+                          : entry.rank === 3
+                            ? "#f9f5ff"
+                            : "inherit",
                     fontWeight: entry.rank <= 3 ? 600 : 400,
                   }}
                 >
@@ -285,8 +295,8 @@ export default function StudentLeaderboard() {
                             entry.rank === 1
                               ? "#FFD700"
                               : entry.rank === 2
-                              ? "#C0C0C0"
-                              : "#CD7F32",
+                                ? "#C0C0C0"
+                                : "#CD7F32",
                           color: "#222",
                           fontWeight: 700,
                         }}
@@ -357,14 +367,14 @@ export default function StudentLeaderboard() {
                           entry.percentage >= 80
                             ? "#d1fae5"
                             : entry.percentage >= 50
-                            ? "#fef9c3"
-                            : "#f3f4f6",
+                              ? "#fef9c3"
+                              : "#f3f4f6",
                         color:
                           entry.percentage >= 80
                             ? "#059669"
                             : entry.percentage >= 50
-                            ? "#b45309"
-                            : "#374151",
+                              ? "#b45309"
+                              : "#374151",
                         fontWeight: 600,
                       }}
                     >

@@ -3,10 +3,10 @@
 import React from "react";
 
 interface TestsLayoutProps {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }
 
 export default function TestsLayout({ children }: TestsLayoutProps) {
-    // Render tests in isolation without student navbar or sidebar
-    return <>{children}</>;
+  // Render tests in isolation without student navbar or sidebar
+  return <>{children}</>;
 }

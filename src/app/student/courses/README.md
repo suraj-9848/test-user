@@ -20,6 +20,7 @@ src/app/student/courses/
 ## Page Descriptions
 
 ### 1. Course Listing (`/student/courses`)
+
 - **File**: `page.tsx`
 - **Purpose**: Displays all available courses for the student
 - **Features**:
@@ -29,6 +30,7 @@ src/app/student/courses/
   - Navigation to individual courses
 
 ### 2. Course Detail (`/student/courses/[id]`)
+
 - **File**: `[id]/page.tsx`
 - **Purpose**: Shows detailed information about a specific course
 - **Features**:
@@ -39,6 +41,7 @@ src/app/student/courses/
   - Assignments and announcements tabs
 
 ### 3. Module Detail (`/student/courses/[id]/modules/[moduleId]`)
+
 - **File**: `[id]/modules/[moduleId]/page.tsx`
 - **Purpose**: Displays module content organized by days
 - **Features**:
@@ -50,6 +53,7 @@ src/app/student/courses/
   - Sticky sidebar with progress overview
 
 ### 4. MCQ Test (`/student/courses/[id]/modules/[moduleId]/mcq`)
+
 - **File**: `[id]/modules/[moduleId]/mcq/page.tsx`
 - **Purpose**: Interactive MCQ test interface
 - **Features**:
@@ -63,6 +67,7 @@ src/app/student/courses/
 ## Data Types
 
 ### Course Interface
+
 ```typescript
 interface Course {
   id: string;
@@ -78,6 +83,7 @@ interface Course {
 ```
 
 ### Module Interface
+
 ```typescript
 interface Module {
   id: string;
@@ -91,6 +97,7 @@ interface Module {
 ```
 
 ### Day Content Interface
+
 ```typescript
 interface DayContent {
   id: string;
@@ -101,6 +108,7 @@ interface DayContent {
 ```
 
 ### MCQ Interface
+
 ```typescript
 interface MCQ {
   id: string;
@@ -119,6 +127,7 @@ interface Question {
 ## Features
 
 ### Navigation Flow
+
 1. **Courses List** → Click course → **Course Detail**
 2. **Course Detail** → Click "View Module" → **Module Detail**
 3. **Module Detail** → Click "Take MCQ Test" → **MCQ Test**
@@ -127,17 +136,20 @@ interface Question {
 ### Key Functionality
 
 #### Course Management
+
 - Browse available courses
 - Track progress across all courses
 - Filter courses by status and other criteria
 
 #### Module Learning
+
 - Sequential day-based content delivery
 - Markdown content support with code highlighting
 - Progress tracking per day
 - Visual completion indicators
 
 #### Assessment System
+
 - Timed MCQ tests (30 minutes default)
 - Real-time answer validation
 - Automatic submission on timeout
@@ -145,6 +157,7 @@ interface Question {
 - Pass/fail status based on configurable passing score
 
 ### Styling
+
 - Uses Tailwind CSS for consistent styling
 - Responsive design for mobile and desktop
 - Loading states and error handling
@@ -152,6 +165,7 @@ interface Question {
 - Color-coded status indicators
 
 ### State Management
+
 - React hooks for local state management
 - URL parameters for navigation state
 - Local storage could be added for draft answers
