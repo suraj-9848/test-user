@@ -117,11 +117,12 @@ export default function ResultsPage() {
                 courseName: test.course?.title,
                 course: { title: test.course?.title },
                 courseId: submission.testId,
-                score: submission.totalScore ,
+                score: submission.totalScore,
                 maxScore: submission.maxMarks,
-                percentage: (submission.totalScore && submission.maxMarks
+                percentage:
+                  submission.totalScore && submission.maxMarks
                     ? (submission.totalScore / submission.maxMarks) * 100
-                    : undefined),
+                    : undefined,
                 status: submission.status,
                 submittedAt: submission.submittedAt,
                 completedAt: submission.submittedAt,
@@ -433,31 +434,53 @@ export default function ResultsPage() {
                         key={response.questionId}
                         className="bg-gray-50 p-4 rounded-lg"
                       >
-                        <h5 className="text-sm font-medium text-gray-900">
-                          Question {index + 1}:{" "}
-                          {stripHtml(response.questionText)}
+                        <h5 className="text-sm font-medium text-gray-900 mb-2">
+                          Question {index + 1}:
                         </h5>
-                        <div className="mt-2 grid grid-cols-1 md:grid-cols-1 gap-2">
+                        <div
+                          className="prose prose-sm max-w-none mb-3"
+                          dangerouslySetInnerHTML={{
+                            __html: response.questionText,
+                          }}
+                        />
+                        <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <p className="text-xs text-gray-500">Your Answer</p>
-                            <p className="text-sm text-gray-900">
-                              {response.answer}
+                            <p className="text-xs text-gray-500 mb-1">
+                              Your Answer
                             </p>
+                            <div className="text-sm text-gray-900 border rounded p-2 bg-white min-h-[32px]">
+                              {response.answer &&
+                              response.answer !== "No answer selected" ? (
+                                response.answer
+                              ) : (
+                                <span className="text-gray-400 italic">
+                                  No answer selected
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 mb-1">
                               Correct Answer(s)
                             </p>
-                            <p className="text-sm text-gray-900">
-                              {response.options
-                                .filter((opt) => opt.correct)
-                                .map((opt) => opt.text)
-                                .join(", ")}
-                            </p>
+                            <div className="text-sm text-gray-900 border rounded p-2 bg-white min-h-[32px]">
+                              {response.options &&
+                              response.options.filter((opt) => opt.correct)
+                                .length > 0 ? (
+                                response.options
+                                  .filter((opt) => opt.correct)
+                                  .map((opt) => opt.text)
+                                  .join(", ")
+                              ) : (
+                                <span className="text-gray-400 italic">
+                                  No correct answer
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500">Score</p>
-                            <p
+                            <p className="text-xs text-gray-500 mb-1">Score</p>
+                            <span
                               className={`text-sm font-medium ${
                                 response.score > 0
                                   ? "text-green-600"
@@ -465,16 +488,16 @@ export default function ResultsPage() {
                               }`}
                             >
                               {response.score}/{response.maxMarks}
-                            </p>
+                            </span>
                           </div>
                           {response.evaluatorComments && (
-                            <div>
-                              <p className="text-xs text-gray-500">
+                            <div className="md:col-span-2">
+                              <p className="text-xs text-gray-500 mb-1">
                                 Evaluator Comments
                               </p>
-                              <p className="text-sm text-gray-900">
+                              <div className="text-sm text-gray-900 border rounded p-2 bg-white">
                                 {response.evaluatorComments}
-                              </p>
+                              </div>
                             </div>
                           )}
                         </div>

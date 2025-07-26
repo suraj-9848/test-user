@@ -307,7 +307,7 @@ export default function QuestionRenderer({
           </span>
         </div>
 
-        <div className="prose max-w-none prose-blue prose-code:font-mono prose-code:bg-gray-100 prose-code:px-1 prose-code:rounded prose-strong:font-bold prose-li:marker:text-blue-600 prose-li:pl-2 prose-li:mb-1">
+        <div className="prose prose-sm max-w-none mb-3">
           <div
             className="text-lg text-gray-900 leading-relaxed"
             dangerouslySetInnerHTML={{ __html: question.questionText }}
