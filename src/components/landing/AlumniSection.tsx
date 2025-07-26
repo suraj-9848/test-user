@@ -57,14 +57,6 @@ export default function AlumniSection() {
             journeys prove what the right mentorship, structure, and dedication
             can achieve.
           </p>
-
-          <Link
-            href="/sign-in"
-            className="inline-block bg-sky-200 mt-4 border border-white px-5 py-2 rounded-full
-            hover:bg-black hover:text-black transition"
-          >
-            ▶️ Start your success story
-          </Link>
         </div>
 
         {/* Right — Cards */}

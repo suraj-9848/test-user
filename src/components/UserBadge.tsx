@@ -5,6 +5,7 @@ import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { FiUser, FiSettings, FiLogOut } from "react-icons/fi";
 import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 interface UserBadgeProps {
   user: {
@@ -15,6 +16,7 @@ interface UserBadgeProps {
 }
 
 const UserBadge: React.FC<UserBadgeProps> = ({ user }) => {
+  const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const userInitial = user?.name?.charAt(0).toUpperCase() || "U";
@@ -91,18 +93,16 @@ const UserBadge: React.FC<UserBadgeProps> = ({ user }) => {
               </div>
             </div>
           </div>
-
           <div className="py-2">
-            <button className="flex items-center w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-violet-50/80 hover:text-violet-600 transition-all duration-200 group">
-              <FiUser />
+            <button onClick={() => router.push("/student/profile")} className="flex items-center w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-all duration-200 group">
+              <FiUser className="h-4 w-4 mr-3 text-gray-400 group-hover:text-gray-500" />
               View Profile
             </button>
-            <button className="flex items-center w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-violet-50/80 hover:text-violet-600 transition-all duration-200 group">
-              <FiSettings />
-              Settings
+            <button onClick={() => router.push("/student")} className="flex items-center w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-all duration-200 group">
+              <FiSettings className="h-4 w-4 mr-3 text-gray-400 group-hover:text-gray-500" />
+              Dashboard
             </button>
           </div>
-
           <div className="border-t border-gray-100 pt-2">
             <button
               onClick={() => signOut()}

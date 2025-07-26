@@ -54,11 +54,9 @@ export default function CourseFilters({
     "₹5,000+",
   ];
   const sortOptions = [
-    { value: "popularity", label: "Most Popular" },
-    { value: "rating", label: "Highest Rated" },
+    { value: "Select Filter", label: "Sorting Options" },
     { value: "price-low", label: "Price: Low to High" },
     { value: "price-high", label: "Price: High to Low" },
-    { value: "newest", label: "Newest First" },
   ];
 
   return (

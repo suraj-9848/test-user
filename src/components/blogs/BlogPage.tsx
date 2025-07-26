@@ -28,8 +28,8 @@ export default function BlogPage() {
   return (
     <section
       className="
-        relative isolate overflow-hidden bg-pink-100
-        pt-32 min-h-screen px-6 md:px-16 pb-24
+        relative isolate overflow-hidden bg-gray-50
+        pt-32 min-h-screen w-full px-6 md:px-16 pb-24
       "
     >
       {/* pastel “blob” */}
@@ -38,13 +38,13 @@ export default function BlogPage() {
         className="
           absolute -z-10 left-1/2 top-0 -translate-x-1/2 -translate-y-1/2
           w-[140vw] h-[140vw] rounded-full blur-3xl
-          bg-gradient-to-b from-blue-300 via-purple-200 to-pink-400 opacity-40
+          bg-gray-50 opacity-40
         "
       />
 
       {/* heading + tag bar */}
       <div className="relative z-10 max-w-5xl">
-        <h1 className="text-3xl md:text-4xl font-semibold font-sans text-gray-800">
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-800">
           Updates, stories, and <br className="hidden md:block" />
           announcements from the Nirudhyog.
         </h1>
@@ -57,8 +57,8 @@ export default function BlogPage() {
               className={`px-4 py-1 rounded-full text-md cursor-pointer border transition-all
                 ${
                   activeTag === tag
-                    ? "bg-pink-500 text-white border-pink-900"
-                    : "bg-white text-gray-700 hover:bg-pink-200 border-gray-300"
+                    ? "bg-blue-500 text-white border-blue-900"
+                    : "bg-white text-gray-700 hover:bg-blue-200 border-gray-300"
                 }`}
             >
               {tag}

@@ -33,7 +33,7 @@ export default function BlogCard({
     return (
       <div
         className="w-full max-w-md rounded-3xl overflow-hidden
-                   bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100
+                   bg-gray-50
                    animate-pulse"
       >
         <div className="h-56" />
@@ -57,7 +57,7 @@ export default function BlogCard({
       <div className="relative h-56">
         <div
           className="absolute inset-0
-                     bg-gradient-to-br from-pink-300/80 via-pink-200/70 to-yellow-200/60"
+                     bg-gray-50 to-yellow-200/60"
         />
         <Image
           src={imageUrl!}
@@ -74,7 +74,7 @@ export default function BlogCard({
       {/* META + TITLE */}
       <div className="p-6 space-y-4 bg-gradient-to-br from-white via-white to-blue-50/30">
         <div className="flex items-center justify-between text-sm">
-          <span className="px-3 py-1 rounded-full bg-pink-200 text-gray-800">
+          <span className="px-3 py-1 rounded-full bg-blue-300 text-gray-800">
             {tag}
           </span>
           <time className="text-gray-500">{postedOn}</time>

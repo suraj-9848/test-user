@@ -1,12 +1,13 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import { Star, Users, BookOpen, X, TrendingUp, Award } from "lucide-react";
+import { Star, Users, BookOpen, X, TrendingUp, Award, Router } from "lucide-react";
 import { courses } from "../../../sample_data/course";
 import { Course } from "../../../types/index";
 import CourseCard from "@/components/CourseCard";
 import CourseFilters from "@/components/CourseFilters";
 import CourseStats from "@/components/CourseStats";
 import EnrollmentModal from "@/components/EnrollmentModal";
+import { useRouter } from "next/navigation";
 
 export default function CoursesPage() {
   const [filteredCourses, setFilteredCourses] = useState<Course[]>(courses);
@@ -20,7 +21,7 @@ export default function CoursesPage() {
   const [showEnrollment, setShowEnrollment] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [activeTab, setActiveTab] = useState<"all" | "trending" | "new">("all");
-
+  const router = useRouter();
   // Memoized filter function to optimize performance
   const filterCourses = useMemo(
     () => (courses: Course[]) => {
@@ -159,20 +160,19 @@ export default function CoursesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 mt-36">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 text-white py-8 sm:py-12 lg:py-16 px-4 md:px-6 overflow-hidden">
-        <div className="absolute inset-0 bg-black/10"></div>
+      <section className="relative bg-white py-8 sm:py-12 lg:py-16 px-4 md:px-6 border-b border-gray-100">
         <div className="relative z-10 max-w-7xl mx-auto text-center">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight text-gray-900">
             Transform Your Career with
             <br />
-            <span className="relative text-yellow-300">
+            <span className="relative text-blue-600">
               Expert-Led Courses
-              <div className="absolute -bottom-1 left-0 right-0 h-1 bg-yellow-300 rounded-full transform rotate-1"></div>
+              <div className="absolute -bottom-1 left-0 right-0 h-1 bg-blue-600 rounded-full transform rotate-1"></div>
             </span>
           </h1>
-          <p className="text-base sm:text-lg md:text-xl text-blue-100 mb-6 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 max-w-3xl mx-auto leading-relaxed">
             Join thousands of learners advancing their skills with
             industry-recognized courses.
           </p>
@@ -187,19 +187,19 @@ export default function CoursesPage() {
             ].map((stat, index) => (
               <div
                 key={index}
-                className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-2"
+                className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-full px-3 py-2"
               >
                 <stat.icon
-                  className={`w-4 h-4 sm:w-5 sm:h-5 ${stat.className || ""}`}
+                  className={`w-4 h-4 sm:w-5 sm:h-5 text-blue-600 ${stat.className || ""}`}
                 />
-                <span className="text-xs sm:text-sm font-medium">
+                <span className="text-xs sm:text-sm font-medium text-blue-800">
                   {stat.text}
                 </span>
               </div>
             ))}
           </div>
 
-          <button className="px-6 py-2 sm:px-8 sm:py-3 bg-yellow-400 text-gray-900 rounded-xl font-bold text-base sm:text-lg hover:bg-yellow-300 transition-all transform hover:scale-105 shadow-lg">
+          <button onClick={() => router.push("/sign-in")} className="px-6 py-2 sm:px-8 sm:py-3 bg-blue-600 text-white rounded-xl font-bold text-base sm:text-lg hover:bg-blue-700 transition-all transform hover:scale-105 shadow-lg">
             Start Learning Today
           </button>
         </div>
@@ -237,11 +237,6 @@ export default function CoursesPage() {
                 key: "trending",
                 label: "Trending",
                 icon: <TrendingUp className="w-4 h-4" />,
-              },
-              {
-                key: "new",
-                label: "New Releases",
-                icon: <Star className="w-4 h-4" />,
               },
             ].map((tab) => (
               <button

@@ -30,7 +30,7 @@ const Page = () => {
 
   if (!post) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-center px-4 py-20 bg-gradient-to-br from-pink-300 via-purple-200 to-blue-200">
+      <div className="min-h-screen flex flex-col items-center justify-center text-center px-4 py-20 bg-gray-50">
         <div className="text-6xl mb-4">📭</div>
         <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
           Oops! This post went missing.
@@ -41,7 +41,7 @@ const Page = () => {
         </p>
         <Link
           href="/blogs"
-          className="inline-flex items-center gap-2 px-4 py-2 text-pink-600 hover:text-pink-800 font-medium transition duration-300 group"
+          className="inline-flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition duration-300 group"
         >
           <MoveLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" />
           <span className="text-base">Back to Blogs</span>
@@ -51,9 +51,9 @@ const Page = () => {
   }
 
   return (
-    <section className="relative isolate min-h-screen px-6 py-24 md:px-12 bg-pink-100 overflow-hidden">
+    <section className="relative isolate min-h-screen px-6 py-24 md:px-12 bg-gray-100 overflow-hidden">
       {/* big background blob */}
-      <span className="absolute -z-10 top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vw] rounded-full blur-3xl opacity-40 bg-gradient-to-b from-blue-300 via-purple-200 to-pink-300" />
+      <span className="absolute -z-10 top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vw] rounded-full blur-3xl opacity-40 bg-gradient-to-b from-blue-300 via-purple-200 to-gray-300" />
 
       {/* floating accent blobs */}
       <span className="hidden lg:block absolute -z-10 right-10 top-1/3 w-72 h-72 rounded-full bg-purple-200/30 blur-3xl animate-pulse" />
@@ -61,11 +61,11 @@ const Page = () => {
 
       {/* glass wrapper with glow */}
       <div className="relative max-w-3xl mx-auto rounded-3xl overflow-hidden animate-[slide-up_0.6s_ease-out]">
-        <div className="absolute -inset-0.5 rounded-[inherit] bg-gradient-to-r from-pink-300 via-purple-300 to-blue-300 blur-lg opacity-50" />
+        <div className="absolute -inset-0.5 rounded-[inherit] bg-gradient-to-r from-gray-300 via-purple-300 to-blue-300 blur-lg opacity-50" />
         <div className="relative bg-white/70 backdrop-blur-xl shadow-lg rounded-[inherit]">
           {/* image cover */}
           <div className="relative h-72 sm:h-96">
-            <div className="absolute inset-0 bg-gradient-to-br from-pink-200/70 via-yellow-100 to-purple-100" />
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-200/70 via-yellow-100 to-purple-100" />
             {!imgLoaded && (
               <div className="absolute inset-0 bg-white/30 animate-pulse" />
             )}
@@ -84,17 +84,17 @@ const Page = () => {
 
           {/* text content */}
           <div className="p-8 md:p-12 space-y-8 bg-gradient-to-br from-white via-white to-blue-50/20">
-            <h1 className="text-4xl font-extrabold bg-gradient-to-r from-pink-500 via-fuchsia-500 to-blue-600 bg-clip-text text-transparent drop-shadow-sm">
+            <h1 className="text-4xl font-extrabold bg-blue-600 bg-clip-text text-transparent drop-shadow-sm">
               {post.title}
             </h1>
 
-            <div className="h-[2px] w-full bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 animate-[pulse_8s_linear_infinite]" />
+            <div className="h-[2px] w-full bg-gradient-to-r from-gray-400 via-purple-400 to-blue-400 animate-[pulse_8s_linear_infinite]" />
 
             <div className="flex flex-wrap gap-2 text-sm font-medium text-gray-600">
-              <span className="bg-pink-200 text-gray-800 px-3 py-1 rounded-full">
+              <span className="bg-gray-200 text-gray-800 px-3 py-1 rounded-full">
                 {post.tag}
               </span>
-              <time className="bg-pink-200 text-gray-800 px-3 py-1 rounded-full">
+              <time className="bg-gray-200 text-gray-800 px-3 py-1 rounded-full">
                 {post.postedOn}
               </time>
             </div>

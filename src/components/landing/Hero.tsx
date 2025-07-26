@@ -42,18 +42,7 @@ export default function HeroSection() {
                   />
                 </svg>
               </Link>
-
-              <p className="mt-5 text-gray-600">
-                Already enrolled?{" "}
-                <Link
-                  href="#"
-                  className="text-black transition-all duration-200 hover:underline"
-                >
-                  Log in
-                </Link>
-              </p>
             </div>
-
             <div>
               <Image
                 width={800}

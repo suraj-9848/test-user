@@ -31,15 +31,6 @@ export default function FAQ() {
             listed, feel free to reach out.
           </p>
         </div>
-
-        <div className="mt-4">
-          <a
-            href="mailto:contact@nirudhrog.com"
-            className="inline-block text-black underline hover:text-blue-600 transition-colors text-lg font-medium"
-          >
-            📧 Contact support
-          </a>
-        </div>
       </div>
 
       <div className="space-y-4">

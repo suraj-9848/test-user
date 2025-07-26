@@ -41,9 +41,8 @@ export default function Footer() {
   return (
     <footer className="bg-gray-950 w-full text-gray-300 mt-0 border-t-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5">
-          {/* Logo, Social Media Icons vertical */}
-          <div className="col-span-2 md:col-span-3 lg:col-span-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-2 gap-8 lg:gap-12">
+          <div className="col-span-1">
             <Image
               width={120}
               height={36}
@@ -76,66 +75,46 @@ export default function Footer() {
               ))}
             </ul>
           </div>
-
-          {/* Quick Links vertical */}
           <div>
-            <h4 className="text-sm font-semibold tracking-wider text-gray-400 uppercase mb-6">
-              Quick Links
-            </h4>
-            <ul className="flex flex-col gap-y-2">
-              {quickLinks.map(({ name, href }, idx) => (
-                <li key={idx}>
-                  <Link
-                    href={href}
-                    className="text-sm text-gray-300 hover:text-white transition"
-                  >
-                    {name}
-                  </Link>
+            <div className="col-span-1 flex gap-64" >
+              <div className="">
+                <h4 className="text-sm font-semibold tracking-wider text-gray-400 uppercase mb-6">
+                  Quick Links
+                </h4>
+                <ul className="flex flex-col gap-y-2">
+                {quickLinks.map(({ name, href }, idx) => (
+                  <li key={idx}>
+                    <Link
+                      href={href}
+                      className="text-sm text-gray-300 hover:text-white transition"
+                    >
+                      {name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="">
+              <h4 className="text-sm font-semibold tracking-wider text-gray-400 uppercase mb-6">
+                Contact Us
+              </h4>
+              <ul className="space-y-4 text-sm text-gray-300 max-w-xs">
+                <li className="flex items-start gap-2 flex-wrap">
+                  <span className="font-bold shrink-0">Email:</span>
+                  <span className="break-words">contact@nirudhyog.com</span>
                 </li>
-              ))}
-            </ul>
-          </div>
 
-          {/* Contact Us */}
-          <div>
-            <h4 className="text-sm font-semibold tracking-wider text-gray-400 uppercase mb-6">
-              Contact Us
-            </h4>
-            <ul className="space-y-4 text-sm text-gray-300 max-w-xs">
-              <li className="flex items-start gap-2 flex-wrap">
-                <span className="font-bold shrink-0">Email:</span>
-                <span className="break-words">contact@nirudhyog.com</span>
-              </li>
-
-              <li className="flex items-start gap-2 flex-wrap">
-                <span className="font-bold shrink-0">Phone:</span>
-                <span className="break-words">+91 81213 98942</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Newsletter */}
-          <div className="col-span-2 md:col-span-1 lg:col-span-2">
-            <h4 className="text-sm font-semibold tracking-wider text-gray-400 uppercase mb-6">
-              Subscribe to newsletter
-            </h4>
-            <form className="mt-2">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="w-full px-4 py-3 rounded-md bg-gray-800 text-white placeholder-gray-400 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                type="submit"
-                className="w-full mt-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md transition"
-              >
-                Subscribe
-              </button>
-            </form>
+                <li className="flex items-start gap-2 flex-wrap">
+                  <span className="font-bold shrink-0">Phone:</span>
+                  <span className="break-words">+91 81213 98942</span>
+                </li>
+              </ul>
+            </div>
+            </div>
           </div>
         </div>
 
-        {/* Bottom Text */}
         <hr className="border-gray-700 mt-16 mb-8" />
         <p className="text-center text-sm text-gray-500">
           © {new Date().getFullYear()} Trailbliz. All rights reserved.

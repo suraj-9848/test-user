@@ -24,14 +24,6 @@ const Testimonials = () => {
             Your success story could be next. Browse the testimonials below to
             see how our LMS is making a difference.
           </p>
-          <div className="pt-2">
-            <a
-              href="mailto:contact@nirudhrog.com"
-              className="inline-block text-black underline hover:text-blue-600 transition-colors text-lg font-medium"
-            >
-              📧 Share your experience
-            </a>
-          </div>
         </div>
       </div>
 
