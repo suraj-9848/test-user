@@ -3,14 +3,12 @@
 import { useEffect, useState, useRef } from "react";
 import { useJWT } from "@/context/JWTContext";
 import { useRouter } from "next/navigation";
-import { MOCK_LEADERBOARD_DATA, paginateData as externalPaginateData } from "../../../../sample_data/leaderboard";
+// No need to import clearJwtEverywhere, we'll handle auth differently
 
-// =================================================================
-// HARDCODED MOCK DATA - REMOVE WHEN INTEGRATING REAL API
-// =================================================================
+const BACKEND_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
 
-// Define the LeaderboardEntry interface
-export interface LeaderboardEntry {
+interface LeaderboardEntry {
   userName: string;
   totalScore: number;
   percentage: number;
@@ -18,25 +16,6 @@ export interface LeaderboardEntry {
   totalMaxMarks: number;
   rank: number;
 }
-
-// Create a smaller set of hardcoded mock data directly in the component
-// This avoids any import issues that might be causing errors
-const HARDCODED_MOCK_DATA: LeaderboardEntry[] = (() => {
-  try {
-    // Use the imported static data
-    return MOCK_LEADERBOARD_DATA;
-  } catch (err) {
-    console.error("Error loading static mock data:", err);
-    return []; // Return empty array if loading fails
-  }
-})();
-
-// =================================================================
-
-const BACKEND_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
-
-// Using the LeaderboardEntry interface defined above
 
 // interface LeaderboardResponse {
 //   data: LeaderboardEntry[];
@@ -51,12 +30,6 @@ export default function StudentLeaderboard() {
   const [hydrated, setHydrated] = useState(false);
   const hasRedirected = useRef(false);
   const hasTriedRefresh = useRef(false);
-
-  // ===== PAGINATION STATE - REMOVE WHEN INTEGRATING REAL API =====
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
-  const [useMockData, setUseMockData] = useState(true); // Toggle for easy switching
-  // ================================================================
 
   // Helper to clear JWT from all storage
   const clearJwtEverywhere = () => {
@@ -78,6 +51,7 @@ export default function StudentLeaderboard() {
         setJwt(null);
       }
       setHydrated(true);
+      console.log("[Leaderboard] Hydrated, JWT:", storedJwt);
     };
     syncJwtFromStorage(); // run on mount
     window.addEventListener("storage", syncJwtFromStorage);
@@ -92,35 +66,8 @@ export default function StudentLeaderboard() {
     };
   }, [jwt, setJwt]);
 
-  // ===== MOCK DATA EFFECT - REMOVE WHEN INTEGRATING REAL API =====
   useEffect(() => {
     if (!hydrated) return;
-    
-    if (useMockData) {
-      setLoading(true);
-      // Use the hardcoded mock data directly from this file
-      try {
-        console.log(`[Leaderboard] Loaded ${HARDCODED_MOCK_DATA.length} mock entries`);
-        setLeaderboard(HARDCODED_MOCK_DATA);
-        setError(null);
-      } catch (err) {
-        console.error("[Leaderboard] Error loading mock data:", err);
-        setError("Failed to load mock leaderboard data");
-      } finally {
-        setLoading(false);
-      }
-      return;
-    }
-  }, [hydrated, useMockData]);
-  // ================================================================
-
-  useEffect(() => {
-    if (!hydrated) return;
-    
-    // ===== SKIP REAL API WHEN USING MOCK DATA =====
-    if (useMockData) return;
-    // ===============================================
-    
     let cancelled = false;
     if (!jwt) {
       setLeaderboard([]); // clear data
@@ -213,16 +160,11 @@ export default function StudentLeaderboard() {
       hasRedirected.current = false;
       hasTriedRefresh.current = false;
     };
-  }, [jwt, setJwt, router, hydrated, useMockData]);
+  }, [jwt, setJwt, router, hydrated]);
 
   if (!hydrated) {
     return null; // or a loading spinner
   }
-
-  // ===== PAGINATION LOGIC - REMOVE WHEN INTEGRATING REAL API =====
-  const paginatedResult = externalPaginateData(leaderboard || [], currentPage, itemsPerPage);
-  const displayData = paginatedResult.data;
-  // ================================================================
 
   return (
     <div style={{ maxWidth: 1000, margin: "40px auto" }}>
@@ -326,7 +268,7 @@ export default function StudentLeaderboard() {
                 </td>
               </tr>
             ) : (
-              displayData.map((entry: LeaderboardEntry) => (
+              leaderboard.map((entry) => (
                 <tr
                   key={entry.userName}
                   style={{
@@ -445,96 +387,6 @@ export default function StudentLeaderboard() {
           </tbody>
         </table>
       </div>
-      
-      {/* Pagination UI */}
-      {useMockData && leaderboard.length > itemsPerPage && (
-        <div style={{ 
-          display: "flex", 
-          justifyContent: "center", 
-          alignItems: "center", 
-          gap: "16px", 
-          marginTop: "24px",
-          flexWrap: "wrap"
-        }}>
-          <button
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            disabled={!paginatedResult.hasPreviousPage}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: paginatedResult.hasPreviousPage ? "#004AAD" : "#ccc",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              cursor: paginatedResult.hasPreviousPage ? "pointer" : "not-allowed",
-              fontSize: "14px",
-              fontWeight: "500"
-            }}
-          >
-            Previous
-          </button>
-          
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            {Array.from({ length: Math.min(7, paginatedResult.totalPages) }, (_, i) => {
-              let pageNum;
-              if (paginatedResult.totalPages <= 7) {
-                pageNum = i + 1;
-              } else if (currentPage <= 4) {
-                pageNum = i + 1;
-              } else if (currentPage >= paginatedResult.totalPages - 3) {
-                pageNum = paginatedResult.totalPages - 6 + i;
-              } else {
-                pageNum = currentPage - 3 + i;
-              }
-              
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => setCurrentPage(pageNum)}
-                  style={{
-                    padding: "8px 12px",
-                    backgroundColor: currentPage === pageNum ? "#004AAD" : "white",
-                    color: currentPage === pageNum ? "white" : "#004AAD",
-                    border: "1px solid #004AAD",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    minWidth: "40px"
-                  }}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
-          </div>
-          
-          <button
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, paginatedResult.totalPages))}
-            disabled={!paginatedResult.hasNextPage}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: paginatedResult.hasNextPage ? "#004AAD" : "#ccc",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              cursor: paginatedResult.hasNextPage ? "pointer" : "not-allowed",
-              fontSize: "14px",
-              fontWeight: "500"
-            }}
-          >
-            Next
-          </button>
-          
-          <div style={{ 
-            fontSize: "14px", 
-            color: "#666",
-            marginLeft: "16px"
-          }}>
-            Page {currentPage} of {paginatedResult.totalPages} 
-            ({paginatedResult.totalItems} total students)
-          </div>
-        </div>
-      )}
     </div>
   );
 }

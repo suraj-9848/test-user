@@ -1,8 +1,5 @@
 import { FAQItem, Testimonial } from "../types";
 
-// Export leaderboard data for reuse across projects
-export { mockLeaderboardData, paginateData, type LeaderboardEntry } from "./leaderboard";
-
 export const faqs: FAQItem[] = [
   {
     question: "What is an LMS?",
