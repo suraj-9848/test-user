@@ -131,7 +131,7 @@ export default function ResultsPage() {
                   : undefined,
                 questionsTotal,
                 questionsCorrect,
-                attempted: submission.status === "FULLY_EVALUATED",
+                attempted: submission.status === "FULLY_EVALUATED" || submission.status === "SUBMITTED",
                 responses: submission.responses,
               });
             });
@@ -141,7 +141,10 @@ export default function ResultsPage() {
         }
 
         const completedTests = allResults.filter(
-          (test) => test.status === "FULLY_EVALUATED" || test.attempted
+          (test) => 
+            test.status === "FULLY_EVALUATED" || 
+            test.status === "SUBMITTED" || 
+            test.attempted
         );
         setResults(completedTests);
       } catch (err: unknown) {
