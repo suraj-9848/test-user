@@ -2,13 +2,14 @@
 import React from "react";
 import { Search, Filter, Grid3X3, List } from "lucide-react";
 
+import { Course } from "../../types/index";
+
 interface CourseFiltersProps {
   searchTerm: string;
   onSearchChange: (term: string) => void;
-  selectedCategory: string;
-  onCategoryChange: (category: string) => void;
-  selectedLevel: string;
-  onLevelChange: (level: string) => void;
+  selectedTags: string[];
+  onTagsChange: (tags: string[]) => void;
+  tags: string[];
   selectedPriceRange: string;
   onPriceRangeChange: (range: string) => void;
   viewMode: "grid" | "list";
@@ -18,46 +19,40 @@ interface CourseFiltersProps {
   totalCourses: number;
 }
 
-export default function CourseFilters({
-  searchTerm,
-  onSearchChange,
-  selectedCategory,
-  onCategoryChange,
-  selectedLevel,
-  onLevelChange,
-  selectedPriceRange,
-  onPriceRangeChange,
-  viewMode,
-  onViewModeChange,
-  sortBy,
-  onSortChange,
-  totalCourses,
-}: CourseFiltersProps) {
-  const categories = [
-    "All Categories",
-    "Web Development",
-    "Data Science",
-    "Mobile Development",
-    "Cloud Computing",
-    "Cybersecurity",
-    "AI/ML",
-    "DevOps",
-    "UI/UX Design",
-  ];
+export default function CourseFilters(props: CourseFiltersProps) {
+  const {
+    searchTerm,
+    onSearchChange,
+    selectedTags,
+    onTagsChange,
+    tags,
+    selectedPriceRange,
+    onPriceRangeChange,
+    viewMode,
+    onViewModeChange,
+    sortBy,
+    onSortChange,
+    totalCourses,
+  } = props;
 
-  const levels = ["All Levels", "Beginner", "Intermediate", "Advanced"];
   const priceRanges = [
     "All Prices",
     "Free",
     "₹0-₹2,000",
-    "₹2,000-₹5,000",
-    "₹5,000+",
+    "₹2,001-₹10,000",
+    "₹10,001-₹20,000",
+    "₹20,000+",
   ];
   const sortOptions = [
     { value: "Select Filter", label: "Sorting Options" },
     { value: "price-low", label: "Price: Low to High" },
     { value: "price-high", label: "Price: High to Low" },
   ];
+
+  // Show more/less state for tags
+  const [showAllTags, setShowAllTags] = React.useState(false);
+  const TAGS_TO_SHOW = 8;
+  const visibleTags = showAllTags ? tags : tags.slice(0, TAGS_TO_SHOW);
 
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 mb-6">
@@ -82,41 +77,46 @@ export default function CourseFilters({
       </div>
 
       {/* Filters Grid */}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4 mb-4">
-        {/* Category Filter */}
+        {/* Tags Filter */}
         <div className="lg:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Category
+            Tags
           </label>
-          <select
-            value={selectedCategory}
-            onChange={(e) => onCategoryChange(e.target.value)}
-            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
-          >
-            {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
+          <div className="flex flex-wrap gap-2">
+            {visibleTags.map((tag) => (
+              <label
+                key={tag}
+                className="flex items-center gap-1 text-xs bg-gray-100 px-2 py-1 rounded cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedTags.includes(tag)}
+                  onChange={() => {
+                    if (selectedTags.includes(tag)) {
+                      onTagsChange(selectedTags.filter((t) => t !== tag));
+                    } else {
+                      onTagsChange([...selectedTags, tag]);
+                    }
+                  }}
+                  className="accent-blue-500"
+                />
+                {tag}
+              </label>
             ))}
-          </select>
-        </div>
-
-        {/* Level Filter */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Level
-          </label>
-          <select
-            value={selectedLevel}
-            onChange={(e) => onLevelChange(e.target.value)}
-            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
-          >
-            {levels.map((level) => (
-              <option key={level} value={level}>
-                {level}
-              </option>
-            ))}
-          </select>
+            {tags.length > TAGS_TO_SHOW && (
+              <button
+                type="button"
+                className="text-xs text-blue-600 underline ml-2"
+                onClick={() => setShowAllTags((prev) => !prev)}
+              >
+                {showAllTags
+                  ? "Show less"
+                  : `Show more (${tags.length - TAGS_TO_SHOW})`}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Price Range Filter */}

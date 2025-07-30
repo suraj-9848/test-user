@@ -27,26 +27,29 @@ declare module "next-auth" {
 }
 
 export interface Course {
+  uuid: string;
   id: string;
   title: string;
   description: string;
-  instructor: string;
-  instructorImage: string;
+  overview: string;
+  trainer: {
+    name: string;
+    bio: string;
+    avatar: string;
+    linkedin: string;
+  };
   price: number;
-  originalPrice?: number;
   duration: string;
-  level: "Beginner" | "Intermediate" | "Advanced";
-  category: string;
-  rating: number;
-  studentsEnrolled: number;
   image: string;
+  lastUpdated: string;
+  tags: string[];
+  startDate: string;
+  endDate: string;
+  mode: "online" | "offline";
   features: string[];
   curriculum: string[];
   prerequisites: string[];
-  certificateProvided: boolean;
-  language: string;
-  lastUpdated: string;
-  tags: string[];
+  whatYouWillLearn: string[];
 }
 
 export interface EnrollmentData {

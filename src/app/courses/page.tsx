@@ -1,6 +1,14 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import { Star, Users, BookOpen, X, TrendingUp, Award, Router } from "lucide-react";
+import {
+  Star,
+  Users,
+  BookOpen,
+  X,
+  TrendingUp,
+  Award,
+  Router,
+} from "lucide-react";
 import { courses } from "../../../sample_data/course";
 import { Course } from "../../../types/index";
 import CourseCard from "@/components/CourseCard";
@@ -12,11 +20,10 @@ import { useRouter } from "next/navigation";
 export default function CoursesPage() {
   const [filteredCourses, setFilteredCourses] = useState<Course[]>(courses);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All Categories");
-  const [selectedLevel, setSelectedLevel] = useState("All Levels");
   const [selectedDuration, setSelectedDuration] = useState("All Durations");
   const [selectedPrice, setSelectedPrice] = useState("All Prices");
   const [sortBy, setSortBy] = useState("popularity");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showEnrollment, setShowEnrollment] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -39,21 +46,16 @@ export default function CoursesPage() {
               .toLowerCase()
               .includes(searchTerm.toLowerCase()) ||
             course.tags.some((tag) =>
-              tag.toLowerCase().includes(searchTerm.toLowerCase()),
-            ),
+              tag.toLowerCase().includes(searchTerm.toLowerCase())
+            )
         );
       }
 
-      // Category filter
-      if (selectedCategory !== "All Categories") {
-        filtered = filtered.filter(
-          (course) => course.category === selectedCategory,
+      // Tag filters
+      if (selectedTags.length > 0) {
+        filtered = filtered.filter((course) =>
+          selectedTags.every((tag) => course.tags.includes(tag))
         );
-      }
-
-      // Level filter
-      if (selectedLevel !== "All Levels") {
-        filtered = filtered.filter((course) => course.level === selectedLevel);
       }
 
       // Duration filter
@@ -79,8 +81,10 @@ export default function CoursesPage() {
           switch (selectedPrice) {
             case "Free":
               return course.price === 0;
-            case "₹1-₹10,000":
-              return course.price > 0 && course.price <= 10000;
+            case "₹0-₹2,000":
+              return course.price > 0 && course.price <= 2000;
+            case "₹2,001-₹10,000":
+              return course.price > 2000 && course.price <= 10000;
             case "₹10,001-₹20,000":
               return course.price > 10000 && course.price <= 20000;
             case "₹20,000+":
@@ -95,14 +99,14 @@ export default function CoursesPage() {
       switch (activeTab) {
         case "trending":
           filtered = filtered.filter(
-            (course) => course.studentsEnrolled > 1000,
+            (course) => course.studentsEnrolled > 1000
           );
           break;
         case "new":
           const thirtyDaysAgo = new Date();
           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
           filtered = filtered.filter(
-            (course) => new Date(course.lastUpdated) > thirtyDaysAgo,
+            (course) => new Date(course.lastUpdated) > thirtyDaysAgo
           );
           break;
       }
@@ -111,10 +115,8 @@ export default function CoursesPage() {
       switch (sortBy) {
         case "popularity":
           return filtered.sort(
-            (a, b) => b.studentsEnrolled - a.studentsEnrolled,
+            (a, b) => b.studentsEnrolled - a.studentsEnrolled
           );
-        case "rating":
-          return filtered.sort((a, b) => b.rating - a.rating);
         case "price-low":
           return filtered.sort((a, b) => a.price - b.price);
         case "price-high":
@@ -123,7 +125,7 @@ export default function CoursesPage() {
           return filtered.sort(
             (a, b) =>
               new Date(b.lastUpdated).getTime() -
-              new Date(a.lastUpdated).getTime(),
+              new Date(a.lastUpdated).getTime()
           );
         default:
           return filtered;
@@ -131,13 +133,12 @@ export default function CoursesPage() {
     },
     [
       searchTerm,
-      selectedCategory,
-      selectedLevel,
       selectedDuration,
       selectedPrice,
       sortBy,
       activeTab,
-    ],
+      selectedTags,
+    ]
   );
 
   useEffect(() => {
@@ -145,14 +146,13 @@ export default function CoursesPage() {
   }, [filterCourses]);
 
   const handleEnrollClick = (course: Course) => {
-    setSelectedCourse(course);
-    setShowEnrollment(true);
+    // Navigate to course details page using uuid
+    router.push(`/courses/${course.uuid}`);
   };
 
   const clearFilters = () => {
     setSearchTerm("");
-    setSelectedCategory("All Categories");
-    setSelectedLevel("All Levels");
+    setSelectedTags([]);
     setSelectedDuration("All Durations");
     setSelectedPrice("All Prices");
     setSortBy("popularity");
@@ -190,7 +190,9 @@ export default function CoursesPage() {
                 className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-full px-3 py-2"
               >
                 <stat.icon
-                  className={`w-4 h-4 sm:w-5 sm:h-5 text-blue-600 ${stat.className || ""}`}
+                  className={`w-4 h-4 sm:w-5 sm:h-5 text-blue-600 ${
+                    stat.className || ""
+                  }`}
                 />
                 <span className="text-xs sm:text-sm font-medium text-blue-800">
                   {stat.text}
@@ -199,7 +201,10 @@ export default function CoursesPage() {
             ))}
           </div>
 
-          <button onClick={() => router.push("/sign-in")} className="px-6 py-2 sm:px-8 sm:py-3 bg-blue-600 text-white rounded-xl font-bold text-base sm:text-lg hover:bg-blue-700 transition-all transform hover:scale-105 shadow-lg">
+          <button
+            onClick={() => router.push("/sign-in")}
+            className="px-6 py-2 sm:px-8 sm:py-3 bg-blue-600 text-white rounded-xl font-bold text-base sm:text-lg hover:bg-blue-700 transition-all transform hover:scale-105 shadow-lg"
+          >
             Start Learning Today
           </button>
         </div>
@@ -208,21 +213,30 @@ export default function CoursesPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <CourseStats />
 
-        <CourseFilters
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
-          selectedLevel={selectedLevel}
-          onLevelChange={setSelectedLevel}
-          selectedPriceRange={selectedPrice}
-          onPriceRangeChange={setSelectedPrice}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          totalCourses={filteredCourses.length}
-        />
+        {/* Derive all unique tags from courses */}
+        {(() => {
+          const tagSet = new Set<string>();
+          courses.forEach((course) =>
+            (course.tags || []).forEach((tag) => tagSet.add(tag))
+          );
+          const tags = Array.from(tagSet).sort();
+          return (
+            <CourseFilters
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              selectedTags={selectedTags}
+              onTagsChange={setSelectedTags}
+              tags={tags}
+              selectedPriceRange={selectedPrice}
+              onPriceRangeChange={setSelectedPrice}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              totalCourses={filteredCourses.length}
+            />
+          );
+        })()}
 
         {/* Course Tabs */}
         <div className="mb-6 border-b border-gray-200">
@@ -241,9 +255,7 @@ export default function CoursesPage() {
             ].map((tab) => (
               <button
                 key={tab.key}
-                onClick={() =>
-                  setActiveTab(tab.key as "all" | "trending" | "new")
-                }
+                onClick={() => setActiveTab(tab.key as "all" | "trending")}
                 className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
                   activeTab === tab.key
                     ? "border-blue-500 text-blue-600"
@@ -252,7 +264,7 @@ export default function CoursesPage() {
               >
                 {tab.icon}
                 {tab.label}
-                {tab.count && (
+                {typeof tab.count === "number" && (
                   <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
                     {tab.count}
                   </span>
@@ -264,8 +276,7 @@ export default function CoursesPage() {
 
         {/* Active Filters */}
         {(searchTerm ||
-          selectedCategory !== "All Categories" ||
-          selectedLevel !== "All Levels" ||
+          selectedTags.length > 0 ||
           selectedPrice !== "All Prices") && (
           <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
             <div className="flex flex-wrap gap-2 mb-3">
@@ -280,22 +291,21 @@ export default function CoursesPage() {
                   </button>
                 </span>
               )}
-              {selectedCategory !== "All Categories" && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
-                  {selectedCategory}
-                  <button onClick={() => setSelectedCategory("All Categories")}>
+              {selectedTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
+                >
+                  {tag}
+                  <button
+                    onClick={() =>
+                      setSelectedTags(selectedTags.filter((t) => t !== tag))
+                    }
+                  >
                     <X className="w-3 h-3" />
                   </button>
                 </span>
-              )}
-              {selectedLevel !== "All Levels" && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
-                  {selectedLevel}
-                  <button onClick={() => setSelectedLevel("All Levels")}>
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
+              ))}
               {selectedPrice !== "All Prices" && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
                   {selectedPrice}
@@ -313,34 +323,6 @@ export default function CoursesPage() {
             </button>
           </div>
         )}
-
-        {/* Results Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <div>
-            <h3 className="text-lg sm:text-xl font-bold text-gray-900">
-              {filteredCourses.length} Course
-              {filteredCourses.length !== 1 ? "s" : ""} Found
-            </h3>
-            <p className="text-gray-600 text-sm mt-1">
-              {activeTab === "trending" && "Most popular courses"}
-              {activeTab === "new" && "Latest course releases"}
-              {activeTab === "all" && "All available courses"}
-              {searchTerm && ` matching "${searchTerm}"`}
-            </p>
-          </div>
-          <div className="flex gap-4 mt-4 sm:mt-0">
-            <div className="text-center">
-              <p className="text-sm text-gray-500">Avg Rating</p>
-              <p className="font-bold text-gray-900">4.7</p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-gray-500">Free Courses</p>
-              <p className="font-bold text-gray-900">
-                {filteredCourses.filter((c) => c.price === 0).length}
-              </p>
-            </div>
-          </div>
-        </div>
 
         <div
           className={
@@ -397,16 +379,7 @@ export default function CoursesPage() {
           </div>
         )}
 
-        {showEnrollment && selectedCourse && (
-          <EnrollmentModal
-            course={selectedCourse}
-            isOpen={showEnrollment}
-            onClose={() => {
-              setShowEnrollment(false);
-              setSelectedCourse(null);
-            }}
-          />
-        )}
+        {/* EnrollmentModal removed: navigation is now used for enroll */}
       </div>
     </div>
   );
