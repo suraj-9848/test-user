@@ -25,16 +25,32 @@ export const JWTProvider = ({ children }: { children: React.ReactNode }) => {
 
   // When JWT changes, update localStorage
   const setJwt = (token: string | null) => {
-    console.debug("[JWTContext] setJwt called with:", token);
+    console.debug("[JWTContext] setJwt called with:", token ? "Token present" : "Token cleared");
     setJwtState(token);
     if (typeof window !== "undefined") {
       if (token) {
         localStorage.setItem("jwt", token);
       } else {
         localStorage.removeItem("jwt");
+        // Also clear admin tokens if present
+        sessionStorage.removeItem("adminToken");
+        sessionStorage.removeItem("adminUser");
       }
     }
   };
+
+  // Make setJwt globally accessible for token refresh
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      (window as any).updateJWTContext = setJwt;
+    }
+    
+    return () => {
+      if (typeof window !== "undefined") {
+        delete (window as any).updateJWTContext;
+      }
+    };
+  }, [setJwt]);
 
   return (
     <JWTContext.Provider value={{ jwt, setJwt }}>
@@ -42,3 +58,4 @@ export const JWTProvider = ({ children }: { children: React.ReactNode }) => {
     </JWTContext.Provider>
   );
 };
+

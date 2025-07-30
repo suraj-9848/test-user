@@ -88,56 +88,65 @@ const transformQuestions = (questions: any[]): any[] => {
   });
 };
 
-// Simple API Service
+// Import enhanced API client with automatic token refresh
+const getEnhancedApiClient = async () => {
+  // Dynamically import to avoid SSR issues
+  const { apiClient } = await import('@/utils/apiClient');
+  return apiClient;
+};
+
+// Enhanced API Service with automatic token refresh
 export const apiService = {
-  // Get available tests
+  // Get available tests with automatic token refresh
   getAvailableTests: async (): Promise<{ tests: any[] }> => {
-    const token = getAuthToken();
-    const response = await fetch(`${BASE_URL}/api/student/tests`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
+    try {
+      console.log("🔄 Fetching available tests with enhanced API client...");
+      const apiClient = await getEnhancedApiClient();
+      const response = await apiClient('/api/student/tests');
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("API Error response:", errorText);
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ API Error response:", errorText);
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log("✅ Raw API response:", data);
+      return { tests: data.data?.tests || [] };
+    } catch (error) {
+      console.error("❌ Error in getAvailableTests:", error);
+      throw error;
     }
-
-    const data = await response.json();
-    console.log("Raw API response:", data);
-    return { tests: data.data.tests || [] };
   },
 
-  // Get test details
+  // Get test details with automatic token refresh
   getTestDetails: async (testId: string): Promise<{ test: any }> => {
-    const token = getAuthToken();
-    const response = await fetch(`${BASE_URL}/api/student/tests/${testId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
+    try {
+      console.log(`🔄 Fetching test details for ${testId} with enhanced API client...`);
+      const apiClient = await getEnhancedApiClient();
+      const response = await apiClient(`/api/student/tests/${testId}`);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("API Error response:", errorText);
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ API Error response:", errorText);
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log("✅ Test details response:", data);
+
+      // Transform questions to frontend format
+      const transformedTest = {
+        ...data.data.test,
+        questions: transformQuestions(data.data.test.questions || []),
+      };
+
+      console.log("✅ Transformed test:", transformedTest);
+      return { test: transformedTest };
+    } catch (error) {
+      console.error("❌ Error in getTestDetails:", error);
+      throw error;
     }
-
-    const data = await response.json();
-    console.log("Test details response:", data);
-
-    // Transform questions to frontend format
-    const transformedTest = {
-      ...data.data.test,
-      questions: transformQuestions(data.data.test.questions || []),
-    };
-
-    console.log("Transformed test:", transformedTest);
-    return { test: transformedTest };
   },
 
   // Submit test - FIXED: Use testId instead of attemptId

@@ -12,19 +12,12 @@ const storeJWT = (token: string): void => {
   localStorage.setItem('jwt', token);
 };
 
-// Helper function to get refresh token from cookies
-const getRefreshTokenFromCookies = (): string | null => {
-  if (typeof window === 'undefined') return null;
-  
-  // Parse cookies manually
-  const cookies = document.cookie.split(';');
-  for (let cookie of cookies) {
-    const [name, value] = cookie.trim().split('=');
-    if (name === 'refreshToken') {
-      return decodeURIComponent(value);
-    }
-  }
-  return null;
+// Note: Refresh tokens are httpOnly cookies and cannot be accessed via JavaScript
+// This is by design for security. The browser will automatically send them with requests.
+const canAccessRefreshToken = (): boolean => {
+  // We can't directly access httpOnly cookies, but we can check if a request
+  // with credentials: 'include' to the refresh endpoint works
+  return typeof window !== 'undefined';
 };
 
 // Helper function to clear tokens and redirect to login
@@ -66,44 +59,55 @@ const isJWTExpired = (token: string): boolean => {
   }
 };
 
-// Helper function to attempt token refresh using refresh token
+// Helper function to attempt token refresh using httpOnly refresh token cookie
 const attemptRefreshToken = async (): Promise<string | null> => {
   try {
-    console.log('🔄 Attempting to refresh token using refresh token...');
+    console.log('🔄 Attempting to refresh token using httpOnly refresh token cookie...');
     
-    // Get refresh token from cookies
-    const refreshToken = getRefreshTokenFromCookies();
-    
-    if (!refreshToken) {
-      console.log('❌ No refresh token found in cookies');
+    // Check if we can potentially access refresh token (browser environment)
+    if (!canAccessRefreshToken()) {
+      console.log('❌ Cannot attempt refresh token in server environment');
       return null;
     }
     
-    // Call refresh endpoint
+    // Call refresh endpoint - browser will automatically send httpOnly cookies
     const response = await fetch(`${BACKEND_BASE_URL}/api/auth/refresh`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      credentials: 'include', // Include cookies
-      body: JSON.stringify({ refreshToken }),
+      credentials: 'include', // Critical: Include httpOnly cookies automatically
     });
     
     if (response.ok) {
       const data = await response.json();
       
       if (data.token) {
-        console.log('✅ Token refreshed successfully using refresh token');
+        console.log('✅ Token refreshed successfully using httpOnly refresh token');
         storeJWT(data.token);
+        
+        // Update JWT context if available
+        if (typeof window !== 'undefined' && (window as any).updateJWTContext) {
+          (window as any).updateJWTContext(data.token);
+        }
+        
         return data.token;
+      } else {
+        console.log('❌ Refresh response missing token field');
+        return null;
       }
     } else {
-      console.log('❌ Refresh token request failed:', response.status, response.statusText);
+      console.log(`❌ Refresh token request failed: ${response.status} ${response.statusText}`);
       const errorData = await response.json().catch(() => ({}));
       console.log('Refresh error details:', errorData);
+      
+      // If it's a 401, the refresh token is invalid/expired
+      if (response.status === 401) {
+        console.log('🔄 Refresh token expired or invalid');
+      }
+      
+      return null;
     }
-    
-    return null;
   } catch (error) {
     console.error('❌ Refresh token request error:', error);
     return null;
