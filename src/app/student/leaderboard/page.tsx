@@ -1,391 +1,267 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useJWT } from "@/context/JWTContext";
-import { useRouter } from "next/navigation";
-// No need to import clearJwtEverywhere, we'll handle auth differently
-
-const BACKEND_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
+import { apiGet } from "@/utils/axiosInterceptor";
+import { API_ENDPOINTS } from "@/config/urls";
 
 interface LeaderboardEntry {
+  id: string;
   userName: string;
-  totalScore: number;
+  score: number;
   percentage: number;
-  courseName: string;
-  totalMaxMarks: number;
-  rank: number;
+  rank?: number;
 }
 
-// interface LeaderboardResponse {
-//   data: LeaderboardEntry[];
-// }
-
 export default function StudentLeaderboard() {
-  const { jwt, setJwt } = useJWT();
-  const router = useRouter();
+  const { jwt } = useJWT();
+  const [hydrated, setHydrated] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [hydrated, setHydrated] = useState(false);
-  const hasRedirected = useRef(false);
-  const hasTriedRefresh = useRef(false);
+  const [error, setError] = useState("");
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Helper to clear JWT from all storage
-  const clearJwtEverywhere = () => {
-    setJwt(null);
-    try {
-      localStorage.removeItem("jwt"); // In case your context uses this
-    } catch {}
-    // If you use cookies for JWT, clear them here as well
-    // document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-  };
-
-  // Sync JWT from localStorage on tab focus or storage change, and set hydrated
+  // Hydration effect
   useEffect(() => {
-    const syncJwtFromStorage = () => {
-      const storedJwt = localStorage.getItem("jwt");
-      if (storedJwt && storedJwt !== jwt) {
-        setJwt(storedJwt);
-      } else if (!storedJwt && jwt) {
-        setJwt(null);
-      }
-      setHydrated(true);
-      console.log("[Leaderboard] Hydrated, JWT:", storedJwt);
-    };
-    syncJwtFromStorage(); // run on mount
-    window.addEventListener("storage", syncJwtFromStorage);
-    window.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") {
-        syncJwtFromStorage();
-      }
-    });
-    return () => {
-      window.removeEventListener("storage", syncJwtFromStorage);
-      window.removeEventListener("visibilitychange", syncJwtFromStorage);
-    };
-  }, [jwt, setJwt]);
+    setHydrated(true);
+  }, []);
 
+  // Fetch leaderboard data
   useEffect(() => {
     if (!hydrated) return;
-    let cancelled = false;
+    
+    // Cancel any previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
     if (!jwt) {
-      setLeaderboard([]); // clear data
+      setLeaderboard([]);
       setLoading(false);
       setError("You must be signed in to view the leaderboard.");
       console.log("[Leaderboard] No JWT, not authenticated");
       return;
     }
+
     const fetchLeaderboard = async () => {
       try {
         setLoading(true);
         setError("");
-        const response = await fetch(
-          `${BACKEND_BASE_URL}/api/student/tests/leaderboard`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${jwt}`,
-              "Content-Type": "application/json",
-            },
-          },
-        );
-        console.log("[Leaderboard] Response status:", response.status);
-        if (response.status === 304) {
-          // Not Modified: do not update leaderboard, just stop loading
-          setLoading(false);
+        
+        console.log("[Leaderboard] Fetching data...");
+        
+        const response = await apiGet(API_ENDPOINTS.STUDENT.LEADERBOARD, {
+          signal // Pass abort signal for cancellation
+        });
+
+        // Check if request was cancelled
+        if (signal.aborted) {
+          console.log("[Leaderboard] Request was cancelled");
           return;
         }
-        if (response.status === 401) {
-          if (!hasTriedRefresh.current) {
-            hasTriedRefresh.current = true;
-            const refreshRes = await fetch("/api/auth/refresh", {
-              method: "POST",
-              credentials: "include",
-            });
-            if (refreshRes.ok) {
-              const { token: newToken } = await refreshRes.json();
-              if (newToken) {
-                setJwt(newToken);
-                localStorage.setItem("jwt", newToken);
-                await fetchLeaderboard();
-                return;
-              }
-            }
-          }
-          // If refresh fails, clear and hard redirect
-          clearJwtEverywhere();
-          hasTriedRefresh.current = false;
-          setError("Session expired. Please sign in again.");
-          setTimeout(() => {
-            if (
-              window.location.pathname !== "/sign-in" &&
-              window.location.pathname !== "/student/leaderboard"
-            ) {
-              window.location.replace("/sign-in");
-            }
-          }, 1200); // Show error for 1.2s before redirect
+
+        console.log("[Leaderboard] Response received:", response);
+
+        if (!response || !response.data) {
+          throw new Error("No data received from server");
+        }
+
+        const apiData = response.data || [];
+        
+        // Handle empty leaderboard
+        if (apiData.length === 0) {
+          console.log("[Leaderboard] No leaderboard data available");
+          setLeaderboard([]);
           return;
         }
-        if (!response.ok) throw new Error("Failed to fetch leaderboard");
-        const data = await response.json();
-        if (cancelled) return;
-        console.log("[Leaderboard] Data received:", data);
-        const apiData = data.data || [];
+        
+        // Sort by score/percentage
         const sortedData = apiData.sort(
           (a: LeaderboardEntry, b: LeaderboardEntry) =>
-            b.percentage - a.percentage,
+            b.percentage - a.percentage || b.score - a.score
         );
+
+        // Add rank to each entry
         const dataWithRanks = sortedData.map(
           (entry: LeaderboardEntry, index: number) => ({
             ...entry,
             rank: index + 1,
-          }),
+          })
         );
-        setLeaderboard(dataWithRanks);
-      } catch (err: unknown) {
-        console.error("Error fetching leaderboard:", err);
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to load leaderboard";
-        setError(errorMessage);
 
-        // Error handling without clearJwtEverywhere call
+        setLeaderboard(dataWithRanks);
+        console.log("[Leaderboard] Data processed successfully:", dataWithRanks);
+
+      } catch (err) {
+        // Don't show error if request was cancelled
+        if (signal.aborted) return;
+        
+        console.error("Error fetching leaderboard:", err);
+        const errorMessage = err instanceof Error ? err.message : "Failed to load leaderboard";
+        setError(errorMessage);
       } finally {
-        setLoading(false);
+        if (!signal.aborted) {
+          setLoading(false);
+        }
       }
     };
-    fetchLeaderboard();
-    return () => {
-      cancelled = true;
-      hasRedirected.current = false;
-      hasTriedRefresh.current = false;
-    };
-  }, [jwt, setJwt, router, hydrated]);
 
+    fetchLeaderboard();
+
+    // Cleanup function to cancel request if component unmounts
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [jwt, hydrated]);
+
+  // Show loading state during hydration
   if (!hydrated) {
-    return null; // or a loading spinner
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div style={{ maxWidth: 1000, margin: "40px auto" }}>
-      <h2
-        style={{
-          textAlign: "center",
-          fontWeight: 700,
-          fontSize: 32,
-          color: "#004AAD",
-          marginBottom: 12,
-        }}
-      >
-        Leaderboard
-      </h2>
-      <p
-        style={{
-          textAlign: "center",
-          marginBottom: 24,
-          color: "#555",
-          fontSize: 18,
-        }}
-      >
-        Celebrate the top performers! Keep learning and climb the ranks.
-      </p>
-      <div
-        style={{
-          overflowX: "auto",
-          borderRadius: 12,
-          boxShadow: "0 4px 24px 0 rgba(0,74,173,0.08)",
-        }}
-      >
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            background: "#fff",
-          }}
-        >
-          <thead>
-            <tr style={{ background: "#f0f6ff" }}>
-              <th
-                style={{
-                  padding: 12,
-                  fontWeight: 700,
-                  textAlign: "center",
-                }}
-              >
-                Rank
-              </th>
-              <th style={{ padding: 12, fontWeight: 700 }}>Student</th>
-              <th style={{ padding: 12, fontWeight: 700 }}>Course</th>
-              <th
-                style={{
-                  padding: 12,
-                  fontWeight: 700,
-                  textAlign: "center",
-                }}
-              >
-                Score
-              </th>
-              <th
-                style={{
-                  padding: 12,
-                  fontWeight: 700,
-                  textAlign: "center",
-                }}
-              >
-                Max Marks
-              </th>
-              <th
-                style={{
-                  padding: 12,
-                  fontWeight: 700,
-                  textAlign: "center",
-                }}
-              >
-                Percentage
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={6} style={{ textAlign: "center", padding: 32 }}>
-                  <span>Loading...</span>
-                </td>
-              </tr>
-            ) : error ? (
-              <tr>
-                <td
-                  colSpan={6}
-                  style={{ textAlign: "center", color: "red", padding: 32 }}
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">
+            🏆 Leaderboard
+          </h1>
+          <p className="mt-2 text-gray-600">
+            See how you rank among all students based on test performance
+          </p>
+        </div>
+
+        {/* Content */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-2 text-gray-600">Loading leaderboard...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="text-red-500 mb-2">⚠️</div>
+                <p className="text-red-600 font-medium">Error loading leaderboard</p>
+                <p className="text-sm text-gray-500 mt-1">{error}</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  {error}
-                </td>
-              </tr>
-            ) : leaderboard.length === 0 ? (
-              <tr>
-                <td colSpan={6} style={{ textAlign: "center", padding: 32 }}>
-                  No leaderboard data available.
-                </td>
-              </tr>
-            ) : (
-              leaderboard.map((entry) => (
-                <tr
-                  key={entry.userName}
-                  style={{
-                    background:
-                      entry.rank === 1
-                        ? "#fffbe6"
-                        : entry.rank === 2
-                          ? "#f0f6ff"
-                          : entry.rank === 3
-                            ? "#f9f5ff"
-                            : "inherit",
-                    fontWeight: entry.rank <= 3 ? 600 : 400,
-                  }}
-                >
-                  <td style={{ textAlign: "center", padding: 12 }}>
-                    {entry.rank <= 3 ? (
-                      <span
-                        style={{
-                          display: "inline-block",
-                          minWidth: 36,
-                          padding: "4px 12px",
-                          borderRadius: 16,
-                          background:
-                            entry.rank === 1
-                              ? "#FFD700"
-                              : entry.rank === 2
-                                ? "#C0C0C0"
-                                : "#CD7F32",
-                          color: "#222",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {entry.rank}
-                      </span>
-                    ) : (
-                      entry.rank
-                    )}
-                  </td>
-                  <td style={{ padding: 12 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                      }}
+                  Try Again
+                </button>
+              </div>
+            </div>
+          ) : leaderboard.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="text-gray-400 mb-2">📊</div>
+                <p className="text-gray-600">No leaderboard data available.</p>
+                <p className="text-sm text-gray-500 mt-1">Complete some tests to see rankings!</p>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Rank
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Student
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Score
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Percentage
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {leaderboard.map((entry) => (
+                    <tr
+                      key={entry.id}
+                      className="hover:bg-gray-50 transition-colors"
                     >
-                      <div
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: "50%",
-                          background: "#e3e8f0",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontWeight: 700,
-                          fontSize: 18,
-                          border:
-                            entry.rank <= 3 ? "2px solid #004AAD" : undefined,
-                          color: "#004AAD",
-                        }}
-                      >
-                        {entry.userName[0]}
-                      </div>
-                      <span
-                        style={{
-                          fontWeight: entry.rank <= 3 ? 600 : 400,
-                        }}
-                      >
-                        {entry.userName}
-                      </span>
-                    </div>
-                  </td>
-                  <td style={{ padding: 12 }}>{entry.courseName}</td>
-                  <td
-                    style={{
-                      textAlign: "center",
-                      padding: 12,
-                      fontWeight: 600,
-                      color: "#004AAD",
-                    }}
-                  >
-                    {entry.totalScore}
-                  </td>
-                  <td style={{ textAlign: "center", padding: 12 }}>
-                    {entry.totalMaxMarks}
-                  </td>
-                  <td style={{ textAlign: "center", padding: 12 }}>
-                    <span
-                      style={{
-                        display: "inline-block",
-                        minWidth: 60,
-                        padding: "4px 10px",
-                        borderRadius: 16,
-                        background:
-                          entry.percentage >= 80
-                            ? "#d1fae5"
-                            : entry.percentage >= 50
-                              ? "#fef9c3"
-                              : "#f3f4f6",
-                        color:
-                          entry.percentage >= 80
-                            ? "#059669"
-                            : entry.percentage >= 50
-                              ? "#b45309"
-                              : "#374151",
-                        fontWeight: 600,
-                      }}
-                    >
-                      {entry.percentage.toFixed(2)}%
-                    </span>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          {entry.rank === 1 && (
+                            <span className="text-2xl mr-2">🥇</span>
+                          )}
+                          {entry.rank === 2 && (
+                            <span className="text-2xl mr-2">🥈</span>
+                          )}
+                          {entry.rank === 3 && (
+                            <span className="text-2xl mr-2">🥉</span>
+                          )}
+                          <span className="text-sm font-medium text-gray-900">
+                            #{entry.rank}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mr-3">
+                            <span className="text-white text-sm font-medium">
+                              {entry.userName ? entry.userName[0].toUpperCase() : '?'}
+                            </span>
+                          </div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {entry.userName || 'Anonymous'}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {entry.score || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="text-sm font-medium text-gray-900">
+                            {Math.round((entry.percentage || 0) * 100) / 100}%
+                          </div>
+                          <div className="ml-3 w-20 bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full"
+                              style={{
+                                width: `${Math.min(100, entry.percentage || 0)}%`,
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Footer Info */}
+        {leaderboard.length > 0 && (
+          <div className="mt-6 text-center text-sm text-gray-500">
+            <p>Rankings are based on overall test performance across all courses</p>
+            <p className="mt-1">Data updates in real-time as tests are completed</p>
+          </div>
+        )}
       </div>
     </div>
   );

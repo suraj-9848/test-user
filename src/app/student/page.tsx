@@ -181,29 +181,13 @@ export default function StudentDashboard() {
 
         // Try to get leaderboard data for student profile
         try {
-          const leaderboardResponse: LeaderboardResponse = await api.get(
-            "/api/student/tests/leaderboard",
-          );
-          const apiData = leaderboardResponse.data || [];
-          const sortedData = apiData.sort(
-            (a: LeaderboardEntry, b: LeaderboardEntry) =>
-              b.percentage - a.percentage,
-          );
-
-          const currentUserIndex = sortedData.findIndex(
-            (entry: LeaderboardEntry) =>
-              entry.userName === session?.user?.name ||
-              entry.userName === session?.user?.email,
-          );
-
-          if (currentUserIndex >= 0) {
-            const currentUserData = sortedData[currentUserIndex];
-            setStudentProfile({
-              streak: 7, // Default for now, could be from another endpoint
-              points: Math.round(currentUserData.totalScore || 0),
-              rank: currentUserIndex + 1, // Calculate rank based on position in sorted array
-            });
-          }
+          // TODO: Replace with dedicated user stats endpoint
+          // For now, set default student profile data
+          setStudentProfile({
+            streak: 7, // Default for now, could be from another endpoint
+            points: 0, // Will be updated when user stats endpoint is available
+            rank: 0, // Will be updated when user stats endpoint is available
+          });
         } catch (profileError) {
           console.log("Profile data not available:", profileError);
         }

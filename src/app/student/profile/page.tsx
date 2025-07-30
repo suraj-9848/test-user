@@ -106,33 +106,11 @@ export default function StudentProfile() {
         let percentage = 0;
 
         try {
-          interface LeaderboardEntry {
-            userName: string;
-            totalScore: number;
-            percentage: number;
-          }
-
-          const leaderboardResponse = await api.get(
-            "/api/student/tests/leaderboard",
-          );
-          const apiData = leaderboardResponse.data || [];
-          const sortedData = apiData.sort(
-            (a: LeaderboardEntry, b: LeaderboardEntry) =>
-              b.percentage - a.percentage,
-          );
-
-          const currentUserIndex = sortedData.findIndex(
-            (entry: LeaderboardEntry) =>
-              entry.userName === session?.user?.name ||
-              entry.userName === session?.user?.email,
-          );
-
-          if (currentUserIndex >= 0) {
-            const currentUserData = sortedData[currentUserIndex];
-            rank = currentUserIndex + 1; // Calculate rank based on position in sorted array
-            score = Math.round(currentUserData.totalScore || 0);
-            percentage = Math.round(currentUserData.percentage || 0);
-          }
+          // TODO: Replace with dedicated user stats endpoint
+          // For now, set default values - will be updated when proper endpoint is available
+          rank = 0; // Default rank
+          score = 0; // Default score
+          percentage = 0; // Default percentage
         } catch (leaderboardError) {
           console.log("Leaderboard data not available:", leaderboardError);
         }

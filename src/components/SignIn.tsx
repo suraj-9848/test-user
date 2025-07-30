@@ -1,267 +1,167 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { signIn, useSession } from "next-auth/react";
-// import { useRouter } from "next/navigation"; // Removed unused
-import { AiOutlineGoogle } from "react-icons/ai";
-import { Shield, ArrowRight, Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useJWT } from "@/context/JWTContext";
+import { BASE_URLS, API_ENDPOINTS, getAdminDashboardUrl } from "@/config/urls";
 
-const BACKEND_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
-
-const SignIn = () => {
-  const { status, data: session } = useSession();
-  // Removed unused router
+export default function SignIn() {
+  const { data: session, status } = useSession();
   const { setJwt } = useJWT();
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [userType, setUserType] = useState<'student' | 'admin' | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // const didRedirect = false; // Removed unused
     const exchangeGoogleJwt = async (googleJwt: string) => {
-      setLoading(true);
-      setError(null);
       try {
-        console.log(
-          "[SignIn] Exchanging Google JWT for backend JWT:",
-          googleJwt,
-        );
-        const res = await fetch(`${BACKEND_BASE_URL}/api/auth/exchange`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        setLoading(true);
+        setError(null);
+
+        // Try admin login first
+        const adminResponse = await fetch(`${BASE_URLS.BACKEND}${API_ENDPOINTS.AUTH.ADMIN_LOGIN}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
           body: JSON.stringify({ token: googleJwt }),
-          credentials: "include",
         });
-        console.log("[SignIn] /api/auth/exchange response status:", res.status);
-        let data = null;
-        try {
-          data = await res.json();
-        } catch {
-          data = null;
-        }
-        console.log("[SignIn] /api/auth/exchange response data:", data);
-        if (!res.ok) {
-          setError(data?.message || "Failed to authenticate with backend");
-          setJwt(null);
-          localStorage.removeItem("jwt");
+
+        if (adminResponse.ok) {
+          const adminData = await adminResponse.json();
+          sessionStorage.setItem('adminToken', adminData.token);
+          sessionStorage.setItem('adminUser', JSON.stringify(adminData.user));
+          setUserType('admin');
+          
+          const adminDashboardUrl = getAdminDashboardUrl();
+          if (adminDashboardUrl) {
+            window.location.href = adminDashboardUrl;
+          } else {
+            router.push('/admin');
+          }
           return;
         }
-        if (data && data.token) {
-          setJwt(data.token);
-          localStorage.setItem("jwt", data.token);
-          console.log("[SignIn] Stored backend JWT:", data.token);
-          // Force a hard reload to guarantee correct JWT is loaded everywhere
-          window.location.replace("/student");
+
+        // Try student login
+        const studentResponse = await fetch(`${BASE_URLS.BACKEND}${API_ENDPOINTS.AUTH.EXCHANGE}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ token: googleJwt }),
+        });
+
+        if (studentResponse.ok) {
+          const studentData = await studentResponse.json();
+          setJwt(studentData.token);
+          localStorage.setItem('jwt', studentData.token);
+          setUserType('student');
+          router.push('/student');
           return;
-        } else {
-          setError("No backend token received");
-          setJwt(null);
-          localStorage.removeItem("jwt");
         }
-      } catch (e: any) {
-        setError(e?.message || "Failed to authenticate with backend");
-        setJwt(null);
-        localStorage.removeItem("jwt");
+
+        // Both failed
+        const errorData = await studentResponse.json();
+        setError(errorData.error || 'Authentication failed');
+        
+      } catch (error) {
+        console.error('Authentication error:', error);
+        setError('Network error occurred. Please try again.');
       } finally {
         setLoading(false);
       }
     };
 
-    // Only ever store backend JWT, never Google JWT
-    if (status === "authenticated" && session?.jwt) {
-      setJwt(null);
-      localStorage.removeItem("jwt");
-      console.log("[SignIn] Google JWT from session:", session.jwt);
-      exchangeGoogleJwt(session.jwt);
+    // Check if user just signed in with Google
+    if (status === "authenticated" && (session as any)?.id_token && !userType) {
+      exchangeGoogleJwt((session as any).id_token);
     } else if (status === "unauthenticated") {
-      setJwt(null);
       localStorage.removeItem("jwt");
+      sessionStorage.removeItem("adminToken");
+      sessionStorage.removeItem("adminUser");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, session]);
+  }, [status, session, setJwt, userType, router]);
 
-  const handleGoogleSignIn = () => {
-    setError(null);
+  const handleGoogleSignIn = async () => {
     setLoading(true);
-    signIn("google", {
-      callbackUrl: "/sign-in", // Redirect back to sign-in page so exchange runs
-    });
+    setError(null);
+    
+    try {
+      await signIn("google", { redirect: false });
+    } catch (error) {
+      console.error('Sign in error:', error);
+      setError('Failed to sign in with Google');
+      setLoading(false);
+    }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full mx-4">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">Authenticating...</h2>
+            <p className="text-gray-600">Please wait while we verify your credentials.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-white relative overflow-hidden">
-      {/* Background decorative elements */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-blue-50 rounded-full -translate-x-1/2 -translate-y-1/2 opacity-60"></div>
-      <div className="absolute bottom-0 right-0 w-80 h-80 bg-purple-50 rounded-full translate-x-1/2 translate-y-1/2 opacity-60"></div>
-      <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-blue-100 rounded-full opacity-40"></div>
-      <div className="absolute top-1/3 right-1/3 w-24 h-24 bg-purple-100 rounded-full opacity-40"></div>
-      <div className="absolute top-1/4 right-1/4 w-20 h-20 bg-blue-50 rounded-full opacity-50"></div>
-      <div className="absolute bottom-1/4 left-1/3 w-28 h-28 bg-purple-50 rounded-full opacity-30"></div>
-      <div className="absolute top-3/4 left-1/2 w-16 h-16 bg-blue-100 rounded-full opacity-40"></div>
-      <div className="absolute bottom-1/3 right-1/4 w-12 h-12 bg-purple-100 rounded-full opacity-50"></div>
-
-      <div className="relative z-10 min-h-screen px-6 py-8 md:py-6 flex items-center justify-center md:px-4">
-        <div className="w-full max-w-5xl md:min-h-[50vh] grid grid-cols-1 lg:grid-cols-2 rounded-3xl overflow-hidden shadow-2xl border border-blue-100 bg-white">
-          {/* Left Panel (Student Info) */}
-          <div className="bg-white text-slate-800 flex flex-col justify-center p-8 lg:p-12 relative">
-            {/* Logo and branding */}
-            <div className="mb-6">
-              <div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg mb-4">
-                <span className="text-xl font-bold">N</span>
-              </div>
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-purple-600" />
-                <span className="text-sm font-semibold text-purple-600 uppercase tracking-wide">
-                  Nirudhyog LMS
-                </span>
-              </div>
-            </div>
-
-            {/* Main heading */}
-            <h1 className="text-4xl lg:text-5xl font-bold mb-4 leading-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Welcome Back
-            </h1>
-
-            <h2 className="text-xl lg:text-2xl font-semibold mb-3 text-slate-800">
-              Ready to continue your learning journey?
-            </h2>
-
-            <p className="text-base text-slate-600 leading-relaxed mb-6">
-              Access your personalized courses, track your progress, and connect
-              with mentors—all in one powerful learning platform.
-            </p>
-
-            {/* Features list */}
-
-            {/* Testimonial card */}
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center font-semibold text-base shadow-lg">
-                  S
-                </div>
-                <div className="flex-1">
-                  <p className="text-slate-700 italic mb-2 leading-relaxed text-sm">
-                    &ldquo;Nirudhyog transformed my learning experience. The
-                    structured approach and expert guidance helped me land my
-                    dream job at Microsoft.&rdquo;
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-slate-800 text-sm">
-                        Sarah Kumar
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        Software Engineer at Microsoft
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {[...Array(5)].map((_, i) => (
-                        <div
-                          key={i}
-                          className="w-2 h-2 bg-yellow-400 rounded-full"
-                        ></div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full mx-4">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-white text-2xl font-bold">N</span>
           </div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Welcome to Nirudhyog</h1>
+          <p className="text-gray-600">Sign in with your Google account to continue</p>
+        </div>
 
-          {/* Right Panel (Sign-In) */}
-          <div className="bg-slate-900 min-h-[400px] text-white flex flex-col items-center justify-center px-8 lg:px-12 relative">
-            {/* Background pattern */}
-            <div className="absolute inset-0 opacity-5">
-              <div className="absolute top-8 right-8 w-16 h-16 border-2 border-white rounded-full"></div>
-              <div className="absolute bottom-16 left-8 w-12 h-12 border-2 border-white rounded-full"></div>
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-24 border-2 border-white rounded-full"></div>
-              <div className="absolute top-1/4 right-1/4 w-8 h-8 border-2 border-white rounded-full"></div>
-              <div className="absolute bottom-1/4 left-1/4 w-10 h-10 border-2 border-white rounded-full"></div>
-            </div>
-
-            <div className="relative z-10 w-full max-w-sm">
-              {/* Header */}
-              <div className="text-center mb-6">
-                <div className="w-14 h-14 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/20">
-                  <Shield className="w-7 h-7 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Sign In</h2>
-                <p className="text-slate-300 text-base">
-                  Continue your learning journey
-                </p>
-              </div>
-
-              {/* Sign in button */}
-              <button
-                onClick={handleGoogleSignIn}
-                className="w-full group relative flex items-center justify-center gap-3 py-3 px-6 bg-white text-slate-900 rounded-2xl font-semibold text-base shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-2 border-white hover:border-blue-100"
-                disabled={loading}
-              >
-                <div className="absolute inset-0 bg-blue-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="relative flex items-center gap-3">
-                  <AiOutlineGoogle size={20} />
-                  <span>
-                    {loading ? "Signing in..." : "Continue with Google"}
-                  </span>
-                  <ArrowRight className="w-4 h-4 text-blue-600 group-hover:translate-x-1 transition-transform duration-300" />
-                </div>
-              </button>
-              {error && (
-                <div className="mt-4 text-center text-red-500 text-sm font-semibold">
-                  {error}
-                </div>
-              )}
-
-              {/* Divider */}
-              <div className="flex items-center my-6">
-                <div className="flex-1 h-px bg-slate-700"></div>
-                <span className="px-4 text-slate-400 text-sm">
-                  Secure & Private
-                </span>
-                <div className="flex-1 h-px bg-slate-700"></div>
-              </div>
-
-              {/* Additional info */}
-              <div className="text-center space-y-3">
-                <p className="text-slate-400 text-xs">
-                  By signing in, you agree to our{" "}
-                  <span className="text-blue-400 hover:text-blue-300 cursor-pointer underline">
-                    Terms of Service
-                  </span>{" "}
-                  and{" "}
-                  <span className="text-blue-400 hover:text-blue-300 cursor-pointer underline">
-                    Privacy Policy
-                  </span>
-                </p>
-
-                <p className="text-slate-400 text-xs">
-                  Need help?{" "}
-                  <span className="text-blue-400 hover:text-blue-300 cursor-pointer underline font-medium">
-                    Contact Support
-                  </span>
-                </p>
-              </div>
-
-              {/* Trust indicators */}
-              <div className="mt-6 pt-4 border-t border-slate-700">
-                <div className="flex items-center justify-center gap-6 text-xs text-slate-400">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                    <span>SSL Secured</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                    <span>GDPR Compliant</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700 text-sm">{error}</p>
           </div>
+        )}
+
+        <button
+          onClick={handleGoogleSignIn}
+          disabled={loading}
+          className="w-full bg-white border border-gray-300 rounded-lg px-6 py-3 text-gray-700 font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24">
+            <path
+              fill="#4285F4"
+              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+            />
+            <path
+              fill="#34A853"
+              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+            />
+            <path
+              fill="#EA4335"
+              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+            />
+          </svg>
+          Continue with Google
+        </button>
+
+        <div className="mt-6 text-center">
+          <p className="text-xs text-gray-500">
+            By signing in, you agree to our Terms of Service and Privacy Policy
+          </p>
         </div>
       </div>
     </div>
   );
-};
-
-export default SignIn;
+}
