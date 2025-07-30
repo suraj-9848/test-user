@@ -13,6 +13,7 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false);
   const [userType, setUserType] = useState<'student' | 'admin' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [redirectAttempted, setRedirectAttempted] = useState(false);
 
   useEffect(() => {
     const exchangeGoogleJwt = async (googleJwt: string) => {
@@ -36,10 +37,23 @@ export default function SignIn() {
           sessionStorage.setItem('adminUser', JSON.stringify(adminData.user));
           setUserType('admin');
           
+          console.log('[SignIn] Admin login successful, attempting redirect...');
+          
+          // Use a more reliable redirect method to prevent infinite loops
           const adminDashboardUrl = getAdminDashboardUrl();
           if (adminDashboardUrl) {
-            window.location.href = adminDashboardUrl;
+            console.log('[SignIn] Redirecting to admin dashboard:', adminDashboardUrl);
+            // Add a small delay to ensure sessionStorage is saved
+            setTimeout(() => {
+              try {
+                window.location.replace(adminDashboardUrl);
+              } catch (error) {
+                console.error('[SignIn] Redirect failed, using router instead:', error);
+                router.push('/admin');
+              }
+            }, 100);
           } else {
+            console.log('[SignIn] No admin dashboard URL found, using local admin route');
             router.push('/admin');
           }
           return;
@@ -71,20 +85,23 @@ export default function SignIn() {
       } catch (error) {
         console.error('Authentication error:', error);
         setError('Network error occurred. Please try again.');
+        setRedirectAttempted(false); // Reset on error to allow retry
       } finally {
         setLoading(false);
       }
     };
 
-    // Check if user just signed in with Google
-    if (status === "authenticated" && (session as any)?.id_token && !userType) {
+    // Check if user just signed in with Google - prevent multiple attempts
+    if (status === "authenticated" && (session as any)?.id_token && !userType && !redirectAttempted) {
+      setRedirectAttempted(true);
       exchangeGoogleJwt((session as any).id_token);
     } else if (status === "unauthenticated") {
       localStorage.removeItem("jwt");
       sessionStorage.removeItem("adminToken");
       sessionStorage.removeItem("adminUser");
+      setRedirectAttempted(false); // Reset on logout
     }
-  }, [status, session, setJwt, userType, router]);
+  }, [status, session, setJwt, userType, router, redirectAttempted]);
 
   const handleGoogleSignIn = async () => {
     setLoading(true);

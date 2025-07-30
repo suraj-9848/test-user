@@ -146,17 +146,38 @@ export const getAdminDashboardUrl = (): string | null => {
   const currentPort = window.location.port;
   const currentProtocol = window.location.protocol;
   
+  console.log('[getAdminDashboardUrl] Current location:', { 
+    currentHost, 
+    currentPort, 
+    currentProtocol,
+    fullHost: window.location.host 
+  });
+  
+  // Check if we have a direct mapping
   const adminHost = DOMAIN_MAPPINGS.LMS_TO_ADMIN[currentHost as keyof typeof DOMAIN_MAPPINGS.LMS_TO_ADMIN];
   
   if (adminHost) {
-    return `${currentProtocol}//${adminHost}`;
+    const adminUrl = `${currentProtocol}//${adminHost}`;
+    console.log('[getAdminDashboardUrl] Using mapped URL:', adminUrl);
+    return adminUrl;
   }
   
-  // Fallback for localhost
+  // Enhanced localhost handling with port consideration
   if (currentHost === 'localhost') {
-    return `${currentProtocol}//localhost:3002`;
+    const adminUrl = `${currentProtocol}//localhost:3002`;
+    console.log('[getAdminDashboardUrl] Using localhost fallback:', adminUrl);
+    return adminUrl;
   }
   
+  // Additional fallback for development/staging environments
+  if (currentHost.includes('lms-') || currentHost.includes('student-')) {
+    const adminHost = currentHost.replace('lms-', 'admin-').replace('student-', 'admin-');
+    const adminUrl = `${currentProtocol}//${adminHost}`;
+    console.log('[getAdminDashboardUrl] Using pattern-based fallback:', adminUrl);
+    return adminUrl;
+  }
+  
+  console.warn('[getAdminDashboardUrl] No admin URL found for host:', currentHost);
   return null;
 };
 

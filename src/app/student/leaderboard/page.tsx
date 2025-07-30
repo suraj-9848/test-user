@@ -70,7 +70,17 @@ export default function StudentLeaderboard() {
           throw new Error("No data received from server");
         }
 
-        const apiData = response.data || [];
+        // Backend returns {message, data} structure, so we need response.data.data
+        const apiData = response.data.data || response.data || [];
+        
+        console.log("[Leaderboard] Extracted data:", apiData);
+        
+        // Ensure apiData is an array before sorting
+        if (!Array.isArray(apiData)) {
+          console.warn("[Leaderboard] API data is not an array:", apiData);
+          setLeaderboard([]);
+          return;
+        }
         
         // Handle empty leaderboard
         if (apiData.length === 0) {
