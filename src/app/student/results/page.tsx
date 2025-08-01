@@ -100,7 +100,7 @@ export default function ResultsPage() {
         for (const test of tests) {
           try {
             const resultsResponse = await api.get(
-              `/api/student/tests/${test.id}/results`
+              `/api/student/tests/${test.id}/results`,
             );
             const submissions = resultsResponse?.data?.submissions || [];
 
@@ -108,7 +108,7 @@ export default function ResultsPage() {
               const questionsTotal = submission.responses?.length || 0;
               const questionsCorrect =
                 submission.responses?.filter(
-                  (response: any) => response.score > 0
+                  (response: any) => response.score > 0,
                 ).length || 0;
 
               allResults.push({
@@ -131,7 +131,9 @@ export default function ResultsPage() {
                   : undefined,
                 questionsTotal,
                 questionsCorrect,
-                attempted: submission.status === "FULLY_EVALUATED" || submission.status === "SUBMITTED",
+                attempted:
+                  submission.status === "FULLY_EVALUATED" ||
+                  submission.status === "SUBMITTED",
                 responses: submission.responses,
               });
             });
@@ -141,10 +143,10 @@ export default function ResultsPage() {
         }
 
         const completedTests = allResults.filter(
-          (test) => 
-            test.status === "FULLY_EVALUATED" || 
-            test.status === "SUBMITTED" || 
-            test.attempted
+          (test) =>
+            test.status === "FULLY_EVALUATED" ||
+            test.status === "SUBMITTED" ||
+            test.attempted,
         );
         setResults(completedTests);
       } catch (err: unknown) {
@@ -294,8 +296,8 @@ export default function ResultsPage() {
                     ? Math.round(
                         results.reduce(
                           (acc, r) => acc + (r.percentage || 0),
-                          0
-                        ) / results.length
+                          0,
+                        ) / results.length,
                       )
                     : 0}
                   %
@@ -377,7 +379,7 @@ export default function ResultsPage() {
                           <p className="text-xs text-gray-500">Percentage</p>
                           <p
                             className={`font-medium ${getScoreColor(
-                              result.percentage
+                              result.percentage,
                             )}`}
                           >
                             {Math.round(result.percentage)}%

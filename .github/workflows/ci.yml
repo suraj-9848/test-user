@@ -62,7 +62,6 @@ jobs:
         run: pnpm run build
         env:
           NODE_ENV: production
-          # Mock environment variables for CI build
           NEXTAUTH_SECRET: mock-nextauth-secret-for-ci-only
           NEXTAUTH_URL: http://localhost:3000
           GOOGLE_CLIENT_ID: mock-client-id.apps.googleusercontent.com

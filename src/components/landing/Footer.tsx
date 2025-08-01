@@ -76,41 +76,41 @@ export default function Footer() {
             </ul>
           </div>
           <div>
-            <div className="col-span-1 flex gap-64" >
+            <div className="col-span-1 flex gap-64">
               <div className="">
                 <h4 className="text-sm font-semibold tracking-wider text-gray-400 uppercase mb-6">
                   Quick Links
                 </h4>
                 <ul className="flex flex-col gap-y-2">
-                {quickLinks.map(({ name, href }, idx) => (
-                  <li key={idx}>
-                    <Link
-                      href={href}
-                      className="text-sm text-gray-300 hover:text-white transition"
-                    >
-                      {name}
-                    </Link>
+                  {quickLinks.map(({ name, href }, idx) => (
+                    <li key={idx}>
+                      <Link
+                        href={href}
+                        className="text-sm text-gray-300 hover:text-white transition"
+                      >
+                        {name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="">
+                <h4 className="text-sm font-semibold tracking-wider text-gray-400 uppercase mb-6">
+                  Contact Us
+                </h4>
+                <ul className="space-y-4 text-sm text-gray-300 max-w-xs">
+                  <li className="flex items-start gap-2 flex-wrap">
+                    <span className="font-bold shrink-0">Email:</span>
+                    <span className="break-words">contact@nirudhyog.com</span>
                   </li>
-                ))}
-              </ul>
-            </div>
 
-            <div className="">
-              <h4 className="text-sm font-semibold tracking-wider text-gray-400 uppercase mb-6">
-                Contact Us
-              </h4>
-              <ul className="space-y-4 text-sm text-gray-300 max-w-xs">
-                <li className="flex items-start gap-2 flex-wrap">
-                  <span className="font-bold shrink-0">Email:</span>
-                  <span className="break-words">contact@nirudhyog.com</span>
-                </li>
-
-                <li className="flex items-start gap-2 flex-wrap">
-                  <span className="font-bold shrink-0">Phone:</span>
-                  <span className="break-words">+91 81213 98942</span>
-                </li>
-              </ul>
-            </div>
+                  <li className="flex items-start gap-2 flex-wrap">
+                    <span className="font-bold shrink-0">Phone:</span>
+                    <span className="break-words">+91 81213 98942</span>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>

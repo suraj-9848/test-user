@@ -5,21 +5,21 @@
  */
 export function decodeJWT(token: string | null): any {
   if (!token) return null;
-  
+
   try {
     // JWT structure: header.payload.signature
-    const parts = token.split('.');
+    const parts = token.split(".");
     if (parts.length !== 3) return null;
-    
+
     // Decode the payload (second part)
     const payload = parts[1];
     // Add padding if needed
-    const paddedPayload = payload + '='.repeat((4 - payload.length % 4) % 4);
+    const paddedPayload = payload + "=".repeat((4 - (payload.length % 4)) % 4);
     const decoded = atob(paddedPayload);
-    
+
     return JSON.parse(decoded);
   } catch (error) {
-    console.error('Error decoding JWT:', error);
+    console.error("Error decoding JWT:", error);
     return null;
   }
 }
@@ -32,7 +32,7 @@ export function decodeJWT(token: string | null): any {
 export function isJWTExpired(token: string | null): boolean {
   const decoded = decodeJWT(token);
   if (!decoded || !decoded.exp) return true;
-  
+
   const currentTime = Math.floor(Date.now() / 1000);
   return decoded.exp < currentTime;
 }
@@ -53,10 +53,10 @@ export function getUserFromJWT(token: string | null): {
   if (!decoded) return null;
 
   return {
-    id: decoded.id || decoded.userId || 'unknown', // Prioritize 'id' from backend JWT
-    username: decoded.username || decoded.name || 'User',
-    email: decoded.email || '',
-    userRole: decoded.userRole || 'student',
-    profile_picture: decoded.profile_picture || null
+    id: decoded.id || decoded.userId || "unknown", // Prioritize 'id' from backend JWT
+    username: decoded.username || decoded.name || "User",
+    email: decoded.email || "",
+    userRole: decoded.userRole || "student",
+    profile_picture: decoded.profile_picture || null,
   };
-} 
+}

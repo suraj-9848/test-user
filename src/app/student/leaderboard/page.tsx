@@ -29,12 +29,12 @@ export default function StudentLeaderboard() {
   // Fetch leaderboard data
   useEffect(() => {
     if (!hydrated) return;
-    
+
     // Cancel any previous request
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
-    
+
     // Create new abort controller for this request
     abortControllerRef.current = new AbortController();
     const signal = abortControllerRef.current.signal;
@@ -51,11 +51,11 @@ export default function StudentLeaderboard() {
       try {
         setLoading(true);
         setError("");
-        
+
         console.log("[Leaderboard] Fetching data...");
-        
+
         const response = await apiGet(API_ENDPOINTS.STUDENT.LEADERBOARD, {
-          signal // Pass abort signal for cancellation
+          signal, // Pass abort signal for cancellation
         });
 
         // Check if request was cancelled
@@ -72,27 +72,27 @@ export default function StudentLeaderboard() {
 
         // Backend returns {message, data} structure, so we need response.data.data
         const apiData = response.data.data || response.data || [];
-        
+
         console.log("[Leaderboard] Extracted data:", apiData);
-        
+
         // Ensure apiData is an array before sorting
         if (!Array.isArray(apiData)) {
           console.warn("[Leaderboard] API data is not an array:", apiData);
           setLeaderboard([]);
           return;
         }
-        
+
         // Handle empty leaderboard
         if (apiData.length === 0) {
           console.log("[Leaderboard] No leaderboard data available");
           setLeaderboard([]);
           return;
         }
-        
+
         // Sort by score/percentage
         const sortedData = apiData.sort(
           (a: LeaderboardEntry, b: LeaderboardEntry) =>
-            b.percentage - a.percentage || b.score - a.score
+            b.percentage - a.percentage || b.score - a.score,
         );
 
         // Add rank to each entry
@@ -100,18 +100,21 @@ export default function StudentLeaderboard() {
           (entry: LeaderboardEntry, index: number) => ({
             ...entry,
             rank: index + 1,
-          })
+          }),
         );
 
         setLeaderboard(dataWithRanks);
-        console.log("[Leaderboard] Data processed successfully:", dataWithRanks);
-
+        console.log(
+          "[Leaderboard] Data processed successfully:",
+          dataWithRanks,
+        );
       } catch (err) {
         // Don't show error if request was cancelled
         if (signal.aborted) return;
-        
+
         console.error("Error fetching leaderboard:", err);
-        const errorMessage = err instanceof Error ? err.message : "Failed to load leaderboard";
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load leaderboard";
         setError(errorMessage);
       } finally {
         if (!signal.aborted) {
@@ -147,9 +150,7 @@ export default function StudentLeaderboard() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            🏆 Leaderboard
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900">🏆 Leaderboard</h1>
           <p className="mt-2 text-gray-600">
             See how you rank among all students based on test performance
           </p>
@@ -168,7 +169,9 @@ export default function StudentLeaderboard() {
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
                 <div className="text-red-500 mb-2">⚠️</div>
-                <p className="text-red-600 font-medium">Error loading leaderboard</p>
+                <p className="text-red-600 font-medium">
+                  Error loading leaderboard
+                </p>
                 <p className="text-sm text-gray-500 mt-1">{error}</p>
                 <button
                   onClick={() => window.location.reload()}
@@ -183,7 +186,9 @@ export default function StudentLeaderboard() {
               <div className="text-center">
                 <div className="text-gray-400 mb-2">📊</div>
                 <p className="text-gray-600">No leaderboard data available.</p>
-                <p className="text-sm text-gray-500 mt-1">Complete some tests to see rankings!</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Complete some tests to see rankings!
+                </p>
               </div>
             </div>
           ) : (
@@ -231,11 +236,13 @@ export default function StudentLeaderboard() {
                         <div className="flex items-center">
                           <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mr-3">
                             <span className="text-white text-sm font-medium">
-                              {entry.userName ? entry.userName[0].toUpperCase() : '?'}
+                              {entry.userName
+                                ? entry.userName[0].toUpperCase()
+                                : "?"}
                             </span>
                           </div>
                           <div className="text-sm font-medium text-gray-900">
-                            {entry.userName || 'Anonymous'}
+                            {entry.userName || "Anonymous"}
                           </div>
                         </div>
                       </td>
@@ -268,8 +275,12 @@ export default function StudentLeaderboard() {
         {/* Footer Info */}
         {leaderboard.length > 0 && (
           <div className="mt-6 text-center text-sm text-gray-500">
-            <p>Rankings are based on overall test performance across all courses</p>
-            <p className="mt-1">Data updates in real-time as tests are completed</p>
+            <p>
+              Rankings are based on overall test performance across all courses
+            </p>
+            <p className="mt-1">
+              Data updates in real-time as tests are completed
+            </p>
           </div>
         )}
       </div>

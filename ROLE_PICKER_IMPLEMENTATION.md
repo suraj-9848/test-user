@@ -18,7 +18,7 @@ Created a sophisticated role picker that allows admin users to switch between di
 
 ```typescript
 // Usage in components
-<RolePicker 
+<RolePicker
   currentViewRole={viewAsRole}
   onRoleChange={setViewAsRole}
 />
@@ -37,7 +37,7 @@ Implemented centralized state management for view-as functionality:
 
 ```typescript
 // Available roles and state
-export type ViewAsRole = 'admin' | 'instructor' | 'student' | 'recruiter';
+export type ViewAsRole = "admin" | "instructor" | "student" | "recruiter";
 
 interface ViewAsContextType {
   viewAsRole: ViewAsRole;
@@ -54,13 +54,15 @@ interface ViewAsContextType {
 Created comprehensive dashboard views for each role:
 
 **Admin Dashboard** (`/dashboard/admin`):
+
 - ✅ User management
-- ✅ Organization management  
+- ✅ Organization management
 - ✅ System administration
 - ✅ Hiring management
 - ✅ Payment approval
 
 **Instructor Dashboard** (`/dashboard/instructor`):
+
 - ✅ Course management
 - ✅ Student analytics
 - ✅ Test creation and evaluation
@@ -68,6 +70,7 @@ Created comprehensive dashboard views for each role:
 - ✅ Batch management
 
 **Student Dashboard** (`/dashboard/student`):
+
 - ✅ Course enrollment and progress
 - ✅ Test taking interface
 - ✅ Certificates and achievements
@@ -75,6 +78,7 @@ Created comprehensive dashboard views for each role:
 - ✅ Recent activity feed
 
 **Recruiter Dashboard** (`/dashboard/recruiter`):
+
 - ✅ Job posting management
 - ✅ Application tracking
 - ✅ Interview scheduling
@@ -123,26 +127,26 @@ graph TB
         NB[Navbar]
         AL[Admin Layout]
     end
-    
+
     subgraph "Dashboard Views"
         AD[Admin Dashboard]
         ID[Instructor Dashboard]
         SD[Student Dashboard]
         RD[Recruiter Dashboard]
     end
-    
+
     subgraph "Backend Middleware"
         VAM[ViewAs Middleware]
         ARM[Auth + Role Middleware]
         RBM[Role-Based Middleware]
     end
-    
+
     subgraph "Security & Audit"
         AL[Audit Logging]
         RV[Role Validation]
         AC[Access Control]
     end
-    
+
     RP --> VAC
     VAC --> NB
     NB --> AL
@@ -150,12 +154,12 @@ graph TB
     AL --> ID
     AL --> SD
     AL --> RD
-    
+
     AD --> VAM
     ID --> VAM
     SD --> VAM
     RD --> VAM
-    
+
     VAM --> ARM
     ARM --> RBM
     RBM --> AL
@@ -172,10 +176,10 @@ graph TB
 ```typescript
 // Access hierarchy
 const accessMatrix = {
-  admin: ['admin', 'instructor', 'student', 'recruiter'], // Can view all
-  instructor: ['instructor'],                              // Own view only
-  student: ['student'],                                    // Own view only
-  recruiter: ['recruiter']                                // Own view only
+  admin: ["admin", "instructor", "student", "recruiter"], // Can view all
+  instructor: ["instructor"], // Own view only
+  student: ["student"], // Own view only
+  recruiter: ["recruiter"], // Own view only
 };
 ```
 
@@ -184,18 +188,18 @@ const accessMatrix = {
 ```typescript
 const roleConfig = {
   admin: {
-    label: 'Admin View',
+    label: "Admin View",
     icon: FiShield,
-    color: 'text-red-600',
-    bgColor: 'bg-red-50',
-    description: 'Full administrative access'
+    color: "text-red-600",
+    bgColor: "bg-red-50",
+    description: "Full administrative access",
   },
   instructor: {
-    label: 'Instructor View', 
+    label: "Instructor View",
     icon: FiBookOpen,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    description: 'Course and student management'
+    color: "text-blue-600",
+    bgColor: "bg-blue-50",
+    description: "Course and student management",
   },
   // ... etc
 };
@@ -228,8 +232,8 @@ The axios interceptor automatically adds view-as headers:
 ```typescript
 // Add view-as role header for admin users
 const viewAsRole = getCurrentViewAsRole();
-if (viewAsRole && viewAsRole !== 'admin') {
-  config.headers['X-View-As-Role'] = viewAsRole;
+if (viewAsRole && viewAsRole !== "admin") {
+  config.headers["X-View-As-Role"] = viewAsRole;
 }
 ```
 
@@ -238,27 +242,33 @@ if (viewAsRole && viewAsRole !== 'admin') {
 ## 🔒 **Security Features**
 
 ### **1. Admin-Only Access**
+
 - ✅ Only users with `admin` role can use view-as functionality
 - ✅ Non-admin users see only their own role's view
 - ✅ Frontend and backend validation
 
 ### **2. Audit Logging**
+
 ```typescript
 // Backend audit trail
-logger.info(`Admin ${req.user.id} (${req.originalUserRole}) accessing ${req.method} ${req.path} as ${effectiveRole}`);
+logger.info(
+  `Admin ${req.user.id} (${req.originalUserRole}) accessing ${req.method} ${req.path} as ${effectiveRole}`,
+);
 ```
 
 ### **3. Request Validation**
+
 - ✅ Valid role validation on backend
 - ✅ Original role preservation
 - ✅ Access control based on effective role
 
 ### **4. Response Headers** (Debug Mode)
+
 ```typescript
 // Debugging headers added to responses
-res.setHeader('X-Viewing-As', req.viewAsRole);
-res.setHeader('X-Original-Role', req.originalUserRole);
-res.setHeader('X-Is-Viewing-As', 'true');
+res.setHeader("X-Viewing-As", req.viewAsRole);
+res.setHeader("X-Original-Role", req.originalUserRole);
+res.setHeader("X-Is-Viewing-As", "true");
 ```
 
 ---
@@ -294,6 +304,7 @@ nirudhyog-backend/
 ### **For Admin Users**
 
 1. **Switch Role View**:
+
    ```typescript
    // Click role picker dropdown
    // Select "Instructor View"
@@ -302,6 +313,7 @@ nirudhyog-backend/
    ```
 
 2. **API Calls with View-As**:
+
    ```typescript
    // Automatic header injection
    GET /api/instructor/courses
@@ -309,7 +321,7 @@ nirudhyog-backend/
      Authorization: Bearer <admin-token>
      X-View-As-Role: instructor
    }
-   
+
    // Backend processes as instructor role
    // Admin maintains audit trail
    ```
@@ -330,7 +342,7 @@ import { useViewAs } from '../contexts/ViewAsContext';
 
 const MyComponent = () => {
   const { viewAsRole, isViewingAs, setViewAsRole } = useViewAs();
-  
+
   return (
     <div>
       {isViewingAs && (
@@ -338,8 +350,8 @@ const MyComponent = () => {
           Currently viewing as: {viewAsRole}
         </div>
       )}
-      
-      <RolePicker 
+
+      <RolePicker
         currentViewRole={viewAsRole}
         onRoleChange={setViewAsRole}
       />
@@ -353,27 +365,30 @@ const MyComponent = () => {
 ## 🎯 **Benefits Achieved**
 
 ### **For Admin Users**
-| Feature | Benefit |
-|---------|---------|
-| **Role Switching** | ✅ Test system from different user perspectives |
-| **No Logout Required** | ✅ Seamless role switching without re-authentication |
-| **Visual Indicators** | ✅ Clear awareness of current view context |
-| **Persistent Selection** | ✅ Maintains role choice across sessions |
+
+| Feature                  | Benefit                                              |
+| ------------------------ | ---------------------------------------------------- |
+| **Role Switching**       | ✅ Test system from different user perspectives      |
+| **No Logout Required**   | ✅ Seamless role switching without re-authentication |
+| **Visual Indicators**    | ✅ Clear awareness of current view context           |
+| **Persistent Selection** | ✅ Maintains role choice across sessions             |
 
 ### **For Development & Testing**
-| Feature | Benefit |
-|---------|---------|
-| **UI/UX Testing** | ✅ Validate different role experiences |
-| **Feature Testing** | ✅ Test role-specific functionality |
-| **Bug Reproduction** | ✅ Reproduce issues as different user types |
+
+| Feature               | Benefit                                      |
+| --------------------- | -------------------------------------------- |
+| **UI/UX Testing**     | ✅ Validate different role experiences       |
+| **Feature Testing**   | ✅ Test role-specific functionality          |
+| **Bug Reproduction**  | ✅ Reproduce issues as different user types  |
 | **Demo Capabilities** | ✅ Show different views during presentations |
 
 ### **For Security & Compliance**
-| Feature | Benefit |
-|---------|---------|
-| **Audit Trail** | ✅ Complete logging of admin view-as usage |
-| **Access Control** | ✅ Strict admin-only access to view-as |
-| **Role Validation** | ✅ Backend validation of all role switches |
+
+| Feature               | Benefit                                    |
+| --------------------- | ------------------------------------------ |
+| **Audit Trail**       | ✅ Complete logging of admin view-as usage |
+| **Access Control**    | ✅ Strict admin-only access to view-as     |
+| **Role Validation**   | ✅ Backend validation of all role switches |
 | **Original Identity** | ✅ Always preserve original admin identity |
 
 ---
@@ -381,12 +396,14 @@ const MyComponent = () => {
 ## 📊 **Implementation Statistics**
 
 ### **Files Created/Modified**
+
 - ✅ **7 new files** created
 - ✅ **4 existing files** modified
 - ✅ **350+ lines** of new code
 - ✅ **4 dashboard views** implemented
 
 ### **Features Implemented**
+
 - ✅ **Role Picker Component** with animations
 - ✅ **View-As Context** with persistence
 - ✅ **Backend Middleware** with audit logging
@@ -394,6 +411,7 @@ const MyComponent = () => {
 - ✅ **Security Controls** with admin-only access
 
 ### **Code Quality**
+
 - ✅ **TypeScript** throughout
 - ✅ **Comprehensive** error handling
 - ✅ **Security-first** design
@@ -407,34 +425,37 @@ const MyComponent = () => {
 ### **Common Issues**
 
 #### **1. Role Picker Not Visible**
+
 ```typescript
 // Check user role
 const { user } = useAuth();
-console.log('User role:', user?.userRole); // Should be 'admin'
+console.log("User role:", user?.userRole); // Should be 'admin'
 
 // Check ViewAsProvider wrapping
 // Ensure layout includes <ViewAsProvider>
 ```
 
 #### **2. View-As Headers Not Sent**
+
 ```typescript
 // Check localStorage
-console.log('View-as role:', localStorage.getItem('admin_view_as_role'));
+console.log("View-as role:", localStorage.getItem("admin_view_as_role"));
 
 // Check axios interceptor
 // Verify getCurrentViewAsRole() returns correct value
 ```
 
 #### **3. Backend Not Recognizing View-As**
+
 ```typescript
 // Check middleware order
-app.use(authMiddleware);           // First
-app.use(viewAsMiddleware);        // Second  
-app.use(requireRoleWithViewAs);   // Third
+app.use(authMiddleware); // First
+app.use(viewAsMiddleware); // Second
+app.use(requireRoleWithViewAs); // Third
 
 // Check header name
-req.headers['x-view-as-role']     // Correct
-req.headers['X-View-As-Role']     // Also works (auto-lowercased)
+req.headers["x-view-as-role"]; // Correct
+req.headers["X-View-As-Role"]; // Also works (auto-lowercased)
 ```
 
 ### **Debug Commands**
@@ -459,7 +480,7 @@ X-Is-Viewing-As: true
 We've successfully implemented a **comprehensive role picker system** that provides:
 
 - 🎭 **Seamless Role Switching** for admin users
-- 🔒 **Secure Access Controls** with audit logging  
+- 🔒 **Secure Access Controls** with audit logging
 - 🎨 **Polished UI/UX** with visual indicators
 - 🏗️ **Scalable Architecture** for future roles
 - 📱 **Responsive Design** across all dashboards
@@ -472,6 +493,7 @@ We've successfully implemented a **comprehensive role picker system** that provi
 ## 📞 **Usage Instructions**
 
 ### **For Admin Users:**
+
 1. **Login** to the admin dashboard
 2. **Look for the role picker** in the top navigation bar
 3. **Click the dropdown** to see available roles
@@ -480,10 +502,11 @@ We've successfully implemented a **comprehensive role picker system** that provi
 6. **Switch back to Admin** view when needed
 
 ### **For Developers:**
+
 1. **Use the ViewAsProvider** in your layouts
 2. **Import useViewAs hook** in components that need role context
 3. **Check isViewingAs** to show appropriate UI elements
 4. **Use viewAsRole** for conditional rendering
 5. **Test thoroughly** with different role combinations
 
-**Happy role switching!** 🎉👥 
+**Happy role switching!** 🎉👥

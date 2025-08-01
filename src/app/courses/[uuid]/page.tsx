@@ -244,7 +244,13 @@ export default function CourseDetailsPage() {
                   </span>
                   {/* Always show LinkedIn button, fallback to '#' if not present */}
                   <a
-                    href={"linkedin" in course.trainer && typeof course.trainer.linkedin === "string" && course.trainer.linkedin ? course.trainer.linkedin : "#"}
+                    href={
+                      "linkedin" in course.trainer &&
+                      typeof course.trainer.linkedin === "string" &&
+                      course.trainer.linkedin
+                        ? course.trainer.linkedin
+                        : "#"
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-sm font-semibold transition border border-blue-700 shadow-md"
@@ -293,7 +299,9 @@ export default function CourseDetailsPage() {
                 </p>
                 <div className="flex flex-wrap gap-4 mt-2">
                   <div className="text-lg text-blue-700 font-semibold">
-                    <span className="font-semibold text-blue-900">Experience:</span>{" "}
+                    <span className="font-semibold text-blue-900">
+                      Experience:
+                    </span>{" "}
                     12+ years in MERN stack, 2000+ students mentored
                   </div>
                 </div>

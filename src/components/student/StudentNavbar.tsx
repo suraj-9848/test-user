@@ -8,7 +8,11 @@ import { useJWT } from "@/context/JWTContext";
 import { getAdminDashboardUrl } from "@/config/urls";
 import { getUserFromJWT } from "@/utils";
 
-const StudentNavbar = () => {
+interface StudentNavbarProps {
+  onToggleSidebar?: () => void;
+}
+
+const StudentNavbar = ({ onToggleSidebar }: StudentNavbarProps) => {
   const router = useRouter();
   const { jwt, setJwt } = useJWT();
   const [isLogoutMenuOpen, setIsLogoutMenuOpen] = useState(false);
@@ -20,26 +24,29 @@ const StudentNavbar = () => {
 
   // Check if admin is viewing as student
   useEffect(() => {
-    const adminViewing = sessionStorage.getItem('admin_viewing_as_student') === 'true';
-    const returnUrl = sessionStorage.getItem('admin_return_url');
+    const adminViewing =
+      sessionStorage.getItem("admin_viewing_as_student") === "true";
+    const returnUrl = sessionStorage.getItem("admin_return_url");
     setIsAdminViewing(adminViewing);
     setAdminReturnUrl(returnUrl);
   }, []);
 
   const handleLogout = async () => {
     try {
-      const { clearTokensAndRedirect } = await import("@/utils/axiosInterceptor");
+      const { clearTokensAndRedirect } = await import(
+        "@/utils/axiosInterceptor"
+      );
       await clearTokensAndRedirect();
     } catch (error) {
       console.error("Logout error:", error);
       // Fallback: manually clear everything including NextAuth
       try {
-        const { signOut } = await import('next-auth/react');
+        const { signOut } = await import("next-auth/react");
         await signOut({ redirect: false });
       } catch (signOutError) {
         console.error("NextAuth signOut error:", signOutError);
       }
-      
+
       setJwt(null);
       localStorage.removeItem("jwt");
       sessionStorage.clear();
@@ -48,12 +55,13 @@ const StudentNavbar = () => {
   };
 
   const handleReturnToAdmin = () => {
-    const adminUrl = adminReturnUrl || getAdminDashboardUrl() || 'http://localhost:3002';
-    
+    const adminUrl =
+      adminReturnUrl || getAdminDashboardUrl() || "http://localhost:3002";
+
     // Clear the admin viewing session
-    sessionStorage.removeItem('admin_viewing_as_student');
-    sessionStorage.removeItem('admin_return_url');
-    
+    sessionStorage.removeItem("admin_viewing_as_student");
+    sessionStorage.removeItem("admin_return_url");
+
     // Redirect back to admin dashboard
     window.location.href = adminUrl;
   };
@@ -61,7 +69,10 @@ const StudentNavbar = () => {
   // Close logout menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (logoutMenuRef.current && !logoutMenuRef.current.contains(event.target as Node)) {
+      if (
+        logoutMenuRef.current &&
+        !logoutMenuRef.current.contains(event.target as Node)
+      ) {
         setIsLogoutMenuOpen(false);
       }
     };
@@ -105,8 +116,12 @@ const StudentNavbar = () => {
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center mr-3">
                   <span className="text-white font-bold text-sm">N</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">Nirudhyog</span>
-                <span className="ml-2 text-sm text-gray-500 font-medium">Student</span>
+                <span className="text-xl font-bold text-gray-900">
+                  Nirudhyog
+                </span>
+                <span className="ml-2 text-sm text-gray-500 font-medium">
+                  Student
+                </span>
               </Link>
             </div>
 
@@ -119,26 +134,26 @@ const StudentNavbar = () => {
                 {user?.profile_picture ? (
                   <img
                     src={user.profile_picture}
-                    alt={user.username || 'User'}
+                    alt={user.username || "User"}
                     className="w-8 h-8 rounded-full object-cover"
                     onError={(e) => {
                       // Fallback to initials if image fails to load
                       const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
+                      target.style.display = "none";
                       const fallback = target.nextElementSibling as HTMLElement;
-                      if (fallback) fallback.style.display = 'flex';
+                      if (fallback) fallback.style.display = "flex";
                     }}
                   />
                 ) : null}
-                <div 
-                  className={`w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center ${user?.profile_picture ? 'hidden' : ''}`}
+                <div
+                  className={`w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center ${user?.profile_picture ? "hidden" : ""}`}
                 >
                   <span className="text-white font-medium text-sm">
-                    {user?.username ? user.username[0].toUpperCase() : 'S'}
+                    {user?.username ? user.username[0].toUpperCase() : "S"}
                   </span>
                 </div>
                 <span className="text-sm font-medium text-gray-700">
-                  {user?.username || 'Student'}
+                  {user?.username || "Student"}
                 </span>
               </button>
 
@@ -147,10 +162,10 @@ const StudentNavbar = () => {
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
                   <div className="px-4 py-2 border-b border-gray-100">
                     <div className="text-sm font-medium text-gray-900">
-                      {user?.username || 'Student'}
+                      {user?.username || "Student"}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {user?.email || 'No email'}
+                      {user?.email || "No email"}
                     </div>
                   </div>
                   <button

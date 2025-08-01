@@ -73,7 +73,7 @@ export default function TestSelection({
   const now = new Date();
   const upcomingTests = tests.filter((t) => new Date(t.startDate) > now);
   const ongoingTests = tests.filter(
-    (t) => new Date(t.startDate) <= now && new Date(t.endDate) >= now
+    (t) => new Date(t.startDate) <= now && new Date(t.endDate) >= now,
   );
   const pastTests = tests.filter((t) => new Date(t.endDate) < now);
 
@@ -101,7 +101,7 @@ export default function TestSelection({
     const hasCameraAccess = await checkCameraPermission();
     if (!hasCameraAccess) {
       alert(
-        "Camera access is required for this test. Please enable camera permissions and try again."
+        "Camera access is required for this test. Please enable camera permissions and try again.",
       );
       return;
     }
@@ -291,7 +291,7 @@ export default function TestSelection({
                         const hasCameraAccess = await checkCameraPermission();
                         if (!hasCameraAccess) {
                           alert(
-                            "Camera access is required for this test. Please enable camera permissions and try again."
+                            "Camera access is required for this test. Please enable camera permissions and try again.",
                           );
                           return;
                         }

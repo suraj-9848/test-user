@@ -129,30 +129,41 @@ export default function StudentTestsPage() {
   if (error) {
     const testTokenRefresh = async () => {
       try {
-        console.log('🧪 Testing manual token refresh...');
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_BASE_URL || 'http://localhost:3000'}/api/auth/refresh`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+        console.log("🧪 Testing manual token refresh...");
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000"}/api/auth/refresh`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
           },
-          credentials: 'include',
-        });
+        );
 
         if (response.ok) {
           const data = await response.json();
-          console.log('✅ Manual token refresh successful:', data);
+          console.log("✅ Manual token refresh successful:", data);
           if (data.token) {
-            localStorage.setItem('jwt', data.token);
+            localStorage.setItem("jwt", data.token);
             window.location.reload();
           }
         } else {
           const errorData = await response.json().catch(() => ({}));
-          console.log('❌ Manual token refresh failed:', response.status, errorData);
-          alert(`Token refresh failed: ${response.status} - ${errorData.error || response.statusText}`);
+          console.log(
+            "❌ Manual token refresh failed:",
+            response.status,
+            errorData,
+          );
+          alert(
+            `Token refresh failed: ${response.status} - ${errorData.error || response.statusText}`,
+          );
         }
       } catch (error) {
-        console.error('❌ Manual token refresh error:', error);
-        alert(`Token refresh error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        console.error("❌ Manual token refresh error:", error);
+        alert(
+          `Token refresh error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
       }
     };
 
@@ -164,15 +175,20 @@ export default function StudentTestsPage() {
             Error Loading Tests
           </h2>
           <p className="text-gray-600 mb-4">{error}</p>
-          
+
           {/* Token Refresh Debug Panel */}
           <div className="bg-gray-50 p-4 rounded-lg mb-4 text-left">
-            <h3 className="font-semibold mb-2 text-center">🔧 Debug Information</h3>
+            <h3 className="font-semibold mb-2 text-center">
+              🔧 Debug Information
+            </h3>
             <div className="text-sm space-y-1">
-              <div>JWT Present: {jwt ? '✅ Yes' : '❌ No'}</div>
-              <div>Session Present: {session ? '✅ Yes' : '❌ No'}</div>
-              <div>Hydrated: {hydrated ? '✅ Yes' : '❌ No'}</div>
-              <div>Error Type: {error.includes('401') ? '🔐 Authentication' : '⚠️ Other'}</div>
+              <div>JWT Present: {jwt ? "✅ Yes" : "❌ No"}</div>
+              <div>Session Present: {session ? "✅ Yes" : "❌ No"}</div>
+              <div>Hydrated: {hydrated ? "✅ Yes" : "❌ No"}</div>
+              <div>
+                Error Type:{" "}
+                {error.includes("401") ? "🔐 Authentication" : "⚠️ Other"}
+              </div>
             </div>
           </div>
 
@@ -191,7 +207,7 @@ export default function StudentTestsPage() {
             </button>
             <div className="mt-2">
               <button
-                onClick={() => window.location.href = '/sign-in'}
+                onClick={() => (window.location.href = "/sign-in")}
                 className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
               >
                 Sign In Again

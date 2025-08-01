@@ -11,7 +11,7 @@ export default function SignIn() {
   const { setJwt } = useJWT();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [userType, setUserType] = useState<'student' | 'admin' | null>(null);
+  const [userType, setUserType] = useState<"student" | "admin" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [redirectAttempted, setRedirectAttempted] = useState(false);
 
@@ -22,69 +22,84 @@ export default function SignIn() {
         setError(null);
 
         // Try admin login first
-        const adminResponse = await fetch(`${BASE_URLS.BACKEND}${API_ENDPOINTS.AUTH.ADMIN_LOGIN}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+        const adminResponse = await fetch(
+          `${BASE_URLS.BACKEND}${API_ENDPOINTS.AUTH.ADMIN_LOGIN}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({ token: googleJwt }),
           },
-          credentials: 'include',
-          body: JSON.stringify({ token: googleJwt }),
-        });
+        );
 
         if (adminResponse.ok) {
           const adminData = await adminResponse.json();
-          sessionStorage.setItem('adminToken', adminData.token);
-          sessionStorage.setItem('adminUser', JSON.stringify(adminData.user));
-          setUserType('admin');
-          
-          console.log('[SignIn] Admin login successful, attempting redirect...');
-          
+          sessionStorage.setItem("adminToken", adminData.token);
+          sessionStorage.setItem("adminUser", JSON.stringify(adminData.user));
+          setUserType("admin");
+
+          console.log(
+            "[SignIn] Admin login successful, attempting redirect...",
+          );
+
           // Use a more reliable redirect method to prevent infinite loops
           const adminDashboardUrl = getAdminDashboardUrl();
           if (adminDashboardUrl) {
-            console.log('[SignIn] Redirecting to admin dashboard:', adminDashboardUrl);
+            console.log(
+              "[SignIn] Redirecting to admin dashboard:",
+              adminDashboardUrl,
+            );
             // Add a small delay to ensure sessionStorage is saved
             setTimeout(() => {
               try {
                 window.location.replace(adminDashboardUrl);
               } catch (error) {
-                console.error('[SignIn] Redirect failed, using router instead:', error);
-                router.push('/admin');
+                console.error(
+                  "[SignIn] Redirect failed, using router instead:",
+                  error,
+                );
+                router.push("/admin");
               }
             }, 100);
           } else {
-            console.log('[SignIn] No admin dashboard URL found, using local admin route');
-            router.push('/admin');
+            console.log(
+              "[SignIn] No admin dashboard URL found, using local admin route",
+            );
+            router.push("/admin");
           }
           return;
         }
 
         // Try student login
-        const studentResponse = await fetch(`${BASE_URLS.BACKEND}${API_ENDPOINTS.AUTH.EXCHANGE}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+        const studentResponse = await fetch(
+          `${BASE_URLS.BACKEND}${API_ENDPOINTS.AUTH.EXCHANGE}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({ token: googleJwt }),
           },
-          credentials: 'include',
-          body: JSON.stringify({ token: googleJwt }),
-        });
+        );
 
         if (studentResponse.ok) {
           const studentData = await studentResponse.json();
           setJwt(studentData.token);
-          localStorage.setItem('jwt', studentData.token);
-          setUserType('student');
-          router.push('/student');
+          localStorage.setItem("jwt", studentData.token);
+          setUserType("student");
+          router.push("/student");
           return;
         }
 
         // Both failed
         const errorData = await studentResponse.json();
-        setError(errorData.error || 'Authentication failed');
-        
+        setError(errorData.error || "Authentication failed");
       } catch (error) {
-        console.error('Authentication error:', error);
-        setError('Network error occurred. Please try again.');
+        console.error("Authentication error:", error);
+        setError("Network error occurred. Please try again.");
         setRedirectAttempted(false); // Reset on error to allow retry
       } finally {
         setLoading(false);
@@ -92,7 +107,12 @@ export default function SignIn() {
     };
 
     // Check if user just signed in with Google - prevent multiple attempts
-    if (status === "authenticated" && (session as any)?.id_token && !userType && !redirectAttempted) {
+    if (
+      status === "authenticated" &&
+      (session as any)?.id_token &&
+      !userType &&
+      !redirectAttempted
+    ) {
       setRedirectAttempted(true);
       exchangeGoogleJwt((session as any).id_token);
     } else if (status === "unauthenticated") {
@@ -106,12 +126,12 @@ export default function SignIn() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       await signIn("google", { redirect: false });
     } catch (error) {
-      console.error('Sign in error:', error);
-      setError('Failed to sign in with Google');
+      console.error("Sign in error:", error);
+      setError("Failed to sign in with Google");
       setLoading(false);
     }
   };
@@ -122,8 +142,12 @@ export default function SignIn() {
         <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full mx-4">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">Authenticating...</h2>
-            <p className="text-gray-600">Please wait while we verify your credentials.</p>
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+              Authenticating...
+            </h2>
+            <p className="text-gray-600">
+              Please wait while we verify your credentials.
+            </p>
           </div>
         </div>
       </div>
@@ -137,8 +161,12 @@ export default function SignIn() {
           <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-white text-2xl font-bold">N</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Welcome to Nirudhyog</h1>
-          <p className="text-gray-600">Sign in with your Google account to continue</p>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">
+            Welcome to Nirudhyog
+          </h1>
+          <p className="text-gray-600">
+            Sign in with your Google account to continue
+          </p>
         </div>
 
         {error && (

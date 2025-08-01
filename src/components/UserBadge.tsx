@@ -94,11 +94,17 @@ const UserBadge: React.FC<UserBadgeProps> = ({ user }) => {
             </div>
           </div>
           <div className="py-2">
-            <button onClick={() => router.push("/student/profile")} className="flex items-center w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-all duration-200 group">
+            <button
+              onClick={() => router.push("/student/profile")}
+              className="flex items-center w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-all duration-200 group"
+            >
               <FiUser className="h-4 w-4 mr-3 text-gray-400 group-hover:text-gray-500" />
               View Profile
             </button>
-            <button onClick={() => router.push("/student")} className="flex items-center w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-all duration-200 group">
+            <button
+              onClick={() => router.push("/student")}
+              className="flex items-center w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-all duration-200 group"
+            >
               <FiSettings className="h-4 w-4 mr-3 text-gray-400 group-hover:text-gray-500" />
               Dashboard
             </button>

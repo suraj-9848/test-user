@@ -23,7 +23,8 @@
   overflow-x: auto;
 }
 .prose .ql-code-block {
-  font-family: "Fira Mono", "Menlo", "Monaco", "Consolas", "Liberation Mono",
+  font-family:
+    "Fira Mono", "Menlo", "Monaco", "Consolas", "Liberation Mono",
     "Courier New", monospace;
   font-size: 0.95em;
   background: none;

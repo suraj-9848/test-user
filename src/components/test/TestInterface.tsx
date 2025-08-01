@@ -59,7 +59,7 @@ export default function TestInterface({
 
   // Monitoring events state
   const [monitoringEvents, setMonitoringEvents] = useState<MonitoringEvent[]>(
-    []
+    [],
   );
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -91,7 +91,7 @@ export default function TestInterface({
     } catch (error) {
       console.error("Permission denied or fullscreen failed:", error);
       setError(
-        "Permissions required to start test. Please allow camera and fullscreen."
+        "Permissions required to start test. Please allow camera and fullscreen.",
       );
     }
   };
@@ -137,7 +137,7 @@ export default function TestInterface({
         setUIState((prev) => ({
           ...prev,
           timeRemaining: Math.floor(
-            attempt.timeRemaining ?? test.durationInMinutes * 60
+            attempt.timeRemaining ?? test.durationInMinutes * 60,
           ),
         }));
 
@@ -147,7 +147,7 @@ export default function TestInterface({
         startAutoSave();
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Failed to initialize test"
+          err instanceof Error ? err.message : "Failed to initialize test",
         );
       } finally {
         setIsLoading(false);
@@ -216,7 +216,7 @@ export default function TestInterface({
         SecuritySeverity.HIGH,
         {
           error: "Failed to enter fullscreen",
-        }
+        },
       );
     }
   };
@@ -263,7 +263,7 @@ export default function TestInterface({
         {
           error:
             error instanceof Error ? error.message : "Camera access denied",
-        }
+        },
       );
     }
   };
@@ -285,7 +285,7 @@ export default function TestInterface({
         logMonitoringEvent(
           MonitoringEventType.FULLSCREEN_EXIT,
           SecuritySeverity.HIGH,
-          {}
+          {},
         );
         setUIState((prevState) => ({
           ...prevState,
@@ -306,7 +306,7 @@ export default function TestInterface({
           logMonitoringEvent(
             MonitoringEventType.TAB_SWITCH,
             SecuritySeverity.HIGH,
-            { tabSwitchCount: newCount }
+            { tabSwitchCount: newCount },
           );
           setUIState((prevState) => ({
             ...prevState,
@@ -325,7 +325,7 @@ export default function TestInterface({
       logMonitoringEvent(
         MonitoringEventType.WINDOW_BLUR,
         SecuritySeverity.MEDIUM,
-        {}
+        {},
       );
     };
 
@@ -341,7 +341,7 @@ export default function TestInterface({
       logMonitoringEvent(
         MonitoringEventType.PASTE,
         SecuritySeverity.MEDIUM,
-        {}
+        {},
       );
       autoSubmitTest("AUTO_VIOLATION");
     };
@@ -352,7 +352,7 @@ export default function TestInterface({
       logMonitoringEvent(
         MonitoringEventType.CONTEXT_MENU,
         SecuritySeverity.MEDIUM,
-        {}
+        {},
       );
       autoSubmitTest("AUTO_VIOLATION");
     };
@@ -368,7 +368,7 @@ export default function TestInterface({
           logMonitoringEvent(
             MonitoringEventType.TAB_SWITCH,
             SecuritySeverity.HIGH,
-            { tabSwitchCount: newCount }
+            { tabSwitchCount: newCount },
           );
           setUIState((ps) => ({
             ...ps,
@@ -389,7 +389,7 @@ export default function TestInterface({
         logMonitoringEvent(
           MonitoringEventType.KEYBOARD_SHORTCUT,
           SecuritySeverity.MEDIUM,
-          { key: e.key }
+          { key: e.key },
         );
         autoSubmitTest("AUTO_VIOLATION");
       }
@@ -400,7 +400,7 @@ export default function TestInterface({
         logMonitoringEvent(
           MonitoringEventType.FULLSCREEN_EXIT,
           SecuritySeverity.HIGH,
-          { key: e.key }
+          { key: e.key },
         );
         setFullscreenExitCount((prev) => {
           const count = prev + 1;
@@ -424,7 +424,7 @@ export default function TestInterface({
       logMonitoringEvent(
         MonitoringEventType.WINDOW_BLUR,
         SecuritySeverity.HIGH,
-        { reason: "browser-close" }
+        { reason: "browser-close" },
       );
       autoSubmitTest("AUTO_BROWSER_CLOSE");
       e.preventDefault();
@@ -451,15 +451,15 @@ export default function TestInterface({
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
       document.removeEventListener(
         "webkitfullscreenchange",
-        handleFullscreenChange
+        handleFullscreenChange,
       );
       document.removeEventListener(
         "mozfullscreenchange",
-        handleFullscreenChange
+        handleFullscreenChange,
       );
       document.removeEventListener(
         "msfullscreenchange",
-        handleFullscreenChange
+        handleFullscreenChange,
       );
       document.removeEventListener("copy", handleCopy);
       document.removeEventListener("paste", handlePaste);
@@ -480,7 +480,7 @@ export default function TestInterface({
   const logMonitoringEvent = (
     eventType: MonitoringEventType,
     severity: SecuritySeverity,
-    metadata: Record<string, unknown>
+    metadata: Record<string, unknown>,
   ) => {
     const event: MonitoringEvent = {
       id: `${Date.now()}-${Math.random()}`,
@@ -521,7 +521,7 @@ export default function TestInterface({
 
   // Auto-submit test
   const autoSubmitTest = async (
-    submissionType: "AUTO_TIME" | "AUTO_VIOLATION" | "AUTO_BROWSER_CLOSE"
+    submissionType: "AUTO_TIME" | "AUTO_VIOLATION" | "AUTO_BROWSER_CLOSE",
   ) => {
     if (isTestSubmitted) return;
 
@@ -537,7 +537,7 @@ export default function TestInterface({
       | "MANUAL"
       | "AUTO_TIME"
       | "AUTO_VIOLATION"
-      | "AUTO_BROWSER_CLOSE" = "MANUAL"
+      | "AUTO_BROWSER_CLOSE" = "MANUAL",
   ) => {
     try {
       // Stop recording
@@ -652,7 +652,7 @@ export default function TestInterface({
   const handleAnswerChange = (
     questionId: string,
     selectedOptions: string[],
-    textAnswer?: string
+    textAnswer?: string,
   ) => {
     setAnswers((prev) =>
       prev.map((answer) =>
@@ -662,8 +662,8 @@ export default function TestInterface({
               selectedOptions,
               textAnswer: textAnswer || "",
             }
-          : answer
-      )
+          : answer,
+      ),
     );
 
     // Update last activity
@@ -764,7 +764,7 @@ export default function TestInterface({
 
   const currentQuestion = questions[uiState.currentQuestionIndex];
   const currentAnswer = answers.find(
-    (a) => a.questionId === currentQuestion?.id
+    (a) => a.questionId === currentQuestion?.id,
   );
 
   return (
@@ -864,9 +864,9 @@ export default function TestInterface({
                     index === uiState.currentQuestionIndex
                       ? "bg-blue-600 text-white"
                       : answers[index]?.selectedOptions.length > 0 ||
-                        answers[index]?.textAnswer
-                      ? "bg-green-100 text-green-800"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          answers[index]?.textAnswer
+                        ? "bg-green-100 text-green-800"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
                   {index + 1}

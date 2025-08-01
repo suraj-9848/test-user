@@ -124,22 +124,22 @@ export default function StudentSidebar({
           </nav>
 
           {/* Support section */}
-            <div className="p-4 mt-auto border-t border-gray-200">
+          <div className="p-4 mt-auto border-t border-gray-200">
             <div className="bg-gray-50 rounded-lg p-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-2">
-              Need Help?
+                Need Help?
               </h3>
               <p className="text-xs text-gray-600 mb-3">
-              Get support from our team or browse the knowledge base.
+                Get support from our team or browse the knowledge base.
               </p>
               <a
-              href="mailto:contact@nirudhyog.com"
-              className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 font-medium"
+                href="mailto:contact@nirudhyog.com"
+                className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 font-medium"
               >
-              contact@nirudhyog.com
+                contact@nirudhyog.com
               </a>
             </div>
-            </div>
+          </div>
         </div>
       </aside>
     </>

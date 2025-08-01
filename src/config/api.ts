@@ -4,9 +4,6 @@ import { mapBackendToFrontendType } from "@/types/test";
 const BASE_URL =
   process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
 
-
-
-
 console.log("API Configuration - BASE_URL:", BASE_URL);
 
 // Get JWT token from localStorage
@@ -91,7 +88,7 @@ const transformQuestions = (questions: any[]): any[] => {
 // Import enhanced API client with automatic token refresh
 const getEnhancedApiClient = async () => {
   // Dynamically import to avoid SSR issues
-  const { apiClient } = await import('@/utils/apiClient');
+  const { apiClient } = await import("@/utils/apiClient");
   return apiClient;
 };
 
@@ -102,7 +99,7 @@ export const apiService = {
     try {
       console.log("🔄 Fetching available tests with enhanced API client...");
       const apiClient = await getEnhancedApiClient();
-      const response = await apiClient('/api/student/tests');
+      const response = await apiClient("/api/student/tests");
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -122,7 +119,9 @@ export const apiService = {
   // Get test details with automatic token refresh
   getTestDetails: async (testId: string): Promise<{ test: any }> => {
     try {
-      console.log(`🔄 Fetching test details for ${testId} with enhanced API client...`);
+      console.log(
+        `🔄 Fetching test details for ${testId} with enhanced API client...`,
+      );
       const apiClient = await getEnhancedApiClient();
       const response = await apiClient(`/api/student/tests/${testId}`);
 

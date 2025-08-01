@@ -39,8 +39,14 @@ export interface Course {
     linkedin: string;
   };
   price: number;
+  originalPrice?: number;
   duration: string;
   image: string;
+  instructor?: string;
+  instructorImage?: string;
+  rating?: number;
+  studentsEnrolled?: number;
+  certificateProvided?: boolean;
   lastUpdated: string;
   tags: string[];
   startDate: string;

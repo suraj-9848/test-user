@@ -1,36 +1,22 @@
 "use client";
 
 import React from "react";
-import Image, { StaticImageData } from "next/image";
+import Image from "next/image";
 
-// image imports
-import image1 from "../../../public/images/companies/image 100.svg";
-import image2 from "../../../public/images/companies/image 89.svg";
-import image3 from "../../../public/images/companies/image 99.png";
-import image4 from "../../../public/images/companies/image 98.svg";
-import image5 from "../../../public/images/companies/image 97.svg";
-import image6 from "../../../public/images/companies/image 96.svg";
-import image7 from "../../../public/images/companies/image 95.png";
-import image8 from "../../../public/images/companies/image 94.svg";
-import image9 from "../../../public/images/companies/image 93.svg";
-import image10 from "../../../public/images/companies/image 92.svg";
-import image11 from "../../../public/images/companies/image 91.svg";
-import image12 from "../../../public/images/companies/image 90.svg";
-
-// Type helps distinguish raster from SVG
-const images: { src: StaticImageData; isRaster: boolean }[] = [
-  { src: image1, isRaster: false },
-  { src: image2, isRaster: false },
-  { src: image3, isRaster: true },
-  { src: image4, isRaster: false },
-  { src: image5, isRaster: false },
-  { src: image6, isRaster: false },
-  { src: image7, isRaster: true },
-  { src: image8, isRaster: false },
-  { src: image9, isRaster: false },
-  { src: image10, isRaster: false },
-  { src: image11, isRaster: false },
-  { src: image12, isRaster: false },
+// Define image data with public paths
+const images: { src: string; isRaster: boolean }[] = [
+  { src: "/images/companies/image 100.svg", isRaster: false },
+  { src: "/images/companies/image 89.svg", isRaster: false },
+  { src: "/images/companies/image 99.png", isRaster: true },
+  { src: "/images/companies/image 98.svg", isRaster: false },
+  { src: "/images/companies/image 97.svg", isRaster: false },
+  { src: "/images/companies/image 96.svg", isRaster: false },
+  { src: "/images/companies/image 95.png", isRaster: true },
+  { src: "/images/companies/image 94.svg", isRaster: false },
+  { src: "/images/companies/image 93.svg", isRaster: false },
+  { src: "/images/companies/image 92.svg", isRaster: false },
+  { src: "/images/companies/image 91.svg", isRaster: false },
+  { src: "/images/companies/image 90.svg", isRaster: false },
 ];
 
 const CollegesSection: React.FC = () => {
@@ -50,8 +36,9 @@ const CollegesSection: React.FC = () => {
             <Image
               src={img.src}
               alt={`College ${i + 1}`}
+              width={150}
+              height={80}
               className="w-full h-auto object-contain"
-              {...(img.isRaster ? { placeholder: "blur" } : {})}
             />
           </div>
         ))}

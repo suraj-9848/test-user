@@ -138,20 +138,24 @@ export default function EnrollmentModal({
 
             <div className="space-y-2 text-sm text-gray-600 mb-4">
               <div className="flex items-center gap-2">
-                <Image
-                  src={course.instructorImage}
-                  alt={course.instructor}
-                  width={20}
-                  height={20}
-                  className="rounded-full"
-                />
-                <span>{course.instructor}</span>
+                {course.instructorImage && course.instructor && (
+                  <Image
+                    src={course.instructorImage}
+                    alt={course.instructor}
+                    width={20}
+                    height={20}
+                    className="rounded-full"
+                  />
+                )}
+                <span>
+                  {course.instructor || course.trainer?.name || "Instructor"}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                 <span>
-                  {course.rating} ({course.studentsEnrolled.toLocaleString()}{" "}
-                  students)
+                  {course.rating} (
+                  {(course.studentsEnrolled ?? 0).toLocaleString()} students)
                 </span>
               </div>
               <div className="flex items-center gap-2">

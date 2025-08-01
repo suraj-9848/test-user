@@ -25,6 +25,9 @@ export interface Course {
   description: string;
   image?: string;
   logo?: string;
+  price?: number;
+  originalPrice?: number;
+  certificateProvided?: boolean;
   progress: number;
   totalModules: number;
   completedModules: number;
