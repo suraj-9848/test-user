@@ -4,7 +4,6 @@ import { Course } from "../types/index";
 export const courses: Course[] = [
   {
     id: "1",
-    uuid: "c1a2b3c4-d5e6-7890-abcd-ef1234567890",
     overview: `FSRNL-Live is an intensive, 6-week practical training program for job-ready full stack development using the MERN stack. Build and deploy a real e-commerce app, guided by expert instructors.`,
     trainer: {
       name: "Rajesh Kumar",
@@ -74,7 +73,6 @@ export const courses: Course[] = [
   },
   {
     id: "2",
-    uuid: "d2e3f4g5-h6i7-8901-jklm-nop234567890",
     overview:
       "Master Python, statistics, machine learning, and real-world data science projects. Includes hands-on labs and a capstone project.",
     trainer: {
@@ -129,7 +127,6 @@ export const courses: Course[] = [
   },
   {
     id: "3",
-    uuid: "e3f4g5h6-i7j8-9012-klmn-opq345678901",
     overview:
       "Build cross-platform mobile apps for iOS and Android using React Native and JavaScript. Learn to deploy and optimize apps for real users.",
     trainer: {
@@ -183,7 +180,6 @@ export const courses: Course[] = [
   },
   {
     id: "4",
-    uuid: "f4g5h6i7-j8k9-0123-lmno-pqr456789012",
     overview:
       "Learn UI/UX design principles with hands-on projects using Figma and Adobe XD. Build a professional design portfolio.",
     trainer: {
@@ -236,7 +232,6 @@ export const courses: Course[] = [
   },
   {
     id: "5",
-    uuid: "g5h6i7j8-k9l0-1234-mnop-qrs567890123",
     overview:
       "Master AWS and cloud computing concepts with hands-on labs and real-world scenarios. Prepare for AWS certification.",
     trainer: {
@@ -296,7 +291,6 @@ export const courses: Course[] = [
   },
   {
     id: "6",
-    uuid: "h6i7j8k9-l0m1-2345-nopq-rst678901234",
     overview:
       "Learn essential cybersecurity concepts, tools, and techniques to protect digital assets and networks. Includes ethical hacking and certification prep.",
     trainer: {

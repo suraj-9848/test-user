@@ -10,6 +10,10 @@ export const BASE_URLS = {
 
 // API Endpoints
 export const API_ENDPOINTS = {
+  PAYMENT: {
+    CREATE_ORDER: "/api/payment/create-order",
+    VERIFY: "/api/payment/verify",
+  },
   // Authentication
   AUTH: {
     LOGIN: "/api/auth/login",
@@ -77,7 +81,6 @@ export const API_ENDPOINTS = {
   // Public Routes (no authentication required)
   PUBLIC: {
     COURSES: "/api/public/courses",
-    COURSE_BY_ID: (id: string) => `/api/public/courses/${id}`,
     ANNOUNCEMENTS: "/api/public/announcements",
     ABOUT: "/api/public/about",
   },

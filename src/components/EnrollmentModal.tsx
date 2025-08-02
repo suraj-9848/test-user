@@ -125,7 +125,11 @@ export default function EnrollmentModal({
           <div className="lg:w-1/3 p-6 bg-gray-50 border-r border-gray-200">
             <div className="relative h-40 rounded-lg overflow-hidden mb-4">
               <Image
-                src={course.image}
+                src={
+                  typeof course.image === "string" && course.image
+                    ? course.image
+                    : ""
+                }
                 alt={course.title}
                 fill
                 className="object-cover"

@@ -14,16 +14,14 @@ import {
   ArrowRight,
   BarChart3,
 } from "lucide-react";
+import { buildApiUrl } from "@/config/urls";
 
-// API Configuration
-const BACKEND_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
-
-// Create API wrapper for consistency
+// API wrapper using centralized URL config
 const api = {
   get: async (endpoint: string) => {
     const token = localStorage.getItem("jwt");
-    const response = await fetch(`${BACKEND_BASE_URL}${endpoint}`, {
+    const url = buildApiUrl(endpoint);
+    const response = await fetch(url, {
       method: "GET",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
@@ -254,7 +252,11 @@ export default function CourseDetailPage() {
                   <div
                     className="bg-yellow-400 h-3 rounded-full transition-all duration-500"
                     style={{
-                      width: `${!isNaN(Number(course.progress)) ? Number(course.progress) : 0}%`,
+                      width: `${
+                        !isNaN(Number(course.progress))
+                          ? Number(course.progress)
+                          : 0
+                      }%`,
                     }}
                   ></div>
                 </div>

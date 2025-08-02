@@ -15,6 +15,11 @@ export default function CourseCard({
   viewMode,
   onEnrollClick,
 }: CourseCardProps) {
+  const DEFAULT_COURSE_IMAGE =
+    "https://images.unsplash.com/photo-1516321310762-479a5e9490b7?w=400&h=250&fit=crop";
+  const DEFAULT_TRAINER_AVATAR =
+    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face";
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -29,7 +34,7 @@ export default function CourseCard({
         <div className="flex flex-col lg:flex-row">
           <div className="lg:w-80 h-48 lg:h-auto relative flex-shrink-0">
             <Image
-              src={course.image}
+              src={course.image || DEFAULT_COURSE_IMAGE}
               alt={course.title}
               fill
               className="object-cover"
@@ -92,8 +97,8 @@ export default function CourseCard({
                 <div className="flex flex-wrap items-center gap-3 xl:gap-4 mb-4 text-sm text-gray-500">
                   <div className="flex items-center gap-1">
                     <Image
-                      src={course.trainer.avatar}
-                      alt={course.trainer.name}
+                      src={course.trainer.avatar || DEFAULT_TRAINER_AVATAR}
+                      alt={`Avatar of ${course.trainer.name}`}
                       width={20}
                       height={20}
                       className="rounded-full"
@@ -142,7 +147,7 @@ export default function CourseCard({
     <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group h-full flex flex-col">
       <div className="relative h-48 sm:h-52 lg:h-48">
         <Image
-          src={course.image}
+          src={course.image || DEFAULT_COURSE_IMAGE}
           alt={course.title}
           fill
           className="object-cover transition-transform duration-300"
@@ -190,8 +195,8 @@ export default function CourseCard({
 
         <div className="flex items-center gap-2 mb-4">
           <Image
-            src={course.trainer.avatar}
-            alt={course.trainer.name}
+            src={course.trainer.avatar || DEFAULT_TRAINER_AVATAR}
+            alt={`Avatar of ${course.trainer.name}`}
             width={20}
             height={20}
             className="rounded-full"

@@ -26,8 +26,8 @@ declare module "next-auth" {
   }
 }
 
+// src/types/index.ts
 export interface Course {
-  uuid: string;
   id: string;
   title: string;
   description: string;
@@ -35,14 +35,14 @@ export interface Course {
   trainer: {
     name: string;
     bio: string;
-    avatar: string;
-    linkedin: string;
+    avatar?: string; // Optional, as trainer_avatar may be empty
+    linkedin?: string; // Optional, as linkedin may be missing
   };
   price: number;
   originalPrice?: number;
   duration: string;
-  image: string;
-  instructor?: string;
+  image?: string; // Optional, maps to logo, may be empty
+  instructor?: string; // Maps to instructor_name, optional
   instructorImage?: string;
   rating?: number;
   studentsEnrolled?: number;
@@ -51,11 +51,13 @@ export interface Course {
   tags: string[];
   startDate: string;
   endDate: string;
-  mode: "online" | "offline";
+  mode: string; // Changed to string to accommodate "hybrid"
   features: string[];
   curriculum: string[];
   prerequisites: string[];
   whatYouWillLearn: string[];
+  is_public?: boolean; // Optional, from API
+  logo?: string; // Optional, maps to image
 }
 
 export interface EnrollmentData {

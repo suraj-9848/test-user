@@ -1,35 +1,82 @@
+// courses/page.tsx
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import {
-  Star,
-  Users,
-  BookOpen,
-  X,
-  TrendingUp,
-  Award,
-  Router,
-} from "lucide-react";
-import { courses } from "../../../sample_data/course";
-import { Course } from "../../../types/index";
+import { Star, Users, BookOpen, X, TrendingUp, Award } from "lucide-react";
 import CourseCard from "@/components/CourseCard";
 import CourseFilters from "@/components/CourseFilters";
 import CourseStats from "@/components/CourseStats";
-import EnrollmentModal from "@/components/EnrollmentModal";
+import { COMMON_URLS } from "../../config/urls";
 import { useRouter } from "next/navigation";
+import { Course } from "../../../types/index";
+
+// Default images
+const DEFAULT_COURSE_IMAGE =
+  "https://images.unsplash.com/photo-1516321310762-479a5e9490b7?w=400&h=250&fit=crop";
+const DEFAULT_TRAINER_AVATAR =
+  "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face";
 
 export default function CoursesPage() {
-  const [filteredCourses, setFilteredCourses] = useState<Course[]>(courses);
+  const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDuration, setSelectedDuration] = useState("All Durations");
   const [selectedPrice, setSelectedPrice] = useState("All Prices");
   const [sortBy, setSortBy] = useState("popularity");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [showEnrollment, setShowEnrollment] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [activeTab, setActiveTab] = useState<"all" | "trending" | "new">("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  // Memoized filter function to optimize performance
+
+  // Fetch public courses
+  useEffect(() => {
+    async function fetchCourses() {
+      try {
+        setLoading(true);
+        const response = await fetch(COMMON_URLS.PUBLIC_COURSES);
+        if (!response.ok) {
+          throw new Error("Failed to fetch courses");
+        }
+        const data = await response.json();
+        // Map API response to Course interface
+        const mappedCourses: Course[] = data.courses.map((course: any) => ({
+          id: course.id,
+          title: course.title,
+          description: course.description || "",
+          overview: course.overview,
+          trainer: {
+            name: course.trainer_name,
+            bio: course.trainer_bio,
+            avatar: course.trainer_avatar || DEFAULT_TRAINER_AVATAR,
+            linkedin: course.trainer_linkedin || "",
+          },
+          price: course.price,
+          duration: course.duration,
+          image: course.logo || DEFAULT_COURSE_IMAGE,
+          instructor: course.instructor_name,
+          lastUpdated:
+            course.lastUpdated || new Date().toISOString().split("T")[0],
+          tags: course.tags || [],
+          startDate: course.start_date,
+          endDate: course.end_date,
+          mode: course.mode,
+          features: course.features || [],
+          curriculum: course.curriculum || [],
+          prerequisites: course.prerequisites || [],
+          whatYouWillLearn: course.what_you_will_learn || [],
+          is_public: course.is_public,
+        }));
+        setFilteredCourses(mappedCourses);
+      } catch (err) {
+        setError("Error fetching courses. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchCourses();
+  }, []);
+
+  // Memoized filter function
   const filterCourses = useMemo(
     () => (courses: Course[]) => {
       let filtered = [...courses];
@@ -61,7 +108,7 @@ export default function CoursesPage() {
       // Duration filter
       if (selectedDuration !== "All Durations") {
         filtered = filtered.filter((course) => {
-          const weeks = parseInt(course.duration.split(" ")[0]);
+          const weeks = parseInt(course.duration.split(" ")[0]) || 0;
           switch (selectedDuration) {
             case "1-8 weeks":
               return weeks <= 8;
@@ -142,12 +189,11 @@ export default function CoursesPage() {
   );
 
   useEffect(() => {
-    setFilteredCourses(filterCourses(courses));
+    setFilteredCourses(filterCourses(filteredCourses));
   }, [filterCourses]);
 
   const handleEnrollClick = (course: Course) => {
-    // Navigate to course details page using uuid
-    router.push(`/courses/${course.uuid}`);
+    router.push(`/courses/${course.id}`);
   };
 
   const clearFilters = () => {
@@ -158,6 +204,22 @@ export default function CoursesPage() {
     setSortBy("popularity");
     setActiveTab("all");
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading courses...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-red-500">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 mt-36">
@@ -176,8 +238,6 @@ export default function CoursesPage() {
             Join thousands of learners advancing their skills with
             industry-recognized courses.
           </p>
-
-          {/* Hero Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 mb-6 justify-center">
             {[
               { icon: Users, text: "50,000+ Students" },
@@ -200,7 +260,6 @@ export default function CoursesPage() {
               </div>
             ))}
           </div>
-
           <button
             onClick={() => router.push("/sign-in")}
             className="px-6 py-2 sm:px-8 sm:py-3 bg-blue-600 text-white rounded-xl font-bold text-base sm:text-lg hover:bg-blue-700 transition-all transform hover:scale-105 shadow-lg"
@@ -212,11 +271,9 @@ export default function CoursesPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <CourseStats />
-
-        {/* Derive all unique tags from courses */}
         {(() => {
           const tagSet = new Set<string>();
-          courses.forEach((course) =>
+          filteredCourses.forEach((course) =>
             (course.tags || []).forEach((tag) => tagSet.add(tag)),
           );
           const tags = Array.from(tagSet).sort();
@@ -238,7 +295,6 @@ export default function CoursesPage() {
           );
         })()}
 
-        {/* Course Tabs */}
         <div className="mb-6 border-b border-gray-200">
           <div className="flex flex-wrap gap-2">
             {[
@@ -274,7 +330,6 @@ export default function CoursesPage() {
           </div>
         </div>
 
-        {/* Active Filters */}
         {(searchTerm ||
           selectedTags.length > 0 ||
           selectedPrice !== "All Prices") && (
@@ -341,7 +396,6 @@ export default function CoursesPage() {
           ))}
         </div>
 
-        {/* Load More */}
         {filteredCourses.length > 12 && (
           <div className="text-center mt-8 sm:mt-12">
             <button className="px-6 py-2 sm:px-8 sm:py-3 bg-white border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium">
@@ -350,7 +404,6 @@ export default function CoursesPage() {
           </div>
         )}
 
-        {/* Empty State */}
         {filteredCourses.length === 0 && (
           <div className="text-center py-12 sm:py-16">
             <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
@@ -378,8 +431,6 @@ export default function CoursesPage() {
             </div>
           </div>
         )}
-
-        {/* EnrollmentModal removed: navigation is now used for enroll */}
       </div>
     </div>
   );
