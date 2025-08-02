@@ -80,7 +80,7 @@ export const API_ENDPOINTS = {
 
   // Public Routes (no authentication required)
   PUBLIC: {
-    COURSES: "/api/public/courses",
+    COURSES: "/api/student/courses/public",
     ANNOUNCEMENTS: "/api/public/announcements",
     ABOUT: "/api/public/about",
   },

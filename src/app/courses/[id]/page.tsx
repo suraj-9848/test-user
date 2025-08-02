@@ -6,16 +6,12 @@ import { BookOpen } from "lucide-react";
 import { COMMON_URLS } from "../../../config/urls";
 import { API_ENDPOINTS, buildApiUrl } from "../../../config/urls";
 
-// API Configuration
-const BACKEND_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
-
 // Create API wrapper for consistency
 const api = {
   get: async (endpoint: string) => {
     const token =
       typeof window !== "undefined" ? localStorage.getItem("jwt") : null;
-    const response = await fetch(`${BACKEND_BASE_URL}${endpoint}`, {
+    const response = await fetch(`${endpoint}`, {
       method: "GET",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
