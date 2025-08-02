@@ -135,3 +135,714 @@ html {
 .bounce-subtle {
   animation: bounce-subtle 2s ease-in-out infinite;
 }
+
+/* 
+  Comprehensive Global Rich Text Content Styles
+  Add this to your globals.css or import it in your layout.tsx
+  Uses Tailwind-compatible approach for consistent rendering
+*/
+
+/* Base content containers */
+.content-display,
+.student-content-display,
+.prose-content,
+.day-content-display,
+.html-content,
+.rich-text-content {
+  @apply font-sans text-gray-700 leading-relaxed;
+}
+
+/* Heading Styles - CRITICAL for H1, H2, H3 rendering */
+.content-display h1,
+.student-content-display h1,
+.prose-content h1,
+.day-content-display h1,
+.html-content h1,
+.rich-text-content h1 {
+  @apply text-3xl font-bold leading-tight my-4 text-gray-900 block;
+  margin: 16px 0 12px 0 !important;
+}
+
+.content-display h2,
+.student-content-display h2,
+.prose-content h2,
+.day-content-display h2,
+.html-content h2,
+.rich-text-content h2 {
+  @apply text-2xl font-semibold leading-snug my-3 text-gray-800 block;
+  margin: 14px 0 10px 0 !important;
+}
+
+.content-display h3,
+.student-content-display h3,
+.prose-content h3,
+.day-content-display h3,
+.html-content h3,
+.rich-text-content h3 {
+  @apply text-xl font-semibold leading-normal my-3 text-gray-700 block;
+  margin: 12px 0 8px 0 !important;
+}
+
+.content-display h4,
+.student-content-display h4,
+.prose-content h4,
+.day-content-display h4,
+.html-content h4,
+.rich-text-content h4 {
+  @apply text-lg font-semibold leading-normal my-2 text-gray-700 block;
+  margin: 10px 0 6px 0 !important;
+}
+
+.content-display h5,
+.student-content-display h5,
+.prose-content h5,
+.day-content-display h5,
+.html-content h5,
+.rich-text-content h5 {
+  @apply text-base font-semibold leading-normal my-2 text-gray-600 block;
+  margin: 8px 0 4px 0 !important;
+}
+
+.content-display h6,
+.student-content-display h6,
+.prose-content h6,
+.day-content-display h6,
+.html-content h6,
+.rich-text-content h6 {
+  @apply text-sm font-semibold leading-normal my-2 text-gray-600 block;
+  margin: 8px 0 4px 0 !important;
+}
+
+/* Paragraph Styles */
+.content-display p,
+.student-content-display p,
+.prose-content p,
+.day-content-display p,
+.html-content p,
+.rich-text-content p {
+  @apply my-2 leading-relaxed block text-gray-700;
+  margin: 8px 0 !important;
+}
+
+/* List Styles - CRITICAL for UL/OL rendering */
+.content-display ul,
+.student-content-display ul,
+.prose-content ul,
+.day-content-display ul,
+.html-content ul,
+.rich-text-content ul {
+  @apply pl-6 my-2 block;
+  list-style-type: disc !important;
+  margin: 8px 0 !important;
+  padding-left: 24px !important;
+}
+
+.content-display ol,
+.student-content-display ol,
+.prose-content ol,
+.day-content-display ol,
+.html-content ol,
+.rich-text-content ol {
+  @apply pl-6 my-2 block;
+  list-style-type: decimal !important;
+  margin: 8px 0 !important;
+  padding-left: 24px !important;
+}
+
+.content-display li,
+.student-content-display li,
+.prose-content li,
+.day-content-display li,
+.html-content li,
+.rich-text-content li {
+  @apply my-1 leading-normal text-gray-700;
+  display: list-item !important;
+  list-style-position: outside !important;
+  margin: 4px 0 !important;
+}
+
+/* Ensure nested lists work properly */
+.content-display ul li,
+.student-content-display ul li,
+.prose-content ul li,
+.day-content-display ul li,
+.html-content ul li,
+.rich-text-content ul li {
+  list-style-type: disc !important;
+}
+
+.content-display ol li,
+.student-content-display ol li,
+.prose-content ol li,
+.day-content-display ol li,
+.html-content ol li,
+.rich-text-content ol li {
+  list-style-type: decimal !important;
+}
+
+.content-display ul ul,
+.student-content-display ul ul,
+.prose-content ul ul,
+.day-content-display ul ul,
+.html-content ul ul,
+.rich-text-content ul ul {
+  list-style-type: circle !important;
+  margin: 4px 0 !important;
+}
+
+.content-display ol ol,
+.student-content-display ol ol,
+.prose-content ol ol,
+.day-content-display ol ol,
+.html-content ol ol,
+.rich-text-content ol ol {
+  list-style-type: lower-alpha !important;
+  margin: 4px 0 !important;
+}
+
+/* Code Styles - CRITICAL for proper block display */
+.content-display pre,
+.student-content-display pre,
+.prose-content pre,
+.day-content-display pre,
+.html-content pre,
+.rich-text-content pre {
+  @apply bg-slate-100 border border-slate-300 rounded-lg p-4 my-4 overflow-x-auto block font-mono text-sm leading-relaxed;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  clear: both !important;
+  white-space: pre-wrap !important;
+}
+
+.content-display code,
+.student-content-display code,
+.prose-content code,
+.day-content-display code,
+.html-content code,
+.rich-text-content code {
+  @apply bg-slate-100 px-1 py-0.5 rounded font-mono text-sm text-gray-700;
+}
+
+/* Don't style code inside pre differently */
+.content-display pre code,
+.student-content-display pre code,
+.prose-content pre code,
+.day-content-display pre code,
+.html-content pre code,
+.rich-text-content pre code {
+  @apply bg-transparent p-0 rounded-none block;
+}
+
+/* Quote Styles */
+.content-display blockquote,
+.student-content-display blockquote,
+.prose-content blockquote,
+.day-content-display blockquote,
+.html-content blockquote,
+.rich-text-content blockquote {
+  @apply border-l-4 border-blue-500 bg-blue-50 p-3 my-4 rounded italic block text-gray-800;
+}
+
+/* Text Formatting */
+.content-display strong,
+.student-content-display strong,
+.prose-content strong,
+.day-content-display strong,
+.html-content strong,
+.rich-text-content strong,
+.content-display b,
+.student-content-display b,
+.prose-content b,
+.day-content-display b,
+.html-content b,
+.rich-text-content b {
+  @apply font-bold;
+}
+
+.content-display em,
+.student-content-display em,
+.prose-content em,
+.day-content-display em,
+.html-content em,
+.rich-text-content em,
+.content-display i,
+.student-content-display i,
+.prose-content i,
+.day-content-display i,
+.html-content i,
+.rich-text-content i {
+  @apply italic;
+}
+
+.content-display u,
+.student-content-display u,
+.prose-content u,
+.day-content-display u,
+.html-content u,
+.rich-text-content u {
+  @apply underline;
+}
+
+.content-display s,
+.student-content-display s,
+.prose-content s,
+.day-content-display s,
+.html-content s,
+.rich-text-content s {
+  @apply line-through;
+}
+
+/* Link Styles */
+.content-display a,
+.student-content-display a,
+.prose-content a,
+.day-content-display a,
+.html-content a,
+.rich-text-content a {
+  @apply text-blue-600 underline;
+}
+
+.content-display a:hover,
+.student-content-display a:hover,
+.prose-content a:hover,
+.day-content-display a:hover,
+.html-content a:hover,
+.rich-text-content a:hover {
+  @apply text-blue-800;
+}
+
+/* Image Styles */
+.content-display img,
+.student-content-display img,
+.prose-content img,
+.day-content-display img,
+.html-content img,
+.rich-text-content img {
+  @apply max-w-full h-auto my-2 rounded;
+}
+
+/* Horizontal Rule */
+.content-display hr,
+.student-content-display hr,
+.prose-content hr,
+.day-content-display hr,
+.html-content hr,
+.rich-text-content hr {
+  @apply border-0 border-t border-gray-300 my-4;
+}
+
+/* Table Styles */
+.content-display table,
+.student-content-display table,
+.prose-content table,
+.day-content-display table,
+.html-content table,
+.rich-text-content table {
+  @apply border-collapse w-full my-4;
+}
+
+.content-display th,
+.student-content-display th,
+.prose-content th,
+.day-content-display th,
+.html-content th,
+.rich-text-content th,
+.content-display td,
+.student-content-display td,
+.prose-content td,
+.day-content-display td,
+.html-content td,
+.rich-text-content td {
+  @apply border border-gray-300 px-3 py-2 text-left;
+}
+
+.content-display th,
+.student-content-display th,
+.prose-content th,
+.day-content-display th,
+.html-content th,
+.rich-text-content th {
+  @apply bg-gray-50 font-semibold;
+}
+
+/* Fix any potential conflicts */
+.content-display *,
+.student-content-display *,
+.prose-content *,
+.day-content-display *,
+.html-content *,
+.rich-text-content * {
+  box-sizing: border-box;
+}
+
+/* Override Tailwind prose styles if they conflict */
+.prose .content-display *,
+.prose .student-content-display *,
+.prose .prose-content *,
+.prose .day-content-display *,
+.prose .html-content *,
+.prose .rich-text-content * {
+  margin: revert !important;
+  padding: revert !important;
+  font-size: revert !important;
+  font-weight: revert !important;
+  line-height: revert !important;
+  color: revert !important;
+  display: revert !important;
+  list-style-type: revert !important;
+  list-style-position: revert !important;
+}
+
+/* Force important styles for critical elements */
+.content-display h1,
+.student-content-display h1,
+.html-content h1 {
+  font-size: 1.875rem !important;
+}
+.content-display h2,
+.student-content-display h2,
+.html-content h2 {
+  font-size: 1.5rem !important;
+}
+.content-display h3,
+.student-content-display h3,
+.html-content h3 {
+  font-size: 1.25rem !important;
+}
+.content-display ul,
+.student-content-display ul,
+.html-content ul {
+  list-style-type: disc !important;
+}
+.content-display ol,
+.student-content-display ol,
+.html-content ol {
+  list-style-type: decimal !important;
+}
+.content-display li,
+.student-content-display li,
+.html-content li {
+  display: list-item !important;
+}
+
+/* Alternative non-Tailwind approach for better compatibility */
+.content-display h1,
+.student-content-display h1,
+.html-content h1 {
+  font-size: 1.875rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  margin: 16px 0 12px 0 !important;
+  color: #1f2937 !important;
+  display: block !important;
+}
+
+.content-display h2,
+.student-content-display h2,
+.html-content h2 {
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  margin: 14px 0 10px 0 !important;
+  color: #374151 !important;
+  display: block !important;
+}
+
+.content-display h3,
+.student-content-display h3,
+.html-content h3 {
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  margin: 12px 0 8px 0 !important;
+  color: #4b5563 !important;
+  display: block !important;
+}
+
+.content-display ul,
+.student-content-display ul,
+.html-content ul {
+  padding-left: 24px !important;
+  margin: 8px 0 !important;
+  list-style-type: disc !important;
+  display: block !important;
+}
+
+.content-display ol,
+.student-content-display ol,
+.html-content ol {
+  padding-left: 24px !important;
+  margin: 8px 0 !important;
+  list-style-type: decimal !important;
+  display: block !important;
+}
+
+.content-display li,
+.student-content-display li,
+.html-content li {
+  margin: 4px 0 !important;
+  line-height: 1.5 !important;
+  display: list-item !important;
+  list-style-position: outside !important;
+  color: #374151 !important;
+}
+
+.content-display ul li,
+.student-content-display ul li,
+.html-content ul li {
+  list-style-type: disc !important;
+}
+
+.content-display ol li,
+.student-content-display ol li,
+.html-content ol li {
+  list-style-type: decimal !important;
+}
+
+.student-content-display h1 {
+  font-size: 1.875rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  margin: 16px 0 12px 0 !important;
+  color: #1f2937 !important;
+  display: block !important;
+}
+
+.student-content-display h2 {
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  margin: 14px 0 10px 0 !important;
+  color: #374151 !important;
+  display: block !important;
+}
+
+.student-content-display h3 {
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  margin: 12px 0 8px 0 !important;
+  color: #4b5563 !important;
+  display: block !important;
+}
+
+.student-content-display h4 {
+  font-size: 1.125rem !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  margin: 10px 0 6px 0 !important;
+  color: #4b5563 !important;
+  display: block !important;
+}
+
+.student-content-display h5 {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  line-height: 1.5 !important;
+  margin: 8px 0 4px 0 !important;
+  color: #6b7280 !important;
+  display: block !important;
+}
+
+.student-content-display h6 {
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  line-height: 1.5 !important;
+  margin: 8px 0 4px 0 !important;
+  color: #6b7280 !important;
+  display: block !important;
+}
+
+.student-content-display p {
+  margin: 8px 0 !important;
+  line-height: 1.6 !important;
+  display: block !important;
+  color: #374151 !important;
+}
+
+/* List Styles - CRITICAL FOR BULLET POINTS AND NUMBERED LISTS */
+.student-content-display ul {
+  padding-left: 24px !important;
+  margin: 12px 0 !important;
+  list-style-type: disc !important;
+  display: block !important;
+}
+
+.student-content-display ol {
+  padding-left: 24px !important;
+  margin: 12px 0 !important;
+  list-style-type: decimal !important;
+  display: block !important;
+}
+
+.student-content-display li {
+  margin: 6px 0 !important;
+  line-height: 1.6 !important;
+  display: list-item !important;
+  list-style-position: outside !important;
+  color: #374151 !important;
+}
+
+.student-content-display ul li {
+  list-style-type: disc !important;
+}
+
+.student-content-display ol li {
+  list-style-type: decimal !important;
+}
+
+/* Nested lists */
+.student-content-display ul ul {
+  list-style-type: circle !important;
+  margin: 4px 0 !important;
+}
+
+.student-content-display ol ol {
+  list-style-type: lower-alpha !important;
+  margin: 4px 0 !important;
+}
+
+/* Code Styles */
+.student-content-display pre {
+  background-color: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  padding: 16px !important;
+  margin: 16px 0 !important;
+  overflow-x: auto !important;
+  font-family: Monaco, Consolas, "Courier New", monospace !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  clear: both !important;
+  white-space: pre-wrap !important;
+}
+
+.student-content-display code {
+  background-color: #f1f5f9 !important;
+  padding: 2px 4px !important;
+  border-radius: 4px !important;
+  font-family: Monaco, Consolas, "Courier New", monospace !important;
+  font-size: 0.9em !important;
+  color: #1f2937 !important;
+}
+
+.student-content-display pre code {
+  background-color: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* Quote Styles */
+.student-content-display blockquote {
+  border-left: 4px solid #3b82f6 !important;
+  background-color: #eff6ff !important;
+  padding: 12px 16px !important;
+  margin: 16px 0 !important;
+  border-radius: 4px !important;
+  font-style: italic !important;
+  display: block !important;
+  color: #1f2937 !important;
+}
+
+/* Text Formatting */
+.student-content-display strong,
+.student-content-display b {
+  font-weight: 700 !important;
+}
+
+.student-content-display em,
+.student-content-display i {
+  font-style: italic !important;
+}
+
+.student-content-display u {
+  text-decoration: underline !important;
+}
+
+.student-content-display s {
+  text-decoration: line-through !important;
+}
+
+/* Links */
+.student-content-display a {
+  color: #3b82f6 !important;
+  text-decoration: underline !important;
+}
+
+.student-content-display a:hover {
+  color: #1d4ed8 !important;
+}
+
+/* Images */
+.student-content-display img {
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 8px 0 !important;
+  border-radius: 4px !important;
+}
+
+/* Horizontal Rule */
+.student-content-display hr {
+  border: none !important;
+  border-top: 1px solid #e5e7eb !important;
+  margin: 16px 0 !important;
+}
+
+/* Tables */
+.student-content-display table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  margin: 16px 0 !important;
+}
+
+.student-content-display th,
+.student-content-display td {
+  border: 1px solid #e5e7eb !important;
+  padding: 8px 12px !important;
+  text-align: left !important;
+}
+
+.student-content-display th {
+  background-color: #f9fafb !important;
+  font-weight: 600 !important;
+}
+
+/* Override any conflicting styles */
+.prose .student-content-display *,
+.prose-content .student-content-display * {
+  margin: revert !important;
+  padding: revert !important;
+  font-size: revert !important;
+  font-weight: revert !important;
+  line-height: revert !important;
+  color: revert !important;
+  display: revert !important;
+  list-style-type: revert !important;
+}
+
+/* Ensure proper spacing and formatting */
+.student-content-display * {
+  box-sizing: border-box;
+}
+
+/* Fix any potential conflicts with Tailwind prose */
+.prose .student-content-display ul,
+.prose .student-content-display ol {
+  padding-left: 24px !important;
+  margin: 12px 0 !important;
+}
+
+.prose .student-content-display li {
+  margin: 6px 0 !important;
+  display: list-item !important;
+}
+
+.prose .student-content-display h1,
+.prose .student-content-display h2,
+.prose .student-content-display h3 {
+  margin-top: 16px !important;
+  margin-bottom: 8px !important;
+}

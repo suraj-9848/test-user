@@ -584,7 +584,7 @@ export default function TestInterface({
 
       console.log("Submitting test with responses:", formattedResponses);
 
-      // Submit test data - FIXED: Use test.id instead of attempt.id
+      // Submit test data -  Use test.id instead of attempt.id
       await apiService.submitTest(test.id, formattedResponses);
 
       // Exit fullscreen

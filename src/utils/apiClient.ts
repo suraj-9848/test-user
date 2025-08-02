@@ -69,7 +69,7 @@ const attemptRefreshToken = async (): Promise<string | null> => {
 
     // Check if we can potentially access refresh token (browser environment)
     if (!canAccessRefreshToken()) {
-      console.log("❌ Cannot attempt refresh token in server environment");
+      console.log(" Cannot attempt refresh token in server environment");
       return null;
     }
 
@@ -87,7 +87,7 @@ const attemptRefreshToken = async (): Promise<string | null> => {
 
       if (data.token) {
         console.log(
-          "✅ Token refreshed successfully using httpOnly refresh token",
+          " Token refreshed successfully using httpOnly refresh token",
         );
         storeJWT(data.token);
 
@@ -98,12 +98,12 @@ const attemptRefreshToken = async (): Promise<string | null> => {
 
         return data.token;
       } else {
-        console.log("❌ Refresh response missing token field");
+        console.log(" Refresh response missing token field");
         return null;
       }
     } else {
       console.log(
-        `❌ Refresh token request failed: ${response.status} ${response.statusText}`,
+        ` Refresh token request failed: ${response.status} ${response.statusText}`,
       );
       const errorData = await response.json().catch(() => ({}));
       console.log("Refresh error details:", errorData);
@@ -116,7 +116,7 @@ const attemptRefreshToken = async (): Promise<string | null> => {
       return null;
     }
   } catch (error) {
-    console.error("❌ Refresh token request error:", error);
+    console.error(" Refresh token request error:", error);
     return null;
   }
 };
@@ -219,11 +219,11 @@ const apiClient = async (
     }
 
     // Log response for debugging
-    console.log(`✅ API Response: ${response.status} ${response.statusText}`);
+    console.log(` API Response: ${response.status} ${response.statusText}`);
 
     return response;
   } catch (error) {
-    console.error("❌ API Request failed:", {
+    console.error(" API Request failed:", {
       url: fullUrl,
       method: fetchOptions.method || "GET",
       error: error instanceof Error ? error.message : "Unknown error",

@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import {
   ArrowLeft,
   BookOpen,
@@ -537,12 +535,14 @@ export default function ModuleDetail() {
                   </div>
                 </div>
 
-                <div className="prose max-w-none">
+                {/* CRITICAL FIX: Proper content rendering with styling */}
+                <div className="student-content-display">
                   <div
-                    className="html-content"
                     dangerouslySetInnerHTML={{ __html: day.content }}
+                    className="bg-gray-50 rounded-lg p-4 border border-gray-200"
                   />
                 </div>
+
                 {/* Mark as Completed Button */}
                 {!day.completed && (
                   <div className="mt-4">

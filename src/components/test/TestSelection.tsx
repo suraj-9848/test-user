@@ -30,7 +30,6 @@ export default function TestSelection({
 }: TestSelectionProps) {
   const [showStartConfirmation, setShowStartConfirmation] = useState(false);
 
-  // Helper to get time left until test starts (for upcoming tests)
   const getTimeUntilStart = (test: Test) => {
     const start = new Date(test.startDate);
     const now = new Date();
@@ -39,22 +38,17 @@ export default function TestSelection({
     const mins = Math.floor(diff / 60000) % 60;
     const hours = Math.floor(diff / 3600000) % 24;
     const days = Math.floor(diff / 86400000);
-    let result = [];
+    const result = [];
     if (days > 0) result.push(`${days}d`);
     if (hours > 0) result.push(`${hours}h`);
     result.push(`${mins}m`);
     return result.join(" ") + " left";
   };
 
-  // Helper to get course and batch title
-  const getCourseTitle = (test: Test) => {
-    // Prefer test.course?.title, then test.courseName, then test.course
-    // @ts-ignore for possible backend variations
+  const getCourseTitle = (test: any) => {
     return test.course?.title || test.courseName || test.course || "-";
   };
-  const getBatchTitle = (test: Test) => {
-    // Prefer test.batch?.title, then test.batchName, then fallback to course title
-    // @ts-ignore for possible backend variations
+  const getBatchTitle = (test: any) => {
     return test.batch?.title || test.batchName || getCourseTitle(test);
   };
 

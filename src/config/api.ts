@@ -103,15 +103,15 @@ export const apiService = {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("❌ API Error response:", errorText);
+        console.error(" API Error response:", errorText);
         throw new Error(`API Error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log("✅ Raw API response:", data);
+      console.log(" Raw API response:", data);
       return { tests: data.data?.tests || [] };
     } catch (error) {
-      console.error("❌ Error in getAvailableTests:", error);
+      console.error(" Error in getAvailableTests:", error);
       throw error;
     }
   },
@@ -127,12 +127,12 @@ export const apiService = {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("❌ API Error response:", errorText);
+        console.error(" API Error response:", errorText);
         throw new Error(`API Error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log("✅ Test details response:", data);
+      console.log(" Test details response:", data);
 
       // Transform questions to frontend format
       const transformedTest = {
@@ -140,15 +140,15 @@ export const apiService = {
         questions: transformQuestions(data.data.test.questions || []),
       };
 
-      console.log("✅ Transformed test:", transformedTest);
+      console.log(" Transformed test:", transformedTest);
       return { test: transformedTest };
     } catch (error) {
-      console.error("❌ Error in getTestDetails:", error);
+      console.error(" Error in getTestDetails:", error);
       throw error;
     }
   },
 
-  // Submit test - FIXED: Use testId instead of attemptId
+  // Submit test -  Use testId instead of attemptId
   submitTest: async (testId: string, responses: any[]): Promise<any> => {
     const token = getAuthToken();
     console.log(
