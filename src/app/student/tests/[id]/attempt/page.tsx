@@ -7,7 +7,6 @@ import { useParams, useRouter } from "next/navigation";
 import { Test, TestAttempt } from "@/types/test";
 import { apiService } from "@/config/api";
 import TestInterface from "@/components/test/TestInterface";
-import { attemptRefreshToken } from "@/utils/axiosInterceptor";
 
 export default function TestAttemptPage() {
   const { data: session } = useSession();
@@ -34,15 +33,14 @@ export default function TestAttemptPage() {
     };
     syncJwtFromStorage();
     window.addEventListener("storage", syncJwtFromStorage);
-    const handleVisibilityChange = () => {
+    window.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") {
         syncJwtFromStorage();
       }
-    };
-    window.addEventListener("visibilitychange", handleVisibilityChange);
+    });
     return () => {
       window.removeEventListener("storage", syncJwtFromStorage);
-      window.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("visibilitychange", syncJwtFromStorage);
     };
   }, [jwt]);
 
@@ -123,29 +121,72 @@ export default function TestAttemptPage() {
   }
 
   if (error) {
+    const testTokenRefresh = async () => {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000"}/api/auth/refresh`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+          },
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.token) {
+            localStorage.setItem("jwt", data.token);
+            window.location.reload();
+          }
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          alert(
+            `Token refresh failed: ${response.status} - ${errorData.error || response.statusText}`,
+          );
+        }
+      } catch (error) {
+        alert(
+          `Token refresh error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
+      }
+    };
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center max-w-md mx-auto p-6">
           <div className="text-red-500 text-xl mb-4">⚠️</div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Access Forbidden
+            Unable to Load Test
           </h2>
-          <p className="text-gray-600 mb-4">
-            You don't have permission to access this test.
-          </p>
           <div className="space-y-2">
             <button
-              onClick={() => router.push("/student/tests")}
+              onClick={initializeTestAttempt}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors mr-2"
             >
-              Back to Tests
+              Try Again
             </button>
             <button
-              onClick={() => (window.location.href = "/sign-in")}
-              className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+              onClick={testTokenRefresh}
+              className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors mr-2"
             >
-              Sign In Again
+              Test Token Refresh
             </button>
+            <div className="mt-2">
+              <button
+                onClick={() => router.push("/student/tests")}
+                className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors mr-2"
+              >
+                Back to Tests
+              </button>
+              <button
+                onClick={() => (window.location.href = "/sign-in")}
+                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+              >
+                Sign In Again
+              </button>
+            </div>
           </div>
         </div>
       </div>

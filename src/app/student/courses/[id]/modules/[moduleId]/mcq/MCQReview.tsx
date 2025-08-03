@@ -1,23 +1,16 @@
+"use client";
+
 import { useEffect, useState } from "react";
+import {
+  renderContent,
+  CONTENT_DISPLAY_CLASSES,
+} from "@/utils/contentRenderer";
+import { buildApiUrl, API_ENDPOINTS } from "@/config/urls";
 
-// Helper to convert Quill Delta or string to HTML
-function quillDeltaToHtml(delta: any): string {
-  if (!delta) return "";
-  if (typeof delta === "string") return delta;
-  if (typeof delta === "object" && delta.ops) {
-    return delta.ops
-      .map((op: any) => (typeof op.insert === "string" ? op.insert : ""))
-      .join("");
-  }
-  return "";
-}
-
-const BACKEND_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
 const api = {
   get: async (endpoint: string) => {
     const token = localStorage.getItem("jwt");
-    const response = await fetch(`${BACKEND_BASE_URL}${endpoint}`, {
+    const response = await fetch(buildApiUrl(endpoint), {
       method: "GET",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
@@ -37,8 +30,10 @@ export default function MCQReview({ moduleId }: { moduleId: string }) {
   useEffect(() => {
     setLoading(true);
     Promise.all([
-      api.get(`/api/student/modules/${moduleId}/mcq/results`),
-      api.get(`/api/student/modules/${moduleId}/mcq/review`).catch(() => null),
+      api.get(API_ENDPOINTS.STUDENT.MODULE_MCQ_RESULTS(moduleId)),
+      api
+        .get(API_ENDPOINTS.STUDENT.MODULE_MCQ_REVIEW(moduleId))
+        .catch(() => null),
     ])
       .then(([results, reviewMcq]) => {
         setReviewData(results);
@@ -71,9 +66,9 @@ export default function MCQReview({ moduleId }: { moduleId: string }) {
               className="border rounded-2xl p-6 bg-white shadow-sm"
             >
               <div
-                className="font-semibold text-lg mb-4"
+                className={`font-semibold text-lg mb-4 ${CONTENT_DISPLAY_CLASSES}`}
                 dangerouslySetInnerHTML={{
-                  __html: quillDeltaToHtml(q.question),
+                  __html: renderContent(q.question),
                 }}
               />
               <div className="space-y-2">
@@ -110,9 +105,10 @@ export default function MCQReview({ moduleId }: { moduleId: string }) {
                   }
                   return (
                     <div key={opt.id || oidx} className={rowClass}>
-                      <span
+                      <div
+                        className={`flex-1 ${CONTENT_DISPLAY_CLASSES}`}
                         dangerouslySetInnerHTML={{
-                          __html: quillDeltaToHtml(opt.text),
+                          __html: renderContent(opt.text),
                         }}
                       />
                       {label}
@@ -122,9 +118,9 @@ export default function MCQReview({ moduleId }: { moduleId: string }) {
               </div>
               {q.explanation && (
                 <div
-                  className="mt-3 text-xs text-gray-500"
+                  className={`mt-3 text-sm text-gray-500 ${CONTENT_DISPLAY_CLASSES}`}
                   dangerouslySetInnerHTML={{
-                    __html: quillDeltaToHtml(q.explanation),
+                    __html: renderContent(q.explanation),
                   }}
                 />
               )}

@@ -11,16 +11,17 @@ import {
   AlertCircle,
 } from "lucide-react";
 import MCQReview from "./mcq/MCQReview";
-
-// API Configuration
-const BACKEND_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
+import {
+  renderContent,
+  CONTENT_DISPLAY_CLASSES,
+} from "@/utils/contentRenderer";
+import { buildApiUrl, API_ENDPOINTS } from "@/config/urls";
 
 // Create API helper
 const api = {
   get: async (endpoint: string) => {
     const token = localStorage.getItem("jwt");
-    const response = await fetch(`${BACKEND_BASE_URL}${endpoint}`, {
+    const response = await fetch(buildApiUrl(endpoint), {
       method: "GET",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
@@ -36,7 +37,7 @@ const api = {
   },
   patch: async (endpoint: string, data?: Record<string, unknown>) => {
     const token = localStorage.getItem("jwt");
-    const response = await fetch(`${BACKEND_BASE_URL}${endpoint}`, {
+    const response = await fetch(buildApiUrl(endpoint), {
       method: "PATCH",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
@@ -126,13 +127,13 @@ export default function ModuleDetail() {
 
         // Fetch module details
         const moduleData: ModuleData = await api.get(
-          `/api/student/modules/${moduleId}`,
+          API_ENDPOINTS.STUDENT.MODULE_BY_ID(moduleId),
         );
         if (!moduleData) throw new Error("Module not found");
 
         // Fetch course details
         const courseResponse = await api.get(
-          `/api/student/courses/${courseId}`,
+          API_ENDPOINTS.STUDENT.COURSE_BY_ID(courseId),
         );
         if (!courseResponse) throw new Error("Course data not found");
 
@@ -141,7 +142,9 @@ export default function ModuleDetail() {
           moduleData.days.map(async (day: DayContent) => {
             try {
               // Mark day as completed
-              await api.patch(`/api/student/day-contents/${day.id}/complete`);
+              await api.patch(
+                API_ENDPOINTS.STUDENT.DAY_CONTENT_COMPLETE(day.id),
+              );
               return { ...day, completed: true };
             } catch (err) {
               console.warn(`Failed to mark day ${day.id} as completed:`, err);
@@ -162,7 +165,7 @@ export default function ModuleDetail() {
         // Fetch module result (test score & pass status)
         try {
           const resultResponse = await api.get(
-            `/api/student/modules/${moduleId}/mcq/results`,
+            API_ENDPOINTS.STUDENT.MODULE_MCQ_RESULTS(moduleId),
           );
           if (resultResponse && resultResponse.score != null) {
             setModuleResult({
@@ -181,7 +184,7 @@ export default function ModuleDetail() {
         // Fetch MCQ retake status
         try {
           const retakeResponse = await api.get(
-            `/api/student/modules/${moduleId}/mcq/retake-status`,
+            API_ENDPOINTS.STUDENT.MODULE_MCQ_RETAKE_STATUS(moduleId),
           );
           setMcqRetakeStatus({
             canRetake: retakeResponse.canRetake || false,
@@ -218,12 +221,12 @@ export default function ModuleDetail() {
     setMarkingDayId(dayId);
     setMarkError("");
     try {
-      await api.patch(`/api/student/day-contents/${dayId}/complete`);
+      await api.patch(API_ENDPOINTS.STUDENT.DAY_CONTENT_COMPLETE(dayId));
       // Refresh module data
       if (courseId && moduleId) {
         // Re-fetch module data
         const moduleData: ModuleData = await api.get(
-          `/api/student/modules/${moduleId}`,
+          API_ENDPOINTS.STUDENT.MODULE_BY_ID(moduleId),
         );
         setModule({
           ...moduleData,
@@ -535,11 +538,12 @@ export default function ModuleDetail() {
                   </div>
                 </div>
 
-                {/* CRITICAL FIX: Proper content rendering with styling */}
-                <div className="student-content-display">
+                <div className={`${CONTENT_DISPLAY_CLASSES}`}>
                   <div
-                    dangerouslySetInnerHTML={{ __html: day.content }}
-                    className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                    dangerouslySetInnerHTML={{
+                      __html: renderContent(day.content),
+                    }}
+                    className="bg-gray-50 rounded-lg p-6 border border-gray-200"
                   />
                 </div>
 

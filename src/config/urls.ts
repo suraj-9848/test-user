@@ -30,6 +30,7 @@ export const API_ENDPOINTS = {
   STUDENT: {
     PROFILE: "/api/student/profile",
     DASHBOARD: "/api/student/dashboard",
+    DASHBOARD_STATS: "/api/student/dashboard/stats",
     COURSES: "/api/student/courses",
     COURSE_BY_ID: (id: string) => `/api/student/courses/${id}`,
     COURSE_MODULES: (courseId: string) =>
@@ -49,6 +50,18 @@ export const API_ENDPOINTS = {
     MODULE_COMPLETE: (moduleId: string) =>
       `/api/student/modules/${moduleId}/complete`,
     MODULE_MCQ: (moduleId: string) => `/api/student/modules/${moduleId}/mcq`,
+    MODULE_MCQ_RESULTS: (moduleId: string) =>
+      `/api/student/modules/${moduleId}/mcq/results`,
+    MODULE_MCQ_RETAKE_STATUS: (moduleId: string) =>
+      `/api/student/modules/${moduleId}/mcq/retake-status`,
+    MODULE_MCQ_REVIEW: (moduleId: string) =>
+      `/api/student/modules/${moduleId}/mcq/review`,
+    MODULE_MCQ_RESPONSES: (moduleId: string) =>
+      `/api/student/modules/${moduleId}/mcq/responses`,
+
+    // Day Contents
+    DAY_CONTENT_COMPLETE: (dayId: string) =>
+      `/api/student/day-contents/${dayId}/complete`,
 
     // Progress
     PROGRESS: {

@@ -9,16 +9,17 @@ import {
   XCircle,
   AlertCircle,
 } from "lucide-react";
-
-// API Configuration
-const BACKEND_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
+import {
+  renderContent,
+  CONTENT_DISPLAY_CLASSES,
+} from "@/utils/contentRenderer";
+import { buildApiUrl, API_ENDPOINTS } from "@/config/urls";
 
 // Create API helper
 const api = {
   get: async (endpoint: string) => {
     const token = localStorage.getItem("jwt");
-    const response = await fetch(`${BACKEND_BASE_URL}${endpoint}`, {
+    const response = await fetch(buildApiUrl(endpoint), {
       method: "GET",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
@@ -34,7 +35,7 @@ const api = {
   },
   post: async (endpoint: string, data?: unknown) => {
     const token = localStorage.getItem("jwt");
-    const response = await fetch(`${BACKEND_BASE_URL}${endpoint}`, {
+    const response = await fetch(buildApiUrl(endpoint), {
       method: "POST",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
@@ -74,18 +75,6 @@ interface SubmissionResponse {
   message?: string;
 }
 
-// Helper to convert Quill Delta or string to HTML
-function quillDeltaToHtml(delta: any): string {
-  if (!delta) return "";
-  if (typeof delta === "string") return delta;
-  if (typeof delta === "object" && delta.ops) {
-    return delta.ops
-      .map((op: any) => (typeof op.insert === "string" ? op.insert : ""))
-      .join("");
-  }
-  return "";
-}
-
 export default function MCQTest() {
   const router = useRouter();
   const params = useParams();
@@ -123,7 +112,7 @@ export default function MCQTest() {
 
         // First check retake status
         const retakeData = await api.get(
-          `/api/student/modules/${moduleId}/mcq/retake-status`,
+          API_ENDPOINTS.STUDENT.MODULE_MCQ_RETAKE_STATUS(moduleId),
         );
         setRetakeStatus(retakeData);
 
@@ -133,7 +122,7 @@ export default function MCQTest() {
           // Still need to fetch MCQ structure for review
           try {
             const mcqData: MCQData = await api.get(
-              `/api/student/modules/${moduleId}/mcq/review`,
+              API_ENDPOINTS.STUDENT.MODULE_MCQ_REVIEW(moduleId),
             );
             setMcqStructure(mcqData);
           } catch (reviewErr) {
@@ -151,7 +140,7 @@ export default function MCQTest() {
         }
 
         const mcqData: MCQData = await api.get(
-          `/api/student/modules/${moduleId}/mcq`,
+          API_ENDPOINTS.STUDENT.MODULE_MCQ(moduleId),
         );
 
         if (!mcqData.questions || mcqData.questions.length === 0) {
@@ -182,9 +171,9 @@ export default function MCQTest() {
     if (alreadyAttempted) {
       setLoadingReview(true);
       Promise.all([
-        api.get(`/api/student/modules/${moduleId}/mcq/results`),
+        api.get(API_ENDPOINTS.STUDENT.MODULE_MCQ_RESULTS(moduleId)),
         api
-          .get(`/api/student/modules/${moduleId}/mcq/review`)
+          .get(API_ENDPOINTS.STUDENT.MODULE_MCQ_REVIEW(moduleId))
           .catch(() => null),
       ])
         .then(([results, reviewMcq]) => {
@@ -206,7 +195,7 @@ export default function MCQTest() {
 
     try {
       const submissionData: SubmissionResponse = await api.post(
-        `/api/student/modules/${moduleId}/mcq/responses`,
+        API_ENDPOINTS.STUDENT.MODULE_MCQ_RESPONSES(moduleId),
         {
           responses: responseArray,
           timeSpent: timeLeft,
@@ -356,9 +345,9 @@ export default function MCQTest() {
             return (
               <div key={q.id || idx} className="border rounded-lg p-4">
                 <div
-                  className="font-medium mb-2"
+                  className={`font-medium mb-2 ${CONTENT_DISPLAY_CLASSES}`}
                   dangerouslySetInnerHTML={{
-                    __html: quillDeltaToHtml(q.question),
+                    __html: renderContent(q.question),
                   }}
                 />
                 <div className="space-y-1">
@@ -375,8 +364,9 @@ export default function MCQTest() {
                           ${isSelected && isCorrect ? "bg-green-100 border border-green-400" : ""}`}
                       >
                         <span
+                          className={CONTENT_DISPLAY_CLASSES}
                           dangerouslySetInnerHTML={{
-                            __html: quillDeltaToHtml(opt.text),
+                            __html: renderContent(opt.text),
                           }}
                         />
                         {isCorrect && (
@@ -400,9 +390,9 @@ export default function MCQTest() {
                 </div>
                 {q.explanation && (
                   <div
-                    className="mt-2 text-xs text-gray-500"
+                    className={`mt-2 text-xs text-gray-500 ${CONTENT_DISPLAY_CLASSES}`}
                     dangerouslySetInnerHTML={{
-                      __html: quillDeltaToHtml(q.explanation),
+                      __html: renderContent(q.explanation),
                     }}
                   />
                 )}
@@ -594,8 +584,9 @@ export default function MCQTest() {
                   <h3 className="text-lg font-medium text-gray-900 mb-3">
                     {questionIndex + 1}.{" "}
                     <span
+                      className={CONTENT_DISPLAY_CLASSES}
                       dangerouslySetInnerHTML={{
-                        __html: quillDeltaToHtml(question.question),
+                        __html: renderContent(question.question),
                       }}
                     />
                   </h3>
@@ -622,9 +613,9 @@ export default function MCQTest() {
                         className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                       />
                       <span
-                        className="ml-3 text-gray-900"
+                        className={`ml-3 text-gray-900 ${CONTENT_DISPLAY_CLASSES}`}
                         dangerouslySetInnerHTML={{
-                          __html: quillDeltaToHtml(option.text),
+                          __html: renderContent(option.text),
                         }}
                       />
                     </label>

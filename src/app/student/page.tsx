@@ -16,16 +16,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { useJWT } from "@/context/JWTContext";
-
-// API Configuration
-const BACKEND_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
+import { API_ENDPOINTS, buildApiUrl } from "@/config/urls";
 
 // Create API wrapper for consistency
 const api = {
   get: async (endpoint: string) => {
     const token = localStorage.getItem("jwt");
-    const response = await fetch(`${BACKEND_BASE_URL}${endpoint}`, {
+    const response = await fetch(buildApiUrl(endpoint), {
       method: "GET",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
@@ -143,11 +140,15 @@ export default function StudentDashboard() {
         setError("");
 
         // Fetch dashboard stats from new endpoint
-        const statsResponse = await api.get("/api/student/dashboard/stats");
+        const statsResponse = await api.get(
+          API_ENDPOINTS.STUDENT.DASHBOARD_STATS,
+        );
         setStats(statsResponse.stats);
 
         // Fetch courses for the course cards
-        const coursesResponse: Course[] = await api.get("/api/student/courses");
+        const coursesResponse: Course[] = await api.get(
+          API_ENDPOINTS.STUDENT.COURSES,
+        );
         const transformedCourses = coursesResponse
           .slice(0, 3)
           .map((course: Course) => ({
