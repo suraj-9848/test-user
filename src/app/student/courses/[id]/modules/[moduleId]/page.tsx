@@ -9,6 +9,8 @@ import {
   CheckCircle,
   PlayCircle,
   AlertCircle,
+  FileText,
+  HelpCircle,
 } from "lucide-react";
 import MCQReview from "./mcq/MCQReview";
 import {
@@ -112,6 +114,9 @@ export default function ModuleDetail() {
   const [loading, setLoading] = useState<boolean>(true);
   const [markingDayId, setMarkingDayId] = useState<string | null>(null);
   const [markError, setMarkError] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<"content" | "assessment">(
+    "content",
+  );
 
   useEffect(() => {
     if (!courseId || !moduleId) {
@@ -430,16 +435,10 @@ export default function ModuleDetail() {
                           <p className="text-yellow-800 font-medium text-sm">
                             You can retake this assessment
                           </p>
-                          <p className="text-yellow-700 text-sm mt-1">
-                            You have {mcqRetakeStatus.attemptsLeft} attempt(s)
-                            remaining.
-                          </p>
                         </div>
                       </div>
                     </div>
                   )}
-                  {/* MCQ Review UI */}
-                  <MCQReview moduleId={moduleId} />
                 </>
               ) : (
                 <p className="text-gray-600">
@@ -483,93 +482,301 @@ export default function ModuleDetail() {
         </div>
       )}
 
-      {/* Day Content */}
+      {/* Tabbed Content Section */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Day-by-Day Content
-          </h2>
-          <p className="text-gray-600 mt-1">
-            Complete each day's content to progress through the module
-          </p>
-        </div>
-
-        {module.days.length === 0 ? (
-          <div className="text-center py-12">
-            <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No Content Available
-            </h3>
-            <p className="text-gray-600">
-              Day content will appear here once it's published.
-            </p>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-200">
-            {module.days.map((day) => (
-              <div key={day.id} className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        day.completed
-                          ? "bg-green-100 text-green-600"
-                          : "bg-gray-100 text-gray-400"
-                      }`}
-                    >
-                      {day.completed ? (
-                        <CheckCircle className="w-5 h-5" />
-                      ) : (
-                        <span className="font-medium">{day.dayNumber}</span>
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Day {day.dayNumber}
-                      </h3>
-                      <div
-                        className={`text-sm font-medium ${
-                          day.completed ? "text-green-600" : "text-gray-500"
-                        }`}
-                      >
-                        {day.completed ? "Completed" : "Not Completed"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className={`${CONTENT_DISPLAY_CLASSES}`}>
-                  <div
-                    dangerouslySetInnerHTML={{
-                      __html: renderContent(day.content),
-                    }}
-                    className="bg-gray-50 rounded-lg p-6 border border-gray-200"
-                  />
-                </div>
-
-                {/* Mark as Completed Button */}
-                {!day.completed && (
-                  <div className="mt-4">
-                    <button
-                      onClick={() => handleMarkDayCompleted(day.id)}
-                      disabled={markingDayId === day.id}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                    >
-                      {markingDayId === day.id
-                        ? "Marking..."
-                        : "Mark as Completed"}
-                    </button>
-                    {markError && markingDayId === day.id && (
-                      <div className="text-red-600 mt-2 text-sm">
-                        {markError}
-                      </div>
-                    )}
-                  </div>
+        {/* Tab Navigation */}
+        <div className="border-b border-gray-200">
+          <nav className="flex space-x-8 px-6">
+            <button
+              onClick={() => setActiveTab("content")}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === "content"
+                  ? "border-indigo-500 text-indigo-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <FileText className="w-4 h-4" />
+                <span>Day Content</span>
+                <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
+                  {module.days.length}
+                </span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab("assessment")}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === "assessment"
+                  ? "border-indigo-500 text-indigo-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <HelpCircle className="w-4 h-4" />
+                <span>Module Assessment</span>
+                {moduleResult && (
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${
+                      moduleResult.passed
+                        ? "bg-green-100 text-green-600"
+                        : "bg-red-100 text-red-600"
+                    }`}
+                  >
+                    {moduleResult.passed ? "Passed" : "Failed"}
+                  </span>
                 )}
               </div>
-            ))}
-          </div>
-        )}
+            </button>
+          </nav>
+        </div>
+
+        {/* Tab Content */}
+        <div className="p-6">
+          {activeTab === "content" && (
+            <div>
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  Day-by-Day Content
+                </h2>
+                <p className="text-gray-600">
+                  Complete each day's content to progress through the module
+                </p>
+              </div>
+
+              {module.days.length === 0 ? (
+                <div className="text-center py-12">
+                  <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    No Content Available
+                  </h3>
+                  <p className="text-gray-600">
+                    Day content will appear here once it's published.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {module.days.map((day) => (
+                    <div
+                      key={day.id}
+                      className="border border-gray-200 rounded-lg p-6"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <div
+                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                              day.completed
+                                ? "bg-green-100 text-green-600"
+                                : "bg-gray-100 text-gray-400"
+                            }`}
+                          >
+                            {day.completed ? (
+                              <CheckCircle className="w-5 h-5" />
+                            ) : (
+                              <span className="font-medium">
+                                {day.dayNumber}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              Day {day.dayNumber}
+                            </h3>
+                            <div
+                              className={`text-sm font-medium ${
+                                day.completed
+                                  ? "text-green-600"
+                                  : "text-gray-500"
+                              }`}
+                            >
+                              {day.completed ? "Completed" : "Not Completed"}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className={`${CONTENT_DISPLAY_CLASSES}`}>
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html: renderContent(day.content),
+                          }}
+                          className="bg-gray-50 rounded-lg p-6 border border-gray-200"
+                        />
+                      </div>
+
+                      {/* Mark as Completed Button */}
+                      {!day.completed && (
+                        <div className="mt-4">
+                          <button
+                            onClick={() => handleMarkDayCompleted(day.id)}
+                            disabled={markingDayId === day.id}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                          >
+                            {markingDayId === day.id
+                              ? "Marking..."
+                              : "Mark as Completed"}
+                          </button>
+                          {markError && markingDayId === day.id && (
+                            <div className="text-red-600 mt-2 text-sm">
+                              {markError}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "assessment" && (
+            <div>
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  Module Assessment
+                </h2>
+                <p className="text-gray-600">
+                  Take the MCQ test to assess your understanding of this module
+                </p>
+              </div>
+
+              {!module.mcqAccessible ? (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+                  <div className="flex items-center space-x-3">
+                    <AlertCircle className="w-6 h-6 text-amber-600" />
+                    <div>
+                      <h3 className="text-lg font-medium text-amber-800">
+                        Assessment Locked
+                      </h3>
+                      <p className="text-amber-700 mt-1">
+                        Complete all day content to unlock the module
+                        assessment.
+                      </p>
+                      <div className="mt-2 text-sm text-amber-600">
+                        Progress: {completedDays}/{module.days.length} days
+                        completed
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Assessment Status Card */}
+                  <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 rounded-lg p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-indigo-900 mb-2">
+                          Assessment Status
+                        </h3>
+                        {moduleResult ? (
+                          <div className="space-y-2">
+                            <p className="text-indigo-800">
+                              <span className="font-medium">Score:</span>{" "}
+                              {moduleResult.testScore}%
+                            </p>
+                            <p className="text-indigo-800">
+                              <span className="font-medium">Minimum Pass:</span>{" "}
+                              {moduleResult.minimumPassMarks}%
+                            </p>
+                            <div
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                                moduleResult.passed
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}
+                            >
+                              {moduleResult.passed ? "✓ Passed" : "✗ Failed"}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-indigo-700">
+                            {module.mcqAttempted
+                              ? "Assessment attempted - results may be processing"
+                              : "Ready to take assessment"}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex flex-col space-y-2">
+                        {!moduleResult && (
+                          <button
+                            onClick={handleTakeMCQ}
+                            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+                          >
+                            <PlayCircle className="w-4 h-4 mr-2" />
+                            {module.mcqAttempted
+                              ? "Retake Assessment"
+                              : "Take Assessment"}
+                          </button>
+                        )}
+                        {moduleResult &&
+                          !moduleResult.passed &&
+                          mcqRetakeStatus?.canRetake && (
+                            <button
+                              onClick={handleTakeMCQ}
+                              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 rounded-lg transition-colors"
+                            >
+                              <PlayCircle className="w-4 h-4 mr-2" />
+                              Retake Assessment
+                            </button>
+                          )}
+                        {moduleResult && moduleResult.passed && (
+                          <button
+                            onClick={handleTakeMCQ}
+                            className="inline-flex items-center px-4 py-2 text-sm font-medium text-green-600 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors"
+                          >
+                            <BookOpen className="w-4 h-4 mr-2" />
+                            Review Assessment
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Retake Warning */}
+                  {moduleResult &&
+                    !moduleResult.passed &&
+                    mcqRetakeStatus?.canRetake && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div className="flex">
+                          <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 mr-3 flex-shrink-0" />
+                          <div>
+                            <h4 className="text-yellow-800 font-medium text-sm mb-1">
+                              Retake Available
+                            </h4>
+                            <p className="text-yellow-700 text-sm">
+                              You can retake this assessment to improve your
+                              score.
+                              {mcqRetakeStatus.attemptsLeft > 0 && (
+                                <span className="ml-1">
+                                  Attempts left: {mcqRetakeStatus.attemptsLeft}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                  {/* MCQ Review Component */}
+                  {moduleResult && (
+                    <div className="border border-gray-200 rounded-lg">
+                      <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                        <h4 className="font-medium text-gray-900">
+                          Assessment Review
+                        </h4>
+                      </div>
+                      <div className="p-4">
+                        <MCQReview moduleId={moduleId} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
