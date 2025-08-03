@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
-import { Users, Bell, Briefcase, Target } from "lucide-react";
-export type TabId = "overview" | "apply" | "jobs" | "services";
+import { Users, Bell, Crown, Target } from "lucide-react";
+export type TabId = "overview" | "apply" | "jobs" | "pro";
 export interface HiringSidebarProps {
   activeTab: TabId;
   setActiveTab: React.Dispatch<React.SetStateAction<TabId>>;
@@ -14,7 +14,7 @@ export default function HiringSidebar({
     { id: "overview", label: "Overview", icon: Target },
     { id: "apply", label: "Apply for Jobs", icon: Users },
     { id: "jobs", label: "Job Notifications", icon: Bell },
-    { id: "services", label: "Hiring Services", icon: Briefcase },
+    { id: "pro", label: "Pro Subscription", icon: Crown },
   ];
 
   return (

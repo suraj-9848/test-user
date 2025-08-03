@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { JobNotification } from "../../../types/hiring";
 import { jobNotifications } from "../../../sample_data/hiring";
+import { subscriptionService } from "../../services/subscriptionService";
 import {
   Search,
   MapPin,
@@ -12,19 +13,88 @@ import {
   Calendar,
   Bell,
   ExternalLink,
+  Crown,
+  AlertCircle,
+  Zap,
 } from "lucide-react";
 
+interface JobWithEarlyAccess extends JobNotification {
+  earlyAccess?: {
+    isInEarlyAccessPeriod: boolean;
+    earlyAccessUntil: string | null;
+    userHasAccess: boolean;
+  };
+}
+
+interface JobsResponse {
+  success: boolean;
+  count: number;
+  jobs: JobWithEarlyAccess[];
+  earlyAccessInfo?: {
+    hiddenJobsCount: number;
+    message: string;
+    upgradeUrl: string;
+  };
+}
+
 export default function JobNotifications() {
-  const [filteredJobs, setFilteredJobs] =
-    useState<JobNotification[]>(jobNotifications);
+  const [filteredJobs, setFilteredJobs] = useState<JobWithEarlyAccess[]>([]);
+  const [allJobs, setAllJobs] = useState<JobWithEarlyAccess[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("all");
   const [selectedExperience, setSelectedExperience] = useState("all");
   const [notifications, setNotifications] = useState<string[]>([]);
+  const [isProUser, setIsProUser] = useState(false);
+  const [earlyAccessInfo, setEarlyAccessInfo] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Load jobs from backend
+  useEffect(() => {
+    loadJobs();
+    checkProStatus();
+  }, []);
+
+  const loadJobs = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("http://localhost:3000/api/hiring/jobs", {
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        console.warn("Backend not available, using sample data");
+        setAllJobs(jobNotifications);
+        setLoading(false);
+        return;
+      }
+
+      const data: JobsResponse = await response.json();
+      setAllJobs(data.jobs || jobNotifications); // Fallback to sample data
+      setEarlyAccessInfo(data.earlyAccessInfo);
+    } catch (error) {
+      console.error("Error loading jobs:", error);
+      // Fallback to sample data
+      setAllJobs(jobNotifications);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkProStatus = async () => {
+    try {
+      const status = await subscriptionService.checkProStatus();
+      setIsProUser(status);
+    } catch (error) {
+      console.error("Error checking Pro status:", error);
+    }
+  };
 
   // Filter jobs based on search and filters
   useEffect(() => {
-    let filtered = jobNotifications;
+    let filtered = allJobs;
 
     if (searchTerm) {
       filtered = filtered.filter(
@@ -46,7 +116,7 @@ export default function JobNotifications() {
     }
 
     setFilteredJobs(filtered);
-  }, [searchTerm, selectedType, selectedExperience]);
+  }, [allJobs, searchTerm, selectedType, selectedExperience]);
 
   const toggleNotification = (jobId: string) => {
     setNotifications((prev) =>
@@ -87,7 +157,7 @@ export default function JobNotifications() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 py-12 px-4 my-16">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 pt-8 pb-16 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Search and Filters */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8">
@@ -132,6 +202,51 @@ export default function JobNotifications() {
             </div>
           </div>
         </div>
+
+        {/* Pro Status and Early Access Info */}
+        {isProUser && (
+          <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-xl p-4 mb-6">
+            <div className="flex items-center space-x-3">
+              <Crown className="w-5 h-5 text-yellow-600" />
+              <div>
+                <h3 className="font-semibold text-gray-900">
+                  Pro Subscriber Active
+                </h3>
+                <p className="text-sm text-gray-600">
+                  You have early access to all job postings!
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {earlyAccessInfo && !isProUser && (
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6 mb-6">
+            <div className="flex items-start space-x-4">
+              <div className="flex-shrink-0">
+                <Zap className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 mb-2">
+                  Missing Out on Early Access!
+                </h3>
+                <p className="text-gray-700 mb-3">{earlyAccessInfo.message}</p>
+                <button
+                  onClick={() => (window.location.href = "#pro")}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
+                >
+                  Upgrade to Pro Now
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        )}
 
         {/* Job Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -200,9 +315,17 @@ export default function JobNotifications() {
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-4">
                         <div>
-                          <h3 className="text-xl font-bold text-gray-900 mb-2">
-                            {job.title}
-                          </h3>
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-xl font-bold text-gray-900">
+                              {job.title}
+                            </h3>
+                            {job.earlyAccess?.isInEarlyAccessPeriod && (
+                              <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
+                                <Crown className="w-3 h-3" />
+                                {isProUser ? "Early Access" : "Pro Only"}
+                              </div>
+                            )}
+                          </div>
                           <div className="flex items-center gap-4 text-gray-600 mb-3">
                             <div className="flex items-center gap-1">
                               <Building className="w-4 h-4" />

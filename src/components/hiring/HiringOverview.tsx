@@ -9,7 +9,7 @@ import {
   Globe,
   ArrowRight,
   Bell as BellIcon,
-  Star,
+  Crown,
 } from "lucide-react";
 
 interface HiringOverviewProps {
@@ -271,10 +271,10 @@ export default function HiringOverview({ setActiveTab }: HiringOverviewProps) {
               <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
             </button>
             <button
-              onClick={() => setActiveTab("services")}
+              onClick={() => setActiveTab("pro")}
               className="border-2 border-white/30 backdrop-blur-md text-white px-10 py-5 rounded-2xl hover:bg-white/10 transition-all duration-300 font-bold text-lg flex items-center justify-center gap-3"
             >
-              <Star className="w-6 h-6" /> Explore Premium Services
+              <Crown className="w-6 h-6" /> Upgrade to Pro
             </button>
           </div>
         </div>

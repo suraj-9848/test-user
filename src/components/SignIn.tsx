@@ -90,7 +90,15 @@ export default function SignIn() {
           setJwt(studentData.token);
           localStorage.setItem("jwt", studentData.token);
           setUserType("student");
-          router.push("/student");
+
+          // Check for redirect URL stored before login
+          const redirectUrl = sessionStorage.getItem("redirectAfterLogin");
+          if (redirectUrl) {
+            sessionStorage.removeItem("redirectAfterLogin");
+            router.push(redirectUrl);
+          } else {
+            router.push("/student");
+          }
           return;
         }
 
