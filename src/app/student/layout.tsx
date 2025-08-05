@@ -163,18 +163,18 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
 
   // Student layout
   return (
-    <div className="min-h-screen bg-gray-50 relative">
+    <div className="min-h-screen bg-gray-50 relative ">
       {/* Hide the main navbar and footer with overlay */}
       <div className="fixed inset-0 bg-gray-50 z-[100]">
         {/* Student Navigation */}
         <StudentNavbar onToggleSidebar={toggleSidebar} />
 
-        <div className="flex h-screen">
-          {/* Sidebar */}
+        <div className="h-screen">
+          {/* Sidebar - Fixed positioned, not part of flex */}
           <StudentSidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
 
-          {/* Main Content */}
-          <main className="flex-1 lg:ml-64 pt-16 overflow-y-auto">
+          {/* Main Content - Takes full width but with left margin for sidebar */}
+          <main className="lg:ml-64 h-full overflow-y-auto">
             <div className="p-4 lg:p-6">{children}</div>
           </main>
         </div>

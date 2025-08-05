@@ -2,17 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import {
-  Home,
-  BookOpen,
-  Trophy,
-  BarChart3,
-  User,
-  // Settings, // Removed unused
-  // Bell, // Removed unused
-  X,
-  Users,
-} from "lucide-react";
+import { Home, BookOpen, Trophy, BarChart3, User, Users } from "lucide-react";
 
 interface StudentSidebarProps {
   isOpen: boolean;
@@ -67,26 +57,13 @@ export default function StudentSidebar({
 
   return (
     <>
-      {/* Sidebar */}
+      {/* Sidebar - Desktop Only */}
       <aside
         className={`
-        fixed top-16 left-0 z-40 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 
-        transform transition-transform duration-300 ease-in-out flex flex-col
-        ${isOpen ? "translate-x-0" : "-translate-x-full"}
-        lg:translate-x-0
+        hidden lg:flex fixed top-16 left-0 z-40 bg-white border-r border-gray-200
+        flex-col h-[calc(100vh-4rem)] w-64
       `}
       >
-        {/* Mobile close button */}
-        <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
-          <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
-          <button
-            onClick={onToggle}
-            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
         {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto">
           {/* Navigation */}
@@ -99,25 +76,22 @@ export default function StudentSidebar({
                 <Link
                   key={item.name}
                   href={item.href}
-                  onClick={() => onToggle()}
                   className={`
                     group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200
                     ${
                       active
-                        ? "bg-blue-50 text-blue-700 border-blue-600"
-                        : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                     }
                   `}
                 >
                   <Icon
                     className={`
-                    mr-3 h-5 w-5 flex-shrink-0
-                     ${active ? "text-blue-600" : "text-gray-400 group-hover:text-gray-500"}
+                    h-5 w-5 flex-shrink-0 mr-3
+                     ${active ? "text-blue-600" : "text-gray-500 group-hover:text-gray-700"}
                   `}
                   />
-                  <div className="flex-1">
-                    <div className="font-medium">{item.name}</div>
-                  </div>
+                  <span className="font-medium">{item.name}</span>
                 </Link>
               );
             })}

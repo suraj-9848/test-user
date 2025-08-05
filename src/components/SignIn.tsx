@@ -166,8 +166,12 @@ export default function SignIn() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full mx-4">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-white text-2xl font-bold">N</span>
+          <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+            <img
+              src="/favicon.ico"
+              alt="Nirudhyog Logo"
+              className="w-full h-full"
+            />
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
             Welcome to Nirudhyog

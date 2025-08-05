@@ -3,7 +3,18 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { FiUser, FiLogOut, FiArrowLeft } from "react-icons/fi";
+import {
+  Menu,
+  X,
+  Home,
+  BookOpen,
+  Trophy,
+  BarChart3,
+  Users,
+  User as UserIcon,
+} from "lucide-react";
 import { useJWT } from "@/context/JWTContext";
 import { getAdminDashboardUrl } from "@/config/urls";
 import { getUserFromJWT } from "@/utils";
@@ -14,13 +25,56 @@ interface StudentNavbarProps {
 
 const StudentNavbar = ({ onToggleSidebar }: StudentNavbarProps) => {
   const router = useRouter();
+  const pathname = usePathname();
   const { jwt, setJwt } = useJWT();
   const [isLogoutMenuOpen, setIsLogoutMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAdminViewing, setIsAdminViewing] = useState(false);
   const [adminReturnUrl, setAdminReturnUrl] = useState<string | null>(null);
   const logoutMenuRef = useRef<HTMLDivElement>(null);
 
   const user = getUserFromJWT(jwt);
+
+  // Navigation items for mobile menu
+  const navigationItems = [
+    {
+      name: "Dashboard",
+      href: "/student",
+      icon: Home,
+    },
+    {
+      icon: BookOpen,
+      name: "Courses",
+      href: "/student/courses",
+    },
+    {
+      icon: Trophy,
+      name: "Tests",
+      href: "/student/tests",
+    },
+    {
+      icon: BarChart3,
+      name: "Results",
+      href: "/student/results",
+    },
+    {
+      icon: Users,
+      name: "Leaderboard",
+      href: "/student/leaderboard",
+    },
+    {
+      name: "Profile",
+      href: "/student/profile",
+      icon: UserIcon,
+    },
+  ];
+
+  const isActive = (href: string) => {
+    if (href === "/student") {
+      return pathname === href;
+    }
+    return pathname.startsWith(href);
+  };
 
   // Check if admin is viewing as student
   useEffect(() => {
@@ -66,6 +120,14 @@ const StudentNavbar = ({ onToggleSidebar }: StudentNavbarProps) => {
     window.location.href = adminUrl;
   };
 
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
   // Close logout menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -88,8 +150,18 @@ const StudentNavbar = ({ onToggleSidebar }: StudentNavbarProps) => {
         <div className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-2 text-sm shadow-md">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="bg-white/20 rounded-full p-1">
-                <FiUser className="h-3 w-3" />
+              <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                {user?.profile_picture ? (
+                  <img
+                    src={user.profile_picture}
+                    alt="Profile"
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="text-white font-medium text-xs">
+                    {user?.username ? user.username[0].toUpperCase() : "A"}
+                  </span>
+                )}
               </div>
               <span className="font-medium">
                 You are viewing as a Student (Admin Mode)
@@ -106,77 +178,167 @@ const StudentNavbar = ({ onToggleSidebar }: StudentNavbarProps) => {
         </div>
       )}
 
-      {/* Simplified Navigation - Just Logo and Profile */}
-      <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo/Branding */}
-            <div className="flex items-center">
-              <Link href="/student" className="flex items-center">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center mr-3">
-                  <span className="text-white font-bold text-sm">N</span>
-                </div>
-                <span className="text-xl font-bold text-gray-900">
-                  Nirudhyog
-                </span>
-                <span className="ml-2 text-sm text-gray-500 font-medium">
-                  Student
-                </span>
-              </Link>
-            </div>
+      {/* Navigation */}
+      <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40 w-full">
+        <div className="flex items-center justify-between h-16 min-w-0 px-6">
+          {/* Left side - Hamburger Menu + Logo */}
+          <div className="flex items-center gap-3">
+            {/* Hamburger Menu Button - Mobile Only */}
+            <button
+              onClick={toggleMobileMenu}
+              className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+            >
+              {isMobileMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
+            </button>
 
-            {/* User Profile & Logout */}
-            <div className="relative" ref={logoutMenuRef}>
-              <button
-                onClick={() => setIsLogoutMenuOpen(!isLogoutMenuOpen)}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                {user?.profile_picture ? (
-                  <img
-                    src={user.profile_picture}
-                    alt={user.username || "User"}
-                    className="w-8 h-8 rounded-full object-cover"
-                    onError={(e) => {
-                      // Fallback to initials if image fails to load
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = "none";
-                      const fallback = target.nextElementSibling as HTMLElement;
-                      if (fallback) fallback.style.display = "flex";
-                    }}
-                  />
-                ) : null}
-                <div
-                  className={`w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center ${user?.profile_picture ? "hidden" : ""}`}
-                >
+            {/* Logo/Branding */}
+            <Link href="/student" className="flex items-center min-w-0">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center mr-3 shadow-md flex-shrink-0">
+                <img src="/favicon.ico" alt="" />
+              </div>
+              <span className="text-xl font-bold text-gray-900 whitespace-nowrap">
+                Nirudhyog
+              </span>
+            </Link>
+          </div>
+
+          {/* User Profile & Logout - Right Side */}
+          <div className="relative flex-shrink-0 ml-auto" ref={logoutMenuRef}>
+            <button
+              onClick={() => setIsLogoutMenuOpen(!isLogoutMenuOpen)}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
+            >
+              {user?.profile_picture ? (
+                <img
+                  src={user.profile_picture}
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
                   <span className="text-white font-medium text-sm">
                     {user?.username ? user.username[0].toUpperCase() : "S"}
                   </span>
                 </div>
-                <span className="text-sm font-medium text-gray-700">
-                  {user?.username || "Student"}
-                </span>
-              </button>
+              )}
+              <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+                {user?.username || "Student"}
+              </span>
+            </button>
 
-              {/* Logout Dropdown */}
-              {isLogoutMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
-                  <div className="px-4 py-2 border-b border-gray-100">
-                    <div className="text-sm font-medium text-gray-900">
-                      {user?.username || "Student"}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {user?.email || "No email"}
+            {/* Logout Dropdown */}
+            {isLogoutMenuOpen && (
+              <div className="absolute right-0 mt-3 w-64 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 overflow-hidden">
+                {/* User Info Section */}
+                <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    {user?.profile_picture ? (
+                      <img
+                        src={user.profile_picture}
+                        alt="Profile"
+                        className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-sm">
+                        <span className="text-white font-semibold text-lg">
+                          {user?.username
+                            ? user.username[0].toUpperCase()
+                            : "S"}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-gray-900 truncate">
+                        {user?.username || "Student"}
+                      </div>
+                      <div className="text-xs text-gray-600 truncate">
+                        {user?.email || "No email"}
+                      </div>
                     </div>
                   </div>
+                </div>
+
+                {/* Menu Items */}
+                <div className="py-2">
+                  <Link
+                    href="/student/profile"
+                    className="flex items-center gap-3 w-full px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    onClick={() => setIsLogoutMenuOpen(false)}
+                  >
+                    <FiUser className="h-4 w-4 text-gray-500" />
+                    <span className="font-medium">View Profile</span>
+                  </Link>
+
+                  <div className="border-t border-gray-100 my-1"></div>
+
                   <button
                     onClick={handleLogout}
-                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    className="flex items-center gap-3 w-full px-6 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
                   >
                     <FiLogOut className="h-4 w-4" />
-                    Sign Out
+                    <span className="font-medium">Sign Out</span>
                   </button>
                 </div>
-              )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile Dropdown Menu */}
+        <div
+          className={`lg:hidden bg-white border-t border-gray-200 shadow-lg transform transition-all duration-300 ease-in-out origin-top ${
+            isMobileMenuOpen
+              ? "opacity-100 scale-y-100 max-h-96"
+              : "opacity-0 scale-y-95 max-h-0 overflow-hidden"
+          }`}
+        >
+          <div className="px-4 py-2 space-y-1">
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.href);
+
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={closeMobileMenu}
+                  className={`
+                    group flex items-center px-4 py-3 text-base font-medium rounded-lg transition-all duration-200
+                    ${
+                      active
+                        ? "bg-blue-50 text-blue-700 border-l-4 border-blue-600"
+                        : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                    }
+                  `}
+                >
+                  <Icon
+                    className={`
+                    mr-4 h-6 w-6 flex-shrink-0
+                     ${active ? "text-blue-600" : "text-gray-400 group-hover:text-gray-500"}
+                  `}
+                  />
+                  <span className="font-medium">{item.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Support section in mobile menu */}
+          <div className="px-4 py-3 border-t border-gray-200 bg-gray-50">
+            <div className="text-center">
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                Need Help?
+              </h3>
+              <a
+                href="mailto:contact@nirudhyog.com"
+                className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                contact@nirudhyog.com
+              </a>
             </div>
           </div>
         </div>
