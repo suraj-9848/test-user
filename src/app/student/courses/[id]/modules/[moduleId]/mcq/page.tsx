@@ -257,51 +257,59 @@ export default function MCQTest() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Retake Notification */}
-      {showRetakeOption && retakeStatus && (
-        <MCQAlert
-          type="warning"
-          title={`Previous Attempt: ${retakeStatus.score?.toFixed(1)}%`}
-          message={`You need ${retakeStatus.passingScore}% to pass. You can retake this MCQ to improve your score.`}
-        />
-      )}
-
-      {/* Header */}
-      <MCQHeader
-        onBack={handleBack}
-        moduleTitle="Module"
-        passingScore={mcq?.passingScore || 60}
-      />
-
-      {/* Error Alert */}
-      {error && <MCQAlert type="error" message={error} />}
-
-      {/* Results */}
-      {results && (
-        <MCQResults
-          results={results}
-          passingScore={mcq?.passingScore || 60}
-          onBackToModule={handleBack}
-          onRetake={() => {
-            setResults(null);
-            setResponses({});
-            setError("");
-          }}
-          showRetake={!results.passed}
-        />
-      )}
-
-      {/* Questions */}
-      {!results && mcq && (
-        <div>
-          <MCQQuestions
-            questions={mcq.questions}
-            responses={responses}
-            onResponseChange={handleResponseChange}
-            disabled={alreadyAttempted || isSubmitting}
+    <div className="w-full max-w-4xl mx-auto my-10 bg-white rounded-2xl shadow-xl">
+      <div className="space-y-8 p-8">
+        {/* Retake Notification */}
+        {showRetakeOption && retakeStatus && (
+          <MCQAlert
+            type="warning"
+            title={`Previous Attempt: ${retakeStatus.score?.toFixed(1)}%`}
+            message={`You need ${retakeStatus.passingScore}% to pass. You can retake this MCQ to improve your score.`}
           />
+        )}
 
+        {/* Header */}
+        <MCQHeader
+          onBack={handleBack}
+          moduleTitle="Module"
+          passingScore={mcq?.passingScore || 60}
+        />
+
+        {/* Error Alert */}
+        {error && <MCQAlert type="error" message={error} />}
+
+        {/* Results */}
+        {results && (
+          <MCQResults
+            results={results}
+            passingScore={mcq?.passingScore || 60}
+            onBackToModule={handleBack}
+            onRetake={() => {
+              setResults(null);
+              setResponses({});
+              setError("");
+            }}
+            showRetake={!results.passed}
+          />
+        )}
+
+        {/* Questions */}
+        {!results && mcq && (
+          <div className="flex flex-col">
+            <div className="overflow-y-auto max-h-[50vh] min-h-[200px] p-4 gap-6 rounded-xl bg-gray-50">
+              <MCQQuestions
+                questions={mcq.questions}
+                responses={responses}
+                onResponseChange={handleResponseChange}
+                disabled={alreadyAttempted || isSubmitting}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+      {/* Always visible submit button */}
+      {!results && mcq && (
+        <div className="sticky bottom-0 left-0 right-0 bg-white shadow-lg px-6 py-4 z-20">
           <MCQSubmit
             questionsCount={mcq.questions.length}
             responsesCount={Object.keys(responses).length}

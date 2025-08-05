@@ -183,28 +183,28 @@ export default function CoursesPage() {
     setFilteredEnrolledCourses(filtered);
   }, [enrolledCourses, searchTerm, filterStatus]);
 
-  const getStatusBadge = (status?: string) => {
-    switch (status) {
-      case "completed":
-        return (
-          <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
-            Completed
-          </span>
-        );
-      case "active":
-        return (
-          <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
-            In Progress
-          </span>
-        );
-      default:
-        return (
-          <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
-            Not Started
-          </span>
-        );
-    }
-  };
+  // const getStatusBadge = (status?: string) => {
+  //   switch (status) {
+  //     case "completed":
+  //       return (
+  //         <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+  //           Completed
+  //         </span>
+  //       );
+  //     case "active":
+  //       return (
+  //         <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+  //           In Progress
+  //         </span>
+  //       );
+  //     default:
+  //       return (
+  //         <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+  //           Not Started
+  //         </span>
+  //       );
+  //   }
+  // };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -364,7 +364,7 @@ export default function CoursesPage() {
         </div>
 
         {/* Search and Filters for Enrolled Courses */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        {/* <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -398,7 +398,7 @@ export default function CoursesPage() {
               </select>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Enrolled Courses Grid */}
         {filteredEnrolledCourses.length > 0 ? (
@@ -415,9 +415,9 @@ export default function CoursesPage() {
                     fill
                     className="object-cover"
                   />
-                  <div className="absolute top-3 left-3">
+                  {/* <div className="absolute top-3 left-3">
                     {getStatusBadge(course.status)}
-                  </div>
+                  </div> */}
                   {course.rating && (
                     <div className="absolute top-3 right-3 bg-black/70 text-white px-2 py-1 rounded-lg text-sm flex items-center space-x-1">
                       <Star className="w-3 h-3 text-yellow-400 fill-current" />
@@ -459,7 +459,7 @@ export default function CoursesPage() {
                       </div>
                     )}
                   </div>
-                  <div className="mb-4">
+                  {/* <div className="mb-4">
                     <div className="flex items-center justify-between text-sm mb-2">
                       <span className="text-gray-600">Progress</span>
                       <span className="font-medium text-gray-900">
@@ -480,7 +480,7 @@ export default function CoursesPage() {
                         remaining
                       </span>
                     </div>
-                  </div>
+                  </div> */}
                   <div className="text-xs text-gray-500 mb-4">
                     <p>Started: {formatDate(course.start_date)}</p>
                     <p>Ends: {formatDate(course.end_date)}</p>

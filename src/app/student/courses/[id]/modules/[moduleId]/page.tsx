@@ -767,7 +767,8 @@ export default function ModuleDetail() {
                           Assessment Review
                         </h4>
                       </div>
-                      <div className="p-4">
+                      {/* Make MCQReview scrollable and ensure submit button is always visible */}
+                      <div className="p-4 max-h-[70vh] min-h-[300px] flex flex-col overflow-y-auto">
                         <MCQReview moduleId={moduleId} />
                       </div>
                     </div>
