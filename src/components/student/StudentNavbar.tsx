@@ -14,6 +14,8 @@ import {
   BarChart3,
   Users,
   User as UserIcon,
+  Code2,
+  LinkIcon,
 } from "lucide-react";
 import { useJWT } from "@/context/JWTContext";
 import { getAdminDashboardUrl } from "@/config/urls";
@@ -61,6 +63,17 @@ const StudentNavbar = ({ onToggleSidebar }: StudentNavbarProps) => {
       icon: Users,
       name: "Leaderboard",
       href: "/student/leaderboard",
+    },
+
+    {
+      icon: Code2,
+      name: "CP Connection",
+      href: "/student/cp-connection",
+    },
+    {
+      icon: LinkIcon,
+      name: "CP Leaderboard",
+      href: "/student/cp-leaderboard",
     },
     {
       name: "Profile",
@@ -292,11 +305,12 @@ const StudentNavbar = ({ onToggleSidebar }: StudentNavbarProps) => {
         <div
           className={`lg:hidden bg-white border-t border-gray-200 shadow-lg transform transition-all duration-300 ease-in-out origin-top ${
             isMobileMenuOpen
-              ? "opacity-100 scale-y-100 max-h-96"
+              ? "opacity-100 scale-y-100 max-h-[90vh]"
               : "opacity-0 scale-y-95 max-h-0 overflow-hidden"
           }`}
+          style={{ minHeight: 0 }}
         >
-          <div className="px-4 py-2 space-y-1">
+          <div className="flex flex-col h-[60vh] min-h-[320px] max-h-[60vh] overflow-y-auto px-4 py-2 space-y-1">
             {navigationItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.href);
@@ -327,8 +341,7 @@ const StudentNavbar = ({ onToggleSidebar }: StudentNavbarProps) => {
             })}
           </div>
 
-          {/* Support section in mobile menu */}
-          <div className="px-4 py-3 border-t border-gray-200 bg-gray-50">
+          <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 sticky bottom-0">
             <div className="text-center">
               <h3 className="text-sm font-semibold text-gray-900 mb-1">
                 Need Help?

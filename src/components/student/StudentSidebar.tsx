@@ -2,7 +2,16 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home, BookOpen, Trophy, BarChart3, User, Users } from "lucide-react";
+import {
+  Home,
+  BookOpen,
+  Trophy,
+  BarChart3,
+  User,
+  Users,
+  Code2,
+  Link as LinkIcon,
+} from "lucide-react";
 
 interface StudentSidebarProps {
   isOpen: boolean;
@@ -40,6 +49,16 @@ export default function StudentSidebar({
       icon: Users,
       name: "Leaderboard",
       href: "/student/leaderboard",
+    },
+    {
+      icon: Code2,
+      name: "CP Connection",
+      href: "/student/cp-connection",
+    },
+    {
+      icon: LinkIcon,
+      name: "CP Leaderboard",
+      href: "/student/cp-leaderboard",
     },
     {
       name: "Profile",

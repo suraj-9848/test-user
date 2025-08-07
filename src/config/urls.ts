@@ -130,6 +130,15 @@ export const API_ENDPOINTS = {
     MY_APPLICATIONS: "/api/hiring/my-applications",
     APPLICATION_BY_ID: (id: string) => `/api/hiring/applications/${id}`,
   },
+
+  // CP Tracker (Student)
+  CP_TRACKER: {
+    MY_PROFILE: "/api/cp-tracker/my-profile",
+    UPDATE: "/api/cp-tracker/connect",
+    REQUEST_EDIT: "/api/cp-tracker/edit-request",
+    LEADERBOARD: "/api/cp-tracker/leaderboard",
+    VALIDATE: "/api/cp-tracker/validate",
+  },
 } as const;
 
 // Full URL builders

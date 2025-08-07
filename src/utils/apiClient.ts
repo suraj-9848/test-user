@@ -64,7 +64,7 @@ const isJWTExpired = (token: string): boolean => {
 const attemptRefreshToken = async (): Promise<string | null> => {
   try {
     console.log(
-      "🔄 Attempting to refresh token using httpOnly refresh token cookie...",
+      " Attempting to refresh token using httpOnly refresh token cookie...",
     );
 
     // Check if we can potentially access refresh token (browser environment)
@@ -110,7 +110,7 @@ const attemptRefreshToken = async (): Promise<string | null> => {
 
       // If it's a 401, the refresh token is invalid/expired
       if (response.status === 401) {
-        console.log("🔄 Refresh token expired or invalid");
+        console.log(" Refresh token expired or invalid");
       }
 
       return null;
@@ -176,7 +176,7 @@ const apiClient = async (
   const fullUrl = url.startsWith("http") ? url : `${baseURL}${url}`;
 
   try {
-    console.log(`🔄 API Request: ${fetchOptions.method || "GET"} ${fullUrl}`);
+    console.log(` API Request: ${fetchOptions.method || "GET"} ${fullUrl}`);
 
     const response = await fetch(fullUrl, {
       ...fetchOptions,
@@ -196,13 +196,13 @@ const apiClient = async (
         errorData?.error?.includes("Unauthorized") ||
         errorData?.code === "TOKEN_EXPIRED"
       ) {
-        console.log("🔄 Received 401 error, attempting token refresh...");
+        console.log(" Received 401 error, attempting token refresh...");
 
         // Try to refresh token
         const refreshedToken = await attemptRefreshToken();
 
         if (refreshedToken) {
-          console.log("🔄 Retrying original request with refreshed token");
+          console.log(" Retrying original request with refreshed token");
 
           // Retry the original request with new token and _retry flag
           return await apiClient(url, {
@@ -211,15 +211,12 @@ const apiClient = async (
           });
         } else {
           // Refresh failed, redirect to login
-          console.log("🔄 Token refresh failed, redirecting to login");
+          console.log(" Token refresh failed, redirecting to login");
           clearTokensAndRedirect();
           throw new Error("Authentication expired. Please login again.");
         }
       }
     }
-
-    // Log response for debugging
-    console.log(` API Response: ${response.status} ${response.statusText}`);
 
     return response;
   } catch (error) {
