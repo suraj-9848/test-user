@@ -90,6 +90,8 @@ export const API_ENDPOINTS = {
     SESSION_PROGRESS: "/api/student/session-progress",
     SESSION_PROGRESS_UPDATE: "/api/student/session-progress/update",
 
+    BLOGS: "/api/student/blogs",
+    BLOG_BY_ID: (id: string) => `/api/student/blogs/${id}`,
     // Live Meetings / Classes
     MEETINGS: (courseId: string) => `/api/student/courses/${courseId}/meetings`,
   },
@@ -99,6 +101,9 @@ export const API_ENDPOINTS = {
     COURSES: "/api/student/courses/public",
     ANNOUNCEMENTS: "/api/public/announcements",
     ABOUT: "/api/public/about",
+
+    BLOGS: "/api/student/blogs",
+    BLOG_BY_ID: (id: string) => `/api/student/blogs/${id}`,
   },
 
   // Course Management (for enrolled courses)
@@ -281,6 +286,9 @@ export const COMMON_URLS = {
   STUDENT_PROFILE: buildApiUrl(API_ENDPOINTS.STUDENT.PROFILE),
   STUDENT_DASHBOARD: buildApiUrl(API_ENDPOINTS.STUDENT.DASHBOARD),
   LEADERBOARD: buildApiUrl(API_ENDPOINTS.STUDENT.LEADERBOARD),
+
+  // Public Blog URLs (READ ONLY)
+  PUBLIC_BLOGS: buildApiUrl(API_ENDPOINTS.PUBLIC.BLOGS),
 
   // Public URLs
   PUBLIC_COURSES: buildApiUrl(API_ENDPOINTS.PUBLIC.COURSES),

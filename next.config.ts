@@ -32,6 +32,18 @@ const nextConfig = {
         protocol: "https",
         hostname: "lh3.googleusercontent.com", // for Google profile images
       },
+      {
+        protocol: "https",
+        hostname: "imgs.search.brave.com", // From your error log
+      },
+      {
+        protocol: "https",
+        hostname: "**", // Allow all HTTPS domains (less secure but works)
+      },
+      {
+        protocol: "http",
+        hostname: "**", // Allow all HTTP domains if needed
+      },
     ],
   },
 };

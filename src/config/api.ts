@@ -238,6 +238,74 @@ export const apiService = {
       console.warn("Failed to save answers:", error);
     }
   },
+  getBlogs: async (
+    page: number = 1,
+    limit: number = 12,
+  ): Promise<{
+    blogs: any[];
+    pagination: any;
+    success: boolean;
+    message: string;
+  }> => {
+    try {
+      console.log("🔄 Fetching blogs with enhanced API client...");
+      const apiClient = await getEnhancedApiClient();
+      const response = await apiClient(
+        `/api/student/blogs?page=${page}&limit=${limit}`,
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(" Error:", errorText);
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log("Blogs API response:", data);
+
+      return {
+        blogs: data.data?.blogs || [],
+        pagination: data.data?.pagination || {},
+        success: data.success || true,
+        message: data.message || "Blogs fetched successfully",
+      };
+    } catch (error) {
+      console.error("Error in getBlogs:", error);
+      throw error;
+    }
+  },
+
+  getBlogById: async (
+    blogId: string,
+  ): Promise<{
+    blog: any;
+    success: boolean;
+    message: string;
+  }> => {
+    try {
+      console.log(`🔄 Fetching blog details for ${blogId}...`);
+      const apiClient = await getEnhancedApiClient();
+      const response = await apiClient(`/api/student/blogs/${blogId}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Blog API Error:", errorText);
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log(" Blog details response:", data);
+
+      return {
+        blog: data.data?.blog || {},
+        success: data.success || true,
+        message: data.message || "Blog fetched successfully",
+      };
+    } catch (error) {
+      console.error("❌ Error in getBlogById:", error);
+      throw error;
+    }
+  },
 };
 
 // Keep the old API_ENDPOINTS for backward compatibility
