@@ -9,6 +9,7 @@ import {
   CPTrackerApiResponse,
   LeaderboardFilters,
 } from "../types/cptracker";
+import { API_ENDPOINTS } from "../config/urls";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
@@ -51,6 +52,25 @@ apiClient.interceptors.response.use(
 export class CPTrackerAPI {
   // === STUDENT ENDPOINTS ===
 
+  // Refresh CPTracker data for the current user (student endpoint)
+  static async refreshMyCPTrackerData(): Promise<CPTrackerProfile> {
+    try {
+      const response = await apiClient.post<
+        CPTrackerApiResponse<CPTrackerProfile>
+      >(API_ENDPOINTS.CP_TRACKER.REFRESH);
+      if (!response.data.success) {
+        throw new Error(response.data.message || "Failed to refresh CP data");
+      }
+      return response.data.data!;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to refresh CP data",
+      );
+    }
+  }
+
   // Connect/Update CPTracker profiles
   static async connectCPTracker(
     data: CPTrackerConnection,
@@ -58,7 +78,7 @@ export class CPTrackerAPI {
     try {
       const response = await apiClient.post<
         CPTrackerApiResponse<CPTrackerProfile>
-      >("/api/cp-tracker/connect", data);
+      >(API_ENDPOINTS.CP_TRACKER.UPDATE, data);
 
       if (!response.data.success) {
         throw new Error(
@@ -87,7 +107,7 @@ export class CPTrackerAPI {
     try {
       const response = await apiClient.get<
         CPTrackerApiResponse<CPTrackerProfile>
-      >("/api/cp-tracker/my-profile");
+      >(API_ENDPOINTS.CP_TRACKER.MY_PROFILE);
 
       if (!response.data.success) {
         if (response.data.message.includes("not found")) {
@@ -127,7 +147,7 @@ export class CPTrackerAPI {
       if (filters?.limit) params.append("limit", filters.limit.toString());
       if (filters?.offset) params.append("offset", filters.offset.toString());
 
-      const url = `/api/cp-tracker/leaderboard${params.toString() ? "?" + params.toString() : ""}`;
+      const url = `${API_ENDPOINTS.CP_TRACKER.LEADERBOARD}${params.toString() ? "?" + params.toString() : ""}`;
 
       const response =
         await apiClient.get<CPTrackerApiResponse<CPTrackerLeaderboard[]>>(url);
@@ -154,7 +174,9 @@ export class CPTrackerAPI {
   // Get user's enrolled batches
   static async getUserBatches(): Promise<string[]> {
     try {
-      const response = await apiClient.get<any>("/api/user/my-profile");
+      const response = await apiClient.get<
+        CPTrackerApiResponse<CPTrackerProfile>
+      >(API_ENDPOINTS.CP_TRACKER.MY_PROFILE);
 
       if (!response.data.success) {
         throw new Error(
@@ -162,7 +184,9 @@ export class CPTrackerAPI {
         );
       }
 
-      return response.data.data?.batch_id || [];
+      return response.data.data?.user?.batch_id
+        ? [response.data.data.user.batch_id]
+        : [];
     } catch (error) {
       if (typeof error === "object" && error !== null && "response" in error) {
         const axiosError = error as any;
@@ -186,7 +210,7 @@ export class CPTrackerAPI {
     try {
       const response = await apiClient.get<
         CPTrackerApiResponse<CPTrackerProfile>
-      >(`/api/cp-tracker/users/${userId}`);
+      >(API_ENDPOINTS.CP_TRACKER.USER_BY_ID(userId));
 
       if (!response.data.success) {
         if (response.data.message.includes("not found")) {
@@ -218,7 +242,7 @@ export class CPTrackerAPI {
     try {
       const response = await apiClient.put<
         CPTrackerApiResponse<CPTrackerProfile>
-      >(`/api/cp-tracker/users/${userId}`, data);
+      >(API_ENDPOINTS.CP_TRACKER.UPDATE_USER(userId), data);
 
       if (!response.data.success) {
         throw new Error(
@@ -250,7 +274,7 @@ export class CPTrackerAPI {
       if (filters?.limit) params.append("limit", filters.limit.toString());
       if (filters?.offset) params.append("offset", filters.offset.toString());
 
-      const url = `/api/cp-tracker/all${params.toString() ? "?" + params.toString() : ""}`;
+      const url = `${API_ENDPOINTS.CP_TRACKER.ALL}${params.toString() ? "?" + params.toString() : ""}`;
 
       const response =
         await apiClient.get<CPTrackerApiResponse<CPTrackerProfile[]>>(url);
@@ -276,7 +300,7 @@ export class CPTrackerAPI {
     try {
       const response = await apiClient.get<
         CPTrackerApiResponse<CPTrackerStats>
-      >("/api/cp-tracker/stats");
+      >(API_ENDPOINTS.CP_TRACKER.STATS);
 
       if (!response.data.success) {
         throw new Error(response.data.message || "Failed to fetch CP stats");
@@ -297,7 +321,7 @@ export class CPTrackerAPI {
     try {
       const response = await apiClient.post<
         CPTrackerApiResponse<CPTrackerProfile>
-      >(`/api/cp-tracker/users/${userId}/refresh`);
+      >(API_ENDPOINTS.CP_TRACKER.REFRESH_USER(userId));
 
       if (!response.data.success) {
         throw new Error(response.data.message || "Failed to refresh CP data");
@@ -317,7 +341,7 @@ export class CPTrackerAPI {
   static async deleteCPTracker(userId: string): Promise<void> {
     try {
       const response = await apiClient.delete<CPTrackerApiResponse>(
-        `/api/cp-tracker/users/${userId}`,
+        API_ENDPOINTS.CP_TRACKER.DELETE_USER(userId),
       );
 
       if (!response.data.success) {
@@ -339,7 +363,7 @@ export class CPTrackerAPI {
     try {
       const response = await apiClient.post<
         CPTrackerApiResponse<CPTrackerUpdateResult>
-      >("/api/cp-tracker/admin/update-all");
+      >(API_ENDPOINTS.CP_TRACKER.ADMIN_UPDATE_ALL);
 
       if (!response.data.success) {
         throw new Error(
@@ -364,7 +388,7 @@ export class CPTrackerAPI {
     try {
       const response = await apiClient.post<
         CPTrackerApiResponse<CPTrackerUpdateResult>
-      >(`/api/cp-tracker/admin/update-batch/${batchId}`);
+      >(API_ENDPOINTS.CP_TRACKER.ADMIN_UPDATE_BATCH(batchId));
 
       if (!response.data.success) {
         throw new Error(
@@ -387,7 +411,7 @@ export class CPTrackerAPI {
     try {
       const response = await apiClient.get<
         CPTrackerApiResponse<CronJobStatus[]>
-      >("/api/cp-tracker/admin/cron-status");
+      >(API_ENDPOINTS.CP_TRACKER.ADMIN_CRON_STATUS);
 
       if (!response.data.success) {
         throw new Error(
@@ -412,7 +436,7 @@ export class CPTrackerAPI {
   ): Promise<void> {
     try {
       const response = await apiClient.post<CPTrackerApiResponse>(
-        `/api/cp-tracker/admin/cron/${jobName}`,
+        API_ENDPOINTS.CP_TRACKER.ADMIN_CRON(jobName),
         { action },
       );
 
@@ -435,7 +459,7 @@ export class CPTrackerAPI {
     try {
       const response = await apiClient.get<
         CPTrackerApiResponse<CPTrackerStats>
-      >("/api/cp-tracker/admin/update-stats");
+      >(API_ENDPOINTS.CP_TRACKER.ADMIN_UPDATE_STATS);
 
       if (!response.data.success) {
         throw new Error(
@@ -460,7 +484,7 @@ export class CPTrackerAPI {
   ): Promise<void> {
     try {
       const response = await apiClient.post<CPTrackerApiResponse>(
-        `/api/cp-tracker/admin/batch-cron/${batchId}`,
+        API_ENDPOINTS.CP_TRACKER.ADMIN_BATCH_CRON(batchId),
         { cronExpression },
       );
 
@@ -482,7 +506,7 @@ export class CPTrackerAPI {
   static async removeBatchCronJob(batchId: string): Promise<void> {
     try {
       const response = await apiClient.delete<CPTrackerApiResponse>(
-        `/api/cp-tracker/admin/batch-cron/${batchId}`,
+        API_ENDPOINTS.CP_TRACKER.ADMIN_BATCH_CRON(batchId),
       );
 
       if (!response.data.success) {

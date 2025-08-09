@@ -203,7 +203,7 @@ export default function CPTrackerLeaderboardComponent({
                   LeetCode Score
                   <br />
                   <span className="text-gray-500 normal-case text-xs">
-                    LC=LCCSC*10+LCPSC*1+LCCP*0+LCRA*1
+                    LC=LCCSC*10+LCPSC*1+LCCP*1+LCRA*1
                   </span>
                 </th>
                 {/* CodeForces Columns */}
@@ -390,42 +390,6 @@ export default function CPTrackerLeaderboardComponent({
           </div>
         )}
       </div>
-
-      {/* Top 3 Highlight */}
-      {filteredData.length >= 3 && !searchTerm && !batchFilter && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {filteredData.slice(0, 3).map((student, index) => (
-            <div
-              key={student.user.id}
-              className={`p-6 rounded-2xl shadow-lg border-2 ${
-                index === 0
-                  ? "border-yellow-400 bg-gradient-to-br from-yellow-50 to-yellow-100"
-                  : index === 1
-                    ? "border-gray-400 bg-gradient-to-br from-gray-50 to-gray-100"
-                    : "border-amber-400 bg-gradient-to-br from-amber-50 to-amber-100"
-              }`}
-            >
-              <div className="text-center">
-                <div className="mb-4">{getRankIcon(student.rank)}</div>
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl mx-auto mb-4">
-                  {student.user.username
-                    ? student.user.username.charAt(0).toUpperCase()
-                    : "U"}
-                </div>
-                <h3 className="font-bold text-lg text-gray-900 mb-1">
-                  {student.user.username || "Unknown User"}
-                </h3>
-                <p className="text-sm text-gray-600 mb-2">
-                  ID: {student.user.id}
-                </p>
-                <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                  {Number(student.performance_score || 0).toFixed(2)}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

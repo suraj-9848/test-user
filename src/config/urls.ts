@@ -131,13 +131,31 @@ export const API_ENDPOINTS = {
     APPLICATION_BY_ID: (id: string) => `/api/hiring/applications/${id}`,
   },
 
-  // CP Tracker (Student)
+  // CP Tracker (Student & Admin)
   CP_TRACKER: {
+    // Student endpoints
     MY_PROFILE: "/api/cp-tracker/my-profile",
     UPDATE: "/api/cp-tracker/connect",
     REQUEST_EDIT: "/api/cp-tracker/edit-request",
     LEADERBOARD: "/api/cp-tracker/leaderboard",
     VALIDATE: "/api/cp-tracker/validate",
+    REFRESH: "/api/cp-tracker/my/refresh",
+
+    // Admin/Instructor endpoints
+    ALL: "/api/cp-tracker/all",
+    STATS: "/api/cp-tracker/stats",
+    USER_BY_ID: (userId: string) => `/api/cp-tracker/users/${userId}`,
+    UPDATE_USER: (userId: string) => `/api/cp-tracker/users/${userId}`,
+    DELETE_USER: (userId: string) => `/api/cp-tracker/users/${userId}`,
+    REFRESH_USER: (userId: string) => `/api/cp-tracker/users/${userId}/refresh`,
+    ADMIN_UPDATE_ALL: "/api/cp-tracker/admin/update-all",
+    ADMIN_UPDATE_BATCH: (batchId: string) =>
+      `/api/cp-tracker/admin/update-batch/${batchId}`,
+    ADMIN_CRON_STATUS: "/api/cp-tracker/admin/cron-status",
+    ADMIN_CRON: (jobName: string) => `/api/cp-tracker/admin/cron/${jobName}`,
+    ADMIN_UPDATE_STATS: "/api/cp-tracker/admin/update-stats",
+    ADMIN_BATCH_CRON: (batchId: string) =>
+      `/api/cp-tracker/admin/batch-cron/${batchId}`,
   },
 } as const;
 

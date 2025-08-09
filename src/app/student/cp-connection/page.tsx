@@ -57,17 +57,25 @@ export default function CPConnectionPage() {
     }
   };
 
-  // Refresh profile data
+  // Refresh profile data (calls backend refresh endpoint)
   const handleRefresh = async () => {
     if (!profile) return;
-
     try {
       setRefreshing(true);
+      await CPTrackerAPI.refreshMyCPTrackerData();
       await fetchProfile();
       toast.success("Profile data refreshed!");
     } catch (error: any) {
+      let errorMsg = "Failed to refresh profile";
+      if (error && typeof error === "object") {
+        if (error.message) errorMsg = error.message;
+        else if (error.toString) errorMsg = error.toString();
+      } else if (typeof error === "string") {
+        errorMsg = error;
+      }
+      toast.error(errorMsg);
+      // Optionally keep the console log for debugging
       console.error("Error refreshing profile:", error);
-      toast.error(error.message || "Failed to refresh profile");
     } finally {
       setRefreshing(false);
     }

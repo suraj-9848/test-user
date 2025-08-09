@@ -4,6 +4,7 @@ import "./globals.css";
 import PageWrapper from "@/components/landing/PageWrapper";
 import SessionWrapper from "@/components/SessionProvider";
 import { JWTProvider } from "@/context/JWTContext";
+import ToastProvider from "@/components/ToastProvider";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -34,6 +35,7 @@ export default function RootLayout({
         </style>
       </head>
       <body className={` poppins antialiased`}>
+        <ToastProvider />
         <SessionWrapper>
           <JWTProvider>
             <PageWrapper>{children}</PageWrapper>
