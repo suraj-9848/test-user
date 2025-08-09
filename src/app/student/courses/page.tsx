@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { loadRazorpayScript } from "@/utils/razorpay";
+import { buildUrl, API_ENDPOINTS } from "@/config/urls";
 import {
   BookOpen,
   Clock,
@@ -272,7 +273,7 @@ export default function CoursesPage() {
       console.log("Decoded user ID:", decoded.id);
 
       const orderRes = await fetch(
-        `${BACKEND_BASE_URL}/api/payment/create-order`,
+        buildUrl(API_ENDPOINTS.PAYMENT_COURSE.CREATE_ORDER),
         {
           method: "POST",
           headers: {
@@ -286,8 +287,14 @@ export default function CoursesPage() {
       if (!order || !order.id) throw new Error("Order creation failed");
 
       // 2. Open Razorpay checkout
+      const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+      if (!razorpayKey) {
+        throw new Error(
+          "Razorpay key missing. Please set NEXT_PUBLIC_RAZORPAY_KEY_ID in your environment.",
+        );
+      }
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        key: razorpayKey,
         amount: order.amount,
         currency: order.currency,
         name: course.title,
@@ -296,7 +303,6 @@ export default function CoursesPage() {
         order_id: order.id,
         handler: async function (response: any) {
           // 3. Verify payment on backend
-          // Extract userId from JWT (if available)
           let userId = undefined;
           try {
             const tokenPayload = userToken.split(".")[1];
@@ -312,7 +318,7 @@ export default function CoursesPage() {
             return alert("User ID not found. Please login again.");
           }
           const verifyRes = await fetch(
-            `${BACKEND_BASE_URL}/api/payment/verify`,
+            buildUrl(API_ENDPOINTS.PAYMENT_COURSE.VERIFY),
             {
               method: "POST",
               headers: {
@@ -339,7 +345,7 @@ export default function CoursesPage() {
         prefill: {},
         theme: { color: "#2563eb" },
       };
-      // @ts-ignore
+      // @ts-expect-error
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err: any) {

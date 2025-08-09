@@ -10,9 +10,9 @@ export const BASE_URLS = {
 
 // API Endpoints
 export const API_ENDPOINTS = {
-  PAYMENT: {
-    CREATE_ORDER: "/api/payment/create-order",
-    VERIFY: "/api/payment/verify",
+  PAYMENT_COURSE: {
+    CREATE_ORDER: "/api/course/payment/create-order",
+    VERIFY: "/api/course/payment/verify",
   },
   // Authentication
   AUTH: {

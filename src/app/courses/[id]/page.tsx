@@ -124,7 +124,7 @@ export default function CourseDetailsPage() {
     try {
       // 1. Create order on backend
       const orderRes = await fetch(
-        buildApiUrl(API_ENDPOINTS.PAYMENT.CREATE_ORDER),
+        buildApiUrl(API_ENDPOINTS.PAYMENT_COURSE.CREATE_ORDER),
         {
           method: "POST",
           headers: {
@@ -159,7 +159,7 @@ export default function CourseDetailsPage() {
             return;
           }
           const verifyRes = await fetch(
-            buildApiUrl(API_ENDPOINTS.PAYMENT.VERIFY),
+            buildApiUrl(API_ENDPOINTS.PAYMENT_COURSE.VERIFY),
             {
               method: "POST",
               headers: {
@@ -186,7 +186,7 @@ export default function CourseDetailsPage() {
         prefill: {},
         theme: { color: "#2563eb" },
       };
-      // @ts-ignore
+      // @ts-expect-error
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err: any) {
