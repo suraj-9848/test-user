@@ -17,26 +17,15 @@ import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { useJWT } from "@/context/JWTContext";
 import { API_ENDPOINTS, buildApiUrl } from "@/config/urls";
+import { apiGet, handleApiResponse } from "@/utils/apiClient";
+import {
+  fetchMeetingsForCourses,
+  annotateMeetings,
+  formatRelative as formatRelativeMeeting,
+} from "@/utils/meetings";
 
 // Create API wrapper for consistency
-const api = {
-  get: async (endpoint: string) => {
-    const token = localStorage.getItem("jwt");
-    const response = await fetch(buildApiUrl(endpoint), {
-      method: "GET",
-      headers: {
-        Authorization: token ? `Bearer ${token}` : "",
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
-    }
-
-    return response.json();
-  },
-};
+// const api = { get: async ... } (removed inline wrapper in favor of apiClient helpers)
 
 interface Course {
   id: string;
@@ -101,6 +90,8 @@ export default function StudentDashboard() {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
+  const [liveMeetings, setLiveMeetings] = useState<any[]>([]);
+  const [liveMeetingsLoading, setLiveMeetingsLoading] = useState(false);
 
   // Set greeting based on time of day
   useEffect(() => {
@@ -139,16 +130,12 @@ export default function StudentDashboard() {
         setLoading(true);
         setError("");
 
-        // Fetch dashboard stats from new endpoint
-        const statsResponse = await api.get(
-          API_ENDPOINTS.STUDENT.DASHBOARD_STATS,
-        );
+        const statsRes = await apiGet(API_ENDPOINTS.STUDENT.DASHBOARD_STATS);
+        const statsResponse = await handleApiResponse<any>(statsRes);
         setStats(statsResponse.stats);
 
-        // Fetch courses for the course cards
-        const coursesResponse: Course[] = await api.get(
-          API_ENDPOINTS.STUDENT.COURSES,
-        );
+        const coursesRes = await apiGet(API_ENDPOINTS.STUDENT.COURSES);
+        const coursesResponse: Course[] = await handleApiResponse(coursesRes);
         const transformedCourses = coursesResponse
           .slice(0, 3)
           .map((course: Course) => ({
@@ -171,27 +158,39 @@ export default function StudentDashboard() {
           }));
         setCourses(transformedCourses);
 
-        // Fetch tests for upcoming tasks
+        // Fetch live meetings summary (fan-out requests). Show soonest 3 upcoming or live.
         try {
-          const testsResponse: TestResponse[] =
-            await api.get("/api/student/tests");
-          // Tests data is available in testsResponse if needed for future features
+          setLiveMeetingsLoading(true);
+          const allMeetings = await fetchMeetingsForCourses(
+            coursesResponse.map((c) => c.id),
+          );
+          const annotated = annotateMeetings(allMeetings, Date.now());
+          const filtered = annotated.filter(
+            (m) =>
+              m.status === "live" ||
+              m.status === "starting" ||
+              m.status === "upcoming",
+          );
+          const top = filtered.slice(0, 3);
+          setLiveMeetings(top);
+        } catch (e) {
+          console.log("Live meetings fetch failed", e);
+        } finally {
+          setLiveMeetingsLoading(false);
+        }
+
+        // Tests fetch (optional)
+        try {
+          await apiGet("/api/student/tests");
         } catch (testError) {
           console.log("Tests not available:", testError);
         }
 
-        // Try to get leaderboard data for student profile
-        try {
-          // TODO: Replace with dedicated user stats endpoint
-          // For now, set default student profile data
-          setStudentProfile({
-            streak: 7, // Default for now, could be from another endpoint
-            points: 0, // Will be updated when user stats endpoint is available
-            rank: 0, // Will be updated when user stats endpoint is available
-          });
-        } catch (profileError) {
-          console.log("Profile data not available:", profileError);
-        }
+        setStudentProfile({
+          streak: 7,
+          points: 0,
+          rank: 0,
+        });
       } catch (err: unknown) {
         console.error("Error fetching dashboard data:", err);
         const errorMessage =
@@ -467,7 +466,9 @@ export default function StudentDashboard() {
                             <div className="w-full bg-gray-200 rounded-full h-2">
                               <div
                                 className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                                style={{ width: `${course.progress}%` }}
+                                style={{
+                                  width: `${course.progress}%`,
+                                }}
                               ></div>
                             </div>
                           </div>
@@ -483,6 +484,87 @@ export default function StudentDashboard() {
 
         {/* Right Column */}
         <div className="space-y-6">
+          {/* Live Classes Widget */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Live Classes
+              </h2>
+              <Link
+                href="/student/courses"
+                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+              >
+                View All →
+              </Link>
+            </div>
+            <div className="p-6 space-y-4">
+              {liveMeetingsLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full" />
+                </div>
+              ) : liveMeetings.length === 0 ? (
+                <p className="text-sm text-gray-500">
+                  No upcoming live classes.
+                </p>
+              ) : (
+                <ul className="space-y-3">
+                  {liveMeetings.map((m) => {
+                    const relative =
+                      m.status === "live"
+                        ? `${formatRelativeMeeting(m.diffEnd)} left`
+                        : formatRelativeMeeting(m.diffStart);
+                    const statusColor =
+                      m.status === "live"
+                        ? "bg-red-100 text-red-700"
+                        : m.status === "starting"
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-blue-100 text-blue-700";
+                    return (
+                      <li
+                        key={m.id}
+                        className="p-3 rounded-lg border border-gray-200 hover:border-blue-200 transition flex items-start gap-3"
+                      >
+                        <div
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${statusColor}`}
+                        >
+                          {m.status === "live"
+                            ? "Live"
+                            : m.status === "starting"
+                              ? "Starting Soon"
+                              : "Upcoming"}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {m.title}
+                          </p>
+                          <p className="text-xs text-gray-500">{relative}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            if (m.status !== "ended")
+                              window.open(m.link, "_blank", "noopener");
+                          }}
+                          disabled={m.status === "upcoming"}
+                          className={`text-xs font-medium px-3 py-1 rounded-md ${
+                            m.status === "live" || m.status === "starting"
+                              ? "bg-blue-600 text-white hover:bg-blue-700"
+                              : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                          }`}
+                        >
+                          {m.status === "live"
+                            ? "Join"
+                            : m.status === "starting"
+                              ? "Join Soon"
+                              : "Not Yet"}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+
           {/* Quick Actions */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100">
             <div className="p-6 border-b border-gray-100">
@@ -576,7 +658,9 @@ export default function StudentDashboard() {
                           <div className="flex-1 bg-gray-200 rounded-full h-2">
                             <div
                               className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                              style={{ width: `${course.progress}%` }}
+                              style={{
+                                width: `${course.progress}%`,
+                              }}
                             ></div>
                           </div>
                           <span className="ml-2 text-xs text-gray-600">

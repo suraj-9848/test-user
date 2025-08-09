@@ -89,6 +89,9 @@ export const API_ENDPOINTS = {
     // Session Progress
     SESSION_PROGRESS: "/api/student/session-progress",
     SESSION_PROGRESS_UPDATE: "/api/student/session-progress/update",
+
+    // Live Meetings / Classes
+    MEETINGS: (courseId: string) => `/api/student/courses/${courseId}/meetings`,
   },
 
   // Public Routes (no authentication required)
