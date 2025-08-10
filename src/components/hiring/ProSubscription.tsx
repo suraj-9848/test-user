@@ -13,17 +13,24 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useJWT } from "@/context/JWTContext";
+import { usePro } from "@/context/usePro";
 import {
   subscriptionService,
   ProPlan,
-  ProSubscription,
-} from "../../services/subscriptionService";
+  type ProSubscription as ProSubscriptionType,
+} from "@/services/subscriptionService";
 
 export default function ProSubscriptionSection() {
   const { jwt } = useJWT();
+  const {
+    isProUser,
+    expiresAt: proExpiresAt,
+    loading: proLoading,
+    refresh,
+  } = usePro();
   const [plans, setPlans] = useState<ProPlan[]>([]);
   const [currentSubscription, setCurrentSubscription] =
-    useState<ProSubscription | null>(null);
+    useState<ProSubscriptionType | null>(null);
   const [loading, setLoading] = useState(true);
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -33,58 +40,48 @@ export default function ProSubscriptionSection() {
     loadData();
   }, []);
 
-  // Check for plan selected before login
+  // After login auto-continue, but not if Pro already
   useEffect(() => {
-    if (jwt && plans.length > 0) {
-      const storedPlan = sessionStorage.getItem("selectedPlanAfterLogin");
-      if (storedPlan) {
-        try {
-          const plan = JSON.parse(storedPlan);
-          sessionStorage.removeItem("selectedPlanAfterLogin");
-          // Small delay to ensure component is ready
-          setTimeout(() => {
+    if (!jwt || plans.length === 0) return;
+    if (proLoading) return;
+    if (isProUser || currentSubscription?.status === "active") return;
+
+    const storedPlan = sessionStorage.getItem("selectedPlanAfterLogin");
+    if (storedPlan) {
+      try {
+        const plan = JSON.parse(storedPlan);
+        const timeoutId = window.setTimeout(() => {
+          if (!currentSubscription && !isProUser) {
             setError(null);
             handleSubscribe(plan);
-          }, 1000);
-        } catch (err) {
-          console.error("Error processing stored plan:", err);
-        }
+          }
+        }, 1000);
+        return () => window.clearTimeout(timeoutId);
+      } catch (err) {
+        console.error("Error processing stored plan:", err);
+      } finally {
+        sessionStorage.removeItem("selectedPlanAfterLogin");
       }
     }
-  }, [jwt, plans]);
+  }, [jwt, plans, currentSubscription, isProUser, proLoading]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Always load plans (public endpoint)
       const plansData = await subscriptionService.getAvailablePlans();
       setPlans(plansData);
 
-      // Check if user is logged in and get subscription
       if (jwt) {
         try {
-          const subscriptionData =
-            await subscriptionService.getCurrentSubscription();
-          setCurrentSubscription(subscriptionData.subscription);
-
-          // Update Pro status based on actual subscription data
-          if (subscriptionData.isProUser && subscriptionData.expiresAt) {
-            const expiryDate = new Date(subscriptionData.expiresAt);
-            const now = new Date();
-            // Only set as Pro if subscription hasn't expired
-            if (expiryDate > now) {
-              // Pro is active
-            }
-          }
+          const data = await subscriptionService.getCurrentSubscription();
+          setCurrentSubscription(data.subscription);
         } catch (subscriptionError) {
-          // Error getting subscription data
           console.warn("Could not fetch subscription data:", subscriptionError);
           setCurrentSubscription(null);
         }
       } else {
-        // User not logged in
         setCurrentSubscription(null);
       }
     } catch (err) {
@@ -96,15 +93,36 @@ export default function ProSubscriptionSection() {
   };
 
   const handleSubscribe = async (plan: ProPlan) => {
-    // Check if user is logged in first
     if (!isLoggedIn) {
       setError(
         "Please log in to subscribe to Pro plans. You need an account to save your subscription.",
       );
-      // Store current plan and redirect to login
       sessionStorage.setItem("selectedPlanAfterLogin", JSON.stringify(plan));
       sessionStorage.setItem("redirectAfterLogin", window.location.pathname);
       window.location.href = "/sign-in";
+      return;
+    }
+
+    if (proLoading) {
+      setError("Checking your current subscription status. Please wait...");
+      return;
+    }
+
+    if (isProUser) {
+      const expiryText = proExpiresAt
+        ? new Date(proExpiresAt).toLocaleDateString()
+        : "current period";
+      setError(`You're already Pro (expires on ${expiryText}).`);
+      return;
+    }
+
+    if (currentSubscription && currentSubscription.status === "active") {
+      const expiryText = currentSubscription.expiresAt
+        ? new Date(currentSubscription.expiresAt).toLocaleDateString()
+        : "current period";
+      setError(
+        `You already have an active Pro subscription (expires on ${expiryText}).`,
+      );
       return;
     }
 
@@ -114,20 +132,36 @@ export default function ProSubscriptionSection() {
 
       const subscription = await subscriptionService.processPayment(plan);
       setCurrentSubscription(subscription);
+      sessionStorage.removeItem("selectedPlanAfterLogin");
+      sessionStorage.removeItem("redirectAfterLogin");
       alert("Subscription activated successfully! You now have Pro access.");
 
-      // Reload data to get updated subscription status
       await loadData();
-    } catch (err) {
+      await refresh();
+    } catch (err: any) {
       console.error("Subscription error:", err);
-      if (err instanceof Error && err.message.includes("401")) {
+      const msg = String(err?.message || "")
+        .toLowerCase()
+        .trim();
+      if (msg.includes("401") || msg.includes("unauthorized")) {
         setError("Your session has expired. Please log in again to subscribe.");
-        // Clear invalid JWT and redirect to login
         localStorage.removeItem("jwt");
         sessionStorage.setItem("selectedPlanAfterLogin", JSON.stringify(plan));
         sessionStorage.setItem("redirectAfterLogin", window.location.pathname);
         setTimeout(() => (window.location.href = "/sign-in"), 2000);
-      } else if (err instanceof Error && err.message.includes("HTTP")) {
+      } else if (
+        msg.includes("already") &&
+        (msg.includes("active subscription") || msg.includes("already active"))
+      ) {
+        // Treat as success: reflect Pro in UI and refresh context
+        setError("You're already Pro. Syncing your subscription status...");
+        try {
+          await loadData();
+          await refresh();
+        } finally {
+          setError(null);
+        }
+      } else if (msg.startsWith("http")) {
         setError(`Server error: ${err.message}`);
       } else {
         setError(
@@ -185,8 +219,34 @@ export default function ProSubscriptionSection() {
     );
   }
 
+  const alreadyProBanner =
+    (!currentSubscription && isProUser) ||
+    currentSubscription?.status === "active" ? (
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6 mb-8">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Crown className="w-6 h-6 text-yellow-500" />
+            <div>
+              <h3 className="font-semibold text-gray-900">Pro Active</h3>
+              <p className="text-sm text-gray-600">
+                {currentSubscription?.expiresAt || proExpiresAt
+                  ? `Expires on ${new Date(
+                      (currentSubscription?.expiresAt ||
+                        proExpiresAt) as string,
+                    ).toLocaleDateString()}`
+                  : "Current period"}
+              </p>
+            </div>
+          </div>
+          <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+            ACTIVE
+          </div>
+        </div>
+      </div>
+    ) : null;
+
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-16">
+    <div className="min-h-screen bg-gray-50 pt-12 md:pt-16 pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header Section */}
         <div className="text-center mb-12">
@@ -224,6 +284,9 @@ export default function ProSubscriptionSection() {
             </div>
           </div>
         )}
+
+        {/* Pro active banner from context when API didn't return subscription */}
+        {alreadyProBanner}
 
         {/* Pro Benefits Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
@@ -273,7 +336,6 @@ export default function ProSubscriptionSection() {
             </p>
             <button
               onClick={() => {
-                // Store current page to redirect back after login
                 sessionStorage.setItem(
                   "redirectAfterLogin",
                   window.location.pathname,
@@ -343,21 +405,28 @@ export default function ProSubscriptionSection() {
 
                   <button
                     onClick={() => handleSubscribe(plan)}
-                    disabled={!!processingPlanId || !isLoggedIn}
+                    disabled={
+                      !!processingPlanId ||
+                      !isLoggedIn ||
+                      proLoading ||
+                      isProUser
+                    }
                     className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center ${
-                      !isLoggedIn
+                      !isLoggedIn || proLoading || isProUser
                         ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                        : processingPlanId && processingPlanId !== plan.id
-                          ? "bg-gray-400 text-gray-600 cursor-not-allowed opacity-60"
-                          : index === 1
-                            ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
-                            : "bg-gray-900 text-white hover:bg-gray-800"
+                        : index === 1
+                          ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
+                          : "bg-gray-900 text-white hover:bg-gray-800"
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     {processingPlanId === plan.id ? (
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                     ) : !isLoggedIn ? (
                       "Login Required"
+                    ) : proLoading ? (
+                      "Checking..."
+                    ) : isProUser ? (
+                      "You're already Pro"
                     ) : (
                       <>
                         Subscribe Now

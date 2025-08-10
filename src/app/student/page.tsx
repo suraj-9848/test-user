@@ -11,12 +11,19 @@ import {
   PlayCircle,
   Target,
   Award,
+  Building,
+  MapPin,
+  DollarSign,
+  Calendar as CalendarIcon,
+  Crown,
+  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { useJWT } from "@/context/JWTContext";
-import { API_ENDPOINTS, buildApiUrl } from "@/config/urls";
+import { API_ENDPOINTS } from "@/config/urls";
+import { usePro } from "@/context/usePro";
 import { apiGet, handleApiResponse } from "@/utils/apiClient";
 import {
   fetchMeetingsForCourses,
@@ -24,9 +31,7 @@ import {
   formatRelative as formatRelativeMeeting,
 } from "@/utils/meetings";
 
-// Create API wrapper for consistency
-// const api = { get: async ... } (removed inline wrapper in favor of apiClient helpers)
-
+// Add back missing local interfaces used in this page
 interface Course {
   id: string;
   title: string;
@@ -66,42 +71,45 @@ interface StudentProfile {
   rank: number;
 }
 
-interface LeaderboardEntry {
-  userName: string;
-  totalScore: number;
-  percentage: number;
-}
-
-interface LeaderboardResponse {
-  data: LeaderboardEntry[];
-}
-
 export default function StudentDashboard() {
   const { data: session } = useSession();
   const { jwt } = useJWT();
+  const { isProUser } = usePro();
   const [greeting, setGreeting] = useState("Good day");
 
-  // State for real data
+  // State for real data (move before usage)
   const [courses, setCourses] = useState<Course[]>([]);
-  // const [upcomingTests, setUpcomingTests] = useState<TestResponse[]>([]); // Removed unused
+  // const [upcomingTests, setUpcomingTests] = useState<TestResponse[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(
     null,
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
+
+  // Jobs preview state
+  interface PublicJobLight {
+    id: string;
+    title?: string;
+    company?: string;
+    organization?: { name?: string };
+    location?: string;
+    type?: string;
+    salary?: string;
+    deadline?: string | Date;
+    earlyAccess?: { isInEarlyAccessPeriod: boolean; userHasAccess: boolean };
+  }
+  const [jobsPreview, setJobsPreview] = useState<PublicJobLight[]>([]);
+  const [jobsLoading, setJobsLoading] = useState<boolean>(true);
+  const [jobsError, setJobsError] = useState<string>("");
+  const [jobsEarlyInfo, setJobsEarlyInfo] = useState<{
+    hiddenJobsCount: number;
+    message: string;
+  } | null>(null);
   const [liveMeetings, setLiveMeetings] = useState<any[]>([]);
   const [liveMeetingsLoading, setLiveMeetingsLoading] = useState(false);
 
-  // Set greeting based on time of day
-  useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) setGreeting("Good morning");
-    else if (hour < 18) setGreeting("Good afternoon");
-    else setGreeting("Good evening");
-  }, []);
-
-  // Use Google Auth session data, with reasonable defaults
+  // Use Google Auth session data, with reasonable defaults (remove duplicate above)
   const student = session?.user
     ? {
         name: session.user.name || "Student",
@@ -118,10 +126,23 @@ export default function StudentDashboard() {
         rank: studentProfile?.rank || 0,
       };
 
+  // Set greeting based on time of day
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting("Good morning");
+    else if (hour < 18) setGreeting("Good afternoon");
+    else setGreeting("Good evening");
+  }, []);
+
   // Fetch dashboard data from backend
   useEffect(() => {
-    if (!jwt) {
+    if (
+      !jwt &&
+      !localStorage.getItem("jwt") &&
+      !localStorage.getItem("token")
+    ) {
       setLoading(false);
+      setError("");
       return;
     }
 
@@ -130,13 +151,15 @@ export default function StudentDashboard() {
         setLoading(true);
         setError("");
 
+        // Dashboard stats
         const statsRes = await apiGet(API_ENDPOINTS.STUDENT.DASHBOARD_STATS);
-        const statsResponse = await handleApiResponse<any>(statsRes);
-        setStats(statsResponse.stats);
+        const statsJson = await handleApiResponse<any>(statsRes);
+        setStats(statsJson.stats);
 
+        // Courses
         const coursesRes = await apiGet(API_ENDPOINTS.STUDENT.COURSES);
-        const coursesResponse: Course[] = await handleApiResponse(coursesRes);
-        const transformedCourses = coursesResponse
+        const coursesJson: Course[] = await handleApiResponse<any>(coursesRes);
+        const transformed = (coursesJson || [])
           .slice(0, 3)
           .map((course: Course) => ({
             id: course.id,
@@ -156,53 +179,75 @@ export default function StudentDashboard() {
                 | "not-started"),
             end_date: course.end_date,
           }));
-        setCourses(transformedCourses);
+        setCourses(transformed);
 
-        // Fetch live meetings summary (fan-out requests). Show soonest 3 upcoming or live.
+        // Optional: Tests
         try {
-          setLiveMeetingsLoading(true);
-          const allMeetings = await fetchMeetingsForCourses(
-            coursesResponse.map((c) => c.id),
-          );
-          const annotated = annotateMeetings(allMeetings, Date.now());
-          const filtered = annotated.filter(
-            (m) =>
-              m.status === "live" ||
-              m.status === "starting" ||
-              m.status === "upcoming",
-          );
-          const top = filtered.slice(0, 3);
-          setLiveMeetings(top);
-        } catch (e) {
-          console.log("Live meetings fetch failed", e);
-        } finally {
-          setLiveMeetingsLoading(false);
-        }
-
-        // Tests fetch (optional)
-        try {
-          await apiGet("/api/student/tests");
+          const testsRes = await apiGet(API_ENDPOINTS.STUDENT.TESTS);
+          await handleApiResponse<any>(testsRes);
         } catch (testError) {
           console.log("Tests not available:", testError);
         }
 
-        setStudentProfile({
-          streak: 7,
-          points: 0,
-          rank: 0,
-        });
-      } catch (err: unknown) {
-        console.error("Error fetching dashboard data:", err);
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to load dashboard data";
-        setError(errorMessage);
+        // Non-blocking: Meetings for enrolled courses
+        try {
+          const meetingCourseIds = transformed.map((c) => c.id);
+          if (meetingCourseIds.length) {
+            setLiveMeetingsLoading(true);
+            const meetings = await fetchMeetingsForCourses(meetingCourseIds);
+            const annotated = annotateMeetings(meetings);
+            setLiveMeetings(annotated);
+          }
+        } catch (meetErr) {
+          console.log("Meetings fetch failed:", meetErr);
+        } finally {
+          setLiveMeetingsLoading(false);
+        }
+      } catch (err: any) {
+        console.error("Failed to fetch dashboard:", err);
+        setError(err?.message || "Failed to load dashboard");
       } finally {
         setLoading(false);
       }
     };
 
     fetchDashboardData();
-  }, [jwt, session?.user?.name, session?.user?.email]);
+  }, [jwt]);
+
+  // Fetch public jobs (preview)
+  useEffect(() => {
+    let cancelled = false;
+    const loadJobs = async () => {
+      try {
+        setJobsLoading(true);
+        setJobsError("");
+        const res = await apiGet(API_ENDPOINTS.HIRING.JOBS);
+        const data = await handleApiResponse<any>(res);
+        if (cancelled) return;
+        const list: PublicJobLight[] = (data?.jobs || []).slice(0, 4);
+        setJobsPreview(list);
+        if (data?.earlyAccessInfo?.hiddenJobsCount && !isProUser) {
+          setJobsEarlyInfo({
+            hiddenJobsCount: data.earlyAccessInfo.hiddenJobsCount,
+            message: data.earlyAccessInfo.message,
+          });
+        } else {
+          setJobsEarlyInfo(null);
+        }
+      } catch (e: any) {
+        if (cancelled) return;
+        setJobsError(e?.message || "Failed to load jobs");
+        setJobsPreview([]);
+        setJobsEarlyInfo(null);
+      } finally {
+        if (!cancelled) setJobsLoading(false);
+      }
+    };
+    loadJobs();
+    return () => {
+      cancelled = true;
+    };
+  }, [isProUser]);
 
   const dashboardStats = stats
     ? [
@@ -240,8 +285,6 @@ export default function StudentDashboard() {
           : []),
       ]
     : [];
-
-  // Removed unused functions for build
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "No deadline";
@@ -288,7 +331,23 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="pt-8 md:pt-12 pb-16 space-y-6">
+      {isProUser && (
+        <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-xl p-4">
+          <div className="flex items-center space-x-3">
+            <Crown className="w-5 h-5 text-yellow-600" />
+            <div>
+              <h3 className="font-semibold text-gray-900">
+                Pro Subscriber Active
+              </h3>
+              <p className="text-sm text-gray-600">
+                Enjoy early access to job postings and premium features.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Welcome Header */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/10 -translate-y-32 translate-x-32"></div>
@@ -372,7 +431,7 @@ export default function StudentDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Active Courses */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
@@ -387,7 +446,7 @@ export default function StudentDashboard() {
                 </Link>
               </div>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6">
               {courses.length === 0 ? (
                 <div className="text-center py-8">
                   <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -406,77 +465,141 @@ export default function StudentDashboard() {
                   </Link>
                 </div>
               ) : (
-                courses.map((course) => (
-                  <div
-                    key={course.id}
-                    className="group border border-gray-200 rounded-lg p-4 hover:border-blue-200 hover:shadow-sm transition-all"
-                  >
-                    <div className="flex items-start space-x-4">
-                      <div className="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0">
-                        <Image
-                          src={course.image || "/hero-image.png"}
-                          alt={course.title}
-                          width={64}
-                          height={48}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">
-                            {course.title}
-                          </h3>
-                          {course.status === "not-started" && (
-                            <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
-                              New
-                            </span>
-                          )}
+                <div className="space-y-4">
+                  {courses.map((course) => (
+                    <div
+                      key={course.id}
+                      className="group border border-gray-200 rounded-lg p-4 hover:border-blue-200 hover:shadow-sm transition-all h-full"
+                    >
+                      <div className="flex items-start space-x-4">
+                        <div className="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                          <Image
+                            src={course.image || "/hero-image.png"}
+                            alt={course.title}
+                            width={64}
+                            height={48}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
-                        {course.instructor && (
-                          <p className="text-sm text-gray-600 mb-2">
-                            by {course.instructor}
-                          </p>
-                        )}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-4 text-sm text-gray-500">
-                            <span>
-                              {course.completedModules}/{course.totalModules}{" "}
-                              modules
-                            </span>
-                            {course.end_date && (
-                              <span>Due: {formatDate(course.end_date)}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                              {course.title}
+                            </h3>
+                            {course.status === "not-started" && (
+                              <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+                                New
+                              </span>
                             )}
                           </div>
-                          <Link
-                            href={`/student/courses/${course.id}`}
-                            className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
-                          >
-                            <PlayCircle className="w-4 h-4 mr-1" />
-                            Continue
-                          </Link>
-                        </div>
-                        {course.totalModules > 0 && (
-                          <div className="mt-3">
-                            <div className="flex items-center justify-between text-sm mb-1">
-                              <span className="text-gray-600">Progress</span>
-                              <span className="font-medium text-gray-900">
-                                {course.progress}%
+                          {course.instructor && (
+                            <p className="text-sm text-gray-600 mb-2">
+                              by {course.instructor}
+                            </p>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4 text-sm text-gray-500">
+                              <span>
+                                {course.completedModules}/{course.totalModules}{" "}
+                                modules
                               </span>
+                              {course.end_date && (
+                                <span>Due: {formatDate(course.end_date)}</span>
+                              )}
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                                style={{
-                                  width: `${course.progress}%`,
-                                }}
-                              ></div>
-                            </div>
+                            <Link
+                              href={`/student/courses/${course.id}`}
+                              className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
+                            >
+                              <PlayCircle className="w-4 h-4 mr-1" />
+                              Continue
+                            </Link>
                           </div>
-                        )}
+                          {course.totalModules > 0 && (
+                            <div className="mt-3">
+                              <div className="flex items-center justify-between text-sm mb-1">
+                                <span className="text-gray-600">Progress</span>
+                                <span className="font-medium text-gray-900">
+                                  {course.progress}%
+                                </span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div
+                                  className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                                  style={{ width: `${course.progress}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Progress Overview (moved below Continue Learning) */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="p-6 border-b border-gray-100">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Your Progress
+              </h2>
+            </div>
+            <div className="p-6 space-y-4">
+              {courses.length > 0 ? (
+                <div className="space-y-3">
+                  {courses.slice(0, 2).map((course) => (
+                    <div
+                      key={course.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-medium text-gray-900 truncate">
+                          {course.title}
+                        </h4>
+                        <div className="flex items-center mt-1">
+                          <div className="flex-1 bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                              style={{ width: `${course.progress}%` }}
+                            ></div>
+                          </div>
+                          <span className="ml-2 text-xs text-gray-600">
+                            {course.progress}%
+                          </span>
+                        </div>
+                      </div>
+                      <Link
+                        href={`/student/courses/${course.id}`}
+                        className="ml-3 text-blue-600 hover:text-blue-800"
+                      >
+                        <PlayCircle className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  ))}
+                  <Link
+                    href="/student/courses"
+                    className="block w-full text-center py-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    View All Courses →
+                  </Link>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <BookOpen className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600 mb-3">
+                    No courses enrolled yet
+                  </p>
+                  <Link
+                    href="/student/courses"
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Browse Courses
+                  </Link>
+                </div>
               )}
             </div>
           </div>
@@ -484,6 +607,137 @@ export default function StudentDashboard() {
 
         {/* Right Column */}
         <div className="space-y-6">
+          {/* Latest Jobs (Compact) */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                Latest Jobs
+                {isProUser && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-100 text-yellow-800 border border-yellow-300">
+                    <Crown className="w-3 h-3" /> Pro
+                  </span>
+                )}
+              </h2>
+              <Link
+                href="/hiring?tab=jobs"
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium inline-flex items-center"
+              >
+                See all
+                <ExternalLink className="w-4 h-4 ml-1" />
+              </Link>
+            </div>
+            <div className="p-4">
+              {jobsEarlyInfo && !isProUser && (
+                <div className="mb-3 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-3 flex items-start justify-between gap-3">
+                  <div className="text-sm text-gray-700">
+                    {jobsEarlyInfo.message}
+                  </div>
+                  <Link
+                    href="/hiring?tab=pro"
+                    className="shrink-0 inline-flex items-center px-3 py-1.5 rounded-md bg-blue-600 text-white text-xs font-medium hover:bg-blue-700"
+                  >
+                    Upgrade
+                  </Link>
+                </div>
+              )}
+
+              {jobsLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                </div>
+              ) : jobsError ? (
+                <div className="text-sm text-gray-600 py-6 text-center">
+                  No jobs available right now.
+                </div>
+              ) : jobsPreview.length === 0 ? (
+                <div className="text-sm text-gray-600 py-6 text-center">
+                  No jobs available right now.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {jobsPreview.map((job) => {
+                    const company =
+                      job.organization?.name || job.company || "Company";
+                    const location = job.location || "Remote";
+                    const type = job.type || "full-time";
+                    const deadline = job.deadline
+                      ? new Date(job.deadline)
+                      : null;
+                    const daysLeft = deadline
+                      ? Math.ceil(
+                          (deadline.getTime() - Date.now()) /
+                            (1000 * 60 * 60 * 24),
+                        )
+                      : null;
+                    const isEarly = !!job.earlyAccess?.isInEarlyAccessPeriod;
+                    return (
+                      <div
+                        key={job.id}
+                        className="border border-gray-200 rounded-lg p-3 hover:border-blue-200 transition-colors"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 text-sm text-gray-700">
+                              <Building className="w-4 h-4 text-gray-500" />
+                              <span className="truncate font-medium text-gray-900">
+                                {company}
+                              </span>
+                            </div>
+                            <div className="mt-1 font-semibold text-gray-900 truncate">
+                              {job.title || "Job Title"}
+                            </div>
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                              <span className="inline-flex items-center gap-1">
+                                <MapPin className="w-3 h-3" /> {location}
+                              </span>
+                              <span className="inline-flex items-center gap-1">
+                                <DollarSign className="w-3 h-3" />{" "}
+                                {job.salary || "—"}
+                              </span>
+                              {deadline && (
+                                <span className="inline-flex items-center gap-1">
+                                  <CalendarIcon className="w-3 h-3" />{" "}
+                                  {deadline.toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${type === "internship" ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-700"}`}
+                            >
+                              {type}
+                            </span>
+                            {isEarly && (
+                              <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-yellow-100 text-yellow-800">
+                                <Crown className="w-3 h-3" /> Early
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="mt-3 flex items-center justify-between">
+                <Link
+                  href="/hiring?tab=apply"
+                  className="text-sm text-gray-700 hover:text-gray-900"
+                >
+                  Apply now →
+                </Link>
+                <Link
+                  href="/hiring?tab=jobs"
+                  className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Browse all jobs →
+                </Link>
+              </div>
+            </div>
+          </div>
+
           {/* Live Classes Widget */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100">
             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
@@ -632,72 +886,6 @@ export default function StudentDashboard() {
                   <AlertCircle className="w-5 h-5 text-green-600 group-hover:text-green-700" />
                 </div>
               </Link>
-            </div>
-          </div>
-
-          {/* Progress Overview */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-            <div className="p-6 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Your Progress
-              </h2>
-            </div>
-            <div className="p-6 space-y-4">
-              {courses.length > 0 ? (
-                <div className="space-y-3">
-                  {courses.slice(0, 2).map((course) => (
-                    <div
-                      key={course.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-medium text-gray-900 truncate">
-                          {course.title}
-                        </h4>
-                        <div className="flex items-center mt-1">
-                          <div className="flex-1 bg-gray-200 rounded-full h-2">
-                            <div
-                              className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                              style={{
-                                width: `${course.progress}%`,
-                              }}
-                            ></div>
-                          </div>
-                          <span className="ml-2 text-xs text-gray-600">
-                            {course.progress}%
-                          </span>
-                        </div>
-                      </div>
-                      <Link
-                        href={`/student/courses/${course.id}`}
-                        className="ml-3 text-blue-600 hover:text-blue-800"
-                      >
-                        <PlayCircle className="w-4 h-4" />
-                      </Link>
-                    </div>
-                  ))}
-                  <Link
-                    href="/student/courses"
-                    className="block w-full text-center py-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
-                  >
-                    View All Courses →
-                  </Link>
-                </div>
-              ) : (
-                <div className="text-center py-4">
-                  <BookOpen className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600 mb-3">
-                    No courses enrolled yet
-                  </p>
-                  <Link
-                    href="/student/courses"
-                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <BookOpen className="w-4 h-4 mr-2" />
-                    Browse Courses
-                  </Link>
-                </div>
-              )}
             </div>
           </div>
         </div>

@@ -90,8 +90,17 @@ export const API_ENDPOINTS = {
     SESSION_PROGRESS: "/api/student/session-progress",
     SESSION_PROGRESS_UPDATE: "/api/student/session-progress/update",
 
+    // Pro Subscriptions (Student)
+    PRO_SUBSCRIPTIONS: {
+      CREATE_ORDER: "/api/student/pro-subscriptions/create-order",
+      VERIFY_PAYMENT: "/api/student/pro-subscriptions/verify-payment",
+      CURRENT: "/api/student/pro-subscriptions/current",
+    },
+
+    // Blogs (student scope)
     BLOGS: "/api/student/blogs",
     BLOG_BY_ID: (id: string) => `/api/student/blogs/${id}`,
+
     // Live Meetings / Classes
     MEETINGS: (courseId: string) => `/api/student/courses/${courseId}/meetings`,
   },
@@ -102,6 +111,10 @@ export const API_ENDPOINTS = {
     ANNOUNCEMENTS: "/api/public/announcements",
     ABOUT: "/api/public/about",
 
+    // Pro plans (public)
+    PRO_PLANS: "/api/public/pro-plans",
+
+    // Public blogs (read-only)
     BLOGS: "/api/student/blogs",
     BLOG_BY_ID: (id: string) => `/api/student/blogs/${id}`,
   },
@@ -130,13 +143,17 @@ export const API_ENDPOINTS = {
     ASSIGNMENT: "/api/upload/assignment",
   },
 
-  // Hiring Portal (student view)
+  // Hiring Portal (student view) — aligned to backend routers
   HIRING: {
-    JOBS: "/api/hiring/jobs",
-    JOB_BY_ID: (id: string) => `/api/hiring/jobs/${id}`,
-    APPLY: (jobId: string) => `/api/hiring/jobs/${jobId}/apply`,
-    MY_APPLICATIONS: "/api/hiring/my-applications",
-    APPLICATION_BY_ID: (id: string) => `/api/hiring/applications/${id}`,
+    // Public endpoints
+    JOBS: "/api/hiring/public/jobs",
+    JOB_BY_ID: (id: string) => `/api/hiring/public/jobs/${id}`,
+    APPLY: (jobId: string) => `/api/hiring/public/jobs/${jobId}/apply`,
+    APPLICATION_BY_ID: (identifier: string) =>
+      `/api/hiring/public/applications/${identifier}`,
+
+    // Authenticated user endpoints
+    MY_APPLICATIONS: "/api/hiring/user/applications",
   },
 
   // CP Tracker (Student & Admin)
@@ -152,18 +169,19 @@ export const API_ENDPOINTS = {
     // Admin/Instructor endpoints
     ALL: "/api/cp-tracker/all",
     STATS: "/api/cp-tracker/stats",
+    // Back-compat aliases for admin endpoints used by CPTrackerAPI
+    ADMIN_UPDATE_BATCH: (batchId: string) =>
+      `/api/cp-tracker/admin/update-batch/${batchId}`,
+    ADMIN_CRON_STATUS: "/api/cp-tracker/stats",
+    ADMIN_CRON: (jobName: string) => `/api/cp-tracker/admin/cron/${jobName}`,
     USER_BY_ID: (userId: string) => `/api/cp-tracker/users/${userId}`,
     UPDATE_USER: (userId: string) => `/api/cp-tracker/users/${userId}`,
     DELETE_USER: (userId: string) => `/api/cp-tracker/users/${userId}`,
     REFRESH_USER: (userId: string) => `/api/cp-tracker/users/${userId}/refresh`,
     ADMIN_UPDATE_ALL: "/api/cp-tracker/admin/update-all",
-    ADMIN_UPDATE_BATCH: (batchId: string) =>
-      `/api/cp-tracker/admin/update-batch/${batchId}`,
-    ADMIN_CRON_STATUS: "/api/cp-tracker/admin/cron-status",
-    ADMIN_CRON: (jobName: string) => `/api/cp-tracker/admin/cron/${jobName}`,
     ADMIN_UPDATE_STATS: "/api/cp-tracker/admin/update-stats",
     ADMIN_BATCH_CRON: (batchId: string) =>
-      `/api/cp-tracker/admin/batch-cron/${batchId}`,
+      `/api/cp-tracker/admin/update-batch/${batchId}`,
   },
 } as const;
 

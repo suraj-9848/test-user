@@ -6,6 +6,8 @@ import Image from "next/image";
 import { FiUser, FiSettings, FiLogOut } from "react-icons/fi";
 import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { Crown } from "lucide-react";
+import { usePro } from "@/context/usePro";
 
 interface UserBadgeProps {
   user: {
@@ -20,6 +22,19 @@ const UserBadge: React.FC<UserBadgeProps> = ({ user }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const userInitial = user?.name?.charAt(0).toUpperCase() || "U";
+  const { isProUser, expiresAt, refresh } = usePro();
+
+  // Eagerly sync Pro on mount (useful after checkout)
+  useEffect(() => {
+    refresh().catch(() => {});
+    const onVis = () => {
+      if (document.visibilityState === "visible") {
+        refresh().catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [refresh]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -48,23 +63,39 @@ const UserBadge: React.FC<UserBadgeProps> = ({ user }) => {
               alt="Profile"
               width={32}
               height={32}
-              className="rounded-full object-cover ring-2 ring-gray-200 group-hover:ring-violet-300 transition-all duration-200"
+              className={`rounded-full object-cover ring-2 ${
+                isProUser ? "ring-yellow-400" : "ring-gray-200"
+              } group-hover:ring-violet-300 transition-all duration-200`}
             />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-gray-200 group-hover:ring-violet-300 transition-all duration-200">
+            <div
+              className={`w-8 h-8 rounded-full ${
+                isProUser
+                  ? "bg-gradient-to-br from-yellow-400 to-amber-500"
+                  : "bg-gradient-to-br from-violet-500 to-indigo-500"
+              } flex items-center justify-center text-white font-semibold text-sm ring-2 ${
+                isProUser ? "ring-yellow-400" : "ring-gray-200"
+              } group-hover:ring-violet-300 transition-all duration-200`}
+            >
               {userInitial}
             </div>
           )}
+          {/* Online dot */}
           <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
+          {/* Pro crown overlay */}
+          {isProUser && (
+            <div
+              className="absolute -top-1 -right-1 bg-yellow-100 text-yellow-800 rounded-full p-[2px] border border-yellow-300 shadow-sm"
+              title={
+                expiresAt
+                  ? `Pro until ${new Date(expiresAt).toLocaleDateString()}`
+                  : "Pro active"
+              }
+            >
+              <Crown className="w-3.5 h-3.5" />
+            </div>
+          )}
         </div>
-        {/* <div className="hidden sm:block text-left max-w-[160px] overflow-hidden">
-            <p className="text-xs font-medium text-gray-900 truncate">
-              {user?.name || "User"}
-            </p>
-            <p className="text-[10px] text-gray-500 truncate">
-              {user?.email || "No email"}
-            </p>
-          </div> */}
       </button>
 
       {/* Dropdown */}
@@ -86,9 +117,16 @@ const UserBadge: React.FC<UserBadgeProps> = ({ user }) => {
                 </div>
               )}
               <div className="flex flex-col min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">
-                  {user?.name}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {user?.name}
+                  </p>
+                  {isProUser && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-100 text-yellow-800 border border-yellow-300">
+                      <Crown className="w-3 h-3" /> Pro
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs break-all text-gray-500">{user?.email}</p>
               </div>
             </div>

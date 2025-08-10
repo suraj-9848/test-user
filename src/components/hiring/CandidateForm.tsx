@@ -131,7 +131,7 @@ export default function CandidateForm() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 my-16">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 pt-12 md:pt-16 pb-24 my-0">
       <div className="container mx-auto px-4 py-12">
         {/* Progress Steps */}
         <div className="max-w-4xl mx-auto mb-12">
