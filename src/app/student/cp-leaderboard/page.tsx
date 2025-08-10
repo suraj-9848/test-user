@@ -38,10 +38,17 @@ export default function CPTrackerLeaderboardPage() {
         sortOrder: "desc",
         batch: batchId || undefined,
       });
-      setLeaderboard(data);
+      if (Array.isArray(data)) {
+        setLeaderboard(data);
+      } else if (data && typeof data === "object" && "leaderboard" in data) {
+        setLeaderboard(data.leaderboard || []);
+      } else {
+        setLeaderboard([]);
+      }
     } catch (error: any) {
       console.error("Error fetching leaderboard:", error);
       toast.error(error.message || "Failed to fetch leaderboard");
+      setLeaderboard([]);
     } finally {
       setLoading(false);
     }
@@ -119,12 +126,7 @@ export default function CPTrackerLeaderboardPage() {
 
         {/* Leaderboard Content */}
         <div className="w-full">
-          <CPTrackerLeaderboardComponent
-            data={leaderboard}
-            loading={loading}
-            currentUserId={profile?.user_id}
-            onBatchChange={handleBatchChange}
-          />
+          <CPTrackerLeaderboardComponent currentUserId={profile?.user_id} />
         </div>
       </div>
     </div>
