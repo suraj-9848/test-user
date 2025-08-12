@@ -1,9 +1,9 @@
 // Frontend service for Pro Subscription management with 24-hour early job access
 
 import { loadRazorpayScript } from "../utils/razorpay";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000/api";
+import { attemptRefreshToken, isJWTExpired } from "@/utils/axiosInterceptor";
+import { API_ENDPOINTS, buildApiUrl } from "@/config/urls";
+import { toast } from "react-hot-toast";
 
 export interface ProPlan {
   id: string;
@@ -31,11 +31,7 @@ export interface ProSubscription {
 
 export interface CreateOrderResponse {
   success: boolean;
-  order: {
-    id: string;
-    amount: number;
-    currency: string;
-  };
+  order: { id: string; amount: number; currency: string };
   key: string;
   plan: ProPlan;
 }
@@ -47,31 +43,147 @@ export interface PaymentVerificationData {
   plan_id: string;
 }
 
+// Raw subscription shape returned by backend (supports snake_case and camelCase)
+type RawProSubscription = {
+  id: string;
+  userId?: string;
+  user_id?: string;
+  planId?: string;
+  plan_id?: string;
+  status: "active" | "canceled" | "expired" | "pending";
+  amount: number;
+  currency?: string;
+  startsAt?: string;
+  starts_at?: string;
+  startDate?: string;
+  expiresAt?: string;
+  expires_at?: string;
+  expiry?: string;
+  expiryDate?: string;
+  createdAt?: string;
+  created_at?: string;
+  updatedAt?: string;
+  updated_at?: string;
+};
+
+// Typed response for current subscription/pro status endpoint
+interface ProStatusResponse {
+  success?: boolean;
+  proDetails?: {
+    isProUser?: boolean;
+    active?: boolean;
+    expiresAt?: string | null;
+    expiry?: string | null;
+    expiryDate?: string | null;
+    currentSubscription?: RawProSubscription | null;
+  } | null;
+  isProUser?: boolean;
+  subscription?: RawProSubscription | null;
+  currentSubscription?: RawProSubscription | null;
+  data?: {
+    proDetails?: ProStatusResponse["proDetails"];
+    subscription?: RawProSubscription | null;
+  } | null;
+}
+
+// Normalize proDetails to a single, consistent shape
+function normalizeProDetails(pd: ProStatusResponse["proDetails"]): {
+  isProUser: boolean;
+  active: boolean;
+  expiresAt: string | null;
+  currentSubscription: RawProSubscription | null;
+} {
+  const isProUser = pd?.isProUser === true;
+  const active = pd?.active === true;
+  const expiresAt =
+    (pd?.expiresAt || pd?.expiry || pd?.expiryDate || null) ?? null;
+  const currentSubscription = pd?.currentSubscription ?? null;
+  return { isProUser, active, expiresAt, currentSubscription };
+}
+
+// Normalizer to convert RawProSubscription to ProSubscription
+function normalizeSubscription(raw: RawProSubscription): ProSubscription {
+  return {
+    id: raw.id,
+    userId: raw.userId || raw.user_id || "",
+    planId: raw.planId || raw.plan_id || "",
+    status: raw.status,
+    amount: raw.amount,
+    currency: raw.currency || "INR",
+    startsAt: raw.startsAt || raw.starts_at || raw.startDate || "",
+    expiresAt:
+      raw.expiresAt || raw.expires_at || raw.expiry || raw.expiryDate || "",
+    createdAt: raw.createdAt || raw.created_at || "",
+    updatedAt: raw.updatedAt || raw.updated_at || "",
+  };
+}
+
 class SubscriptionService {
-  private async getAuthHeaders(): Promise<HeadersInit> {
-    // Try to get JWT token from localStorage (primary method used by the app)
-    const token =
+  private async getTokenEnsuringFresh(): Promise<string> {
+    let token =
       typeof window !== "undefined" ? localStorage.getItem("jwt") : null;
 
-    if (!token) {
-      console.warn("No JWT token found in localStorage");
+    // Refresh if missing or expired
+    if (!token || (token && isJWTExpired(token))) {
+      try {
+        const refreshed = await attemptRefreshToken();
+        if (refreshed) {
+          token = refreshed;
+        }
+      } catch (e) {
+        // ignore
+      }
     }
 
+    if (!token) {
+      throw new Error("TOKEN_MISSING");
+    }
+    return token;
+  }
+
+  private async getAuthHeaders(): Promise<HeadersInit> {
+    const token = await this.getTokenEnsuringFresh();
     return {
       "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
+      Authorization: `Bearer ${token}`,
     };
+  }
+
+  private async fetchWithAuthRetry(
+    url: string,
+    options: RequestInit,
+  ): Promise<Response> {
+    // First attempt
+    let headers: HeadersInit = options.headers || (await this.getAuthHeaders());
+    let resp = await fetch(url, { ...options, headers });
+
+    if (resp.status === 401) {
+      // try refresh once
+      const refreshed = await attemptRefreshToken();
+      if (refreshed) {
+        headers = {
+          ...(headers as any),
+          Authorization: `Bearer ${refreshed}`,
+        };
+        resp = await fetch(url, { ...options, headers });
+      }
+    }
+
+    return resp;
   }
 
   // Get available pro plans (public endpoint)
   async getAvailablePlans(): Promise<ProPlan[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/public/pro-plans`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        buildApiUrl(API_ENDPOINTS.PUBLIC.PRO_PLANS),
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -93,16 +205,17 @@ class SubscriptionService {
   // Create Razorpay order for subscription
   async createSubscriptionOrder(planId: string): Promise<CreateOrderResponse> {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/student/pro-subscriptions/create-order`,
+      const response = await this.fetchWithAuthRetry(
+        buildApiUrl(API_ENDPOINTS.STUDENT.PRO_SUBSCRIPTIONS.CREATE_ORDER),
         {
           method: "POST",
           headers: await this.getAuthHeaders(),
           body: JSON.stringify({ plan_id: planId }),
+          credentials: "include",
         },
       );
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       // Log the full response for debugging
       console.log("Create order response:", {
@@ -122,8 +235,17 @@ class SubscriptionService {
       }
 
       return data;
-    } catch (error) {
-      console.error("Error creating subscription order:", error);
+    } catch (error: any) {
+      if (error?.message === "TOKEN_MISSING") {
+        if (typeof window !== "undefined") {
+          toast.error("Please log in to purchase Pro");
+        }
+        throw new Error("Unauthorized - Token Missing");
+      }
+      console.error("Error creating subscription order", error);
+      if (typeof window !== "undefined") {
+        toast.error(error?.message || "Failed to create subscription order");
+      }
       throw error;
     }
   }
@@ -133,14 +255,30 @@ class SubscriptionService {
     paymentData: PaymentVerificationData,
   ): Promise<ProSubscription> {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/student/pro-subscriptions/verify-payment`,
+      const response = await this.fetchWithAuthRetry(
+        buildApiUrl(API_ENDPOINTS.STUDENT.PRO_SUBSCRIPTIONS.VERIFY_PAYMENT),
         {
           method: "POST",
           headers: await this.getAuthHeaders(),
           body: JSON.stringify(paymentData),
+          credentials: "include",
         },
       );
+
+      // Surface non-200 errors with details from server if available
+      if (!response.ok) {
+        let serverMsg = "";
+        try {
+          const errBody = await response.json();
+          serverMsg = errBody?.message || errBody?.error || "";
+        } catch (_) {
+          // ignore JSON parse errors
+        }
+        const errText = serverMsg
+          ? `HTTP ${response.status}: ${serverMsg}`
+          : `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(errText);
+      }
 
       const data = await response.json();
       if (!data.success) {
@@ -148,8 +286,17 @@ class SubscriptionService {
       }
 
       return data.subscription;
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.message === "TOKEN_MISSING") {
+        if (typeof window !== "undefined") {
+          toast.error("Please log in to complete payment");
+        }
+        throw new Error("Unauthorized - Token Missing");
+      }
       console.error("Error verifying payment:", error);
+      if (typeof window !== "undefined") {
+        toast.error(error?.message || "Payment verification failed");
+      }
       throw error;
     }
   }
@@ -161,8 +308,8 @@ class SubscriptionService {
     expiresAt: string | null;
   }> {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/student/pro-subscriptions/current`,
+      const response = await this.fetchWithAuthRetry(
+        buildApiUrl(API_ENDPOINTS.STUDENT.PRO_SUBSCRIPTIONS.CURRENT),
         {
           method: "GET",
           headers: await this.getAuthHeaders(),
@@ -171,35 +318,74 @@ class SubscriptionService {
       );
 
       if (!response.ok) {
-        console.warn(`Subscription API not available: ${response.status}`);
-        return {
-          subscription: null,
-          isProUser: false,
-          expiresAt: null,
-        };
+        // Let caller decide unknown status
+        let serverMsg = "";
+        try {
+          const errBody = await response.json();
+          serverMsg = errBody?.message || errBody?.error || "";
+        } catch {}
+        throw new Error(serverMsg || `HTTP ${response.status}`);
       }
 
       const data = await response.json();
-      if (!data.success) {
-        return {
-          subscription: null,
-          isProUser: false,
-          expiresAt: null,
-        };
+      if (data?.success === false) {
+        throw new Error(data.message || "Failed to fetch subscription");
+      }
+
+      const resp = data as ProStatusResponse;
+
+      // Standardize proDetails and subscription
+      const pd = normalizeProDetails(
+        resp.proDetails || resp.data?.proDetails || null,
+      );
+      const subRaw =
+        pd.currentSubscription ??
+        resp.subscription ??
+        resp.currentSubscription ??
+        resp.data?.subscription ??
+        null;
+
+      const subscription: ProSubscription | null = subRaw
+        ? normalizeSubscription(subRaw)
+        : null;
+
+      const now = new Date();
+      const subUnexpired = Boolean(
+        subscription?.expiresAt ? new Date(subscription.expiresAt) > now : true,
+      );
+
+      const isProUser = Boolean(
+        pd.isProUser ||
+          pd.active ||
+          resp?.isProUser === true ||
+          (subscription && subscription.status === "active" && subUnexpired),
+      );
+
+      const expiresAt: string | null =
+        pd.expiresAt ?? subscription?.expiresAt ?? null;
+
+      // Persist locally for quicker UI decisions on reloads
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("isProUser", isProUser ? "1" : "0");
+          if (expiresAt) localStorage.setItem("proExpiresAt", expiresAt);
+          else localStorage.removeItem("proExpiresAt");
+        } catch {}
       }
 
       return {
-        subscription: data.proDetails?.currentSubscription || data.subscription,
-        isProUser: data.proDetails?.isProUser || false,
-        expiresAt: data.proDetails?.expiresAt || null,
+        subscription,
+        isProUser,
+        expiresAt,
       };
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.message === "TOKEN_MISSING") {
+        // Do not toast here to avoid noisy toasts on background checks
+        throw new Error("Unauthorized - Token Missing");
+      }
       console.error("Error fetching current subscription:", error);
-      return {
-        subscription: null,
-        isProUser: false,
-        expiresAt: null,
-      };
+      // Do not overwrite local cache on failure
+      throw error;
     }
   }
 
@@ -231,8 +417,23 @@ class SubscriptionService {
                 razorpay_signature: response.razorpay_signature,
                 plan_id: plan.id,
               });
+              // Persist Pro status locally on success
+              if (typeof window !== "undefined") {
+                try {
+                  localStorage.setItem("isProUser", "1");
+                  if (subscription?.expiresAt) {
+                    localStorage.setItem(
+                      "proExpiresAt",
+                      subscription.expiresAt,
+                    );
+                  }
+                } catch {}
+              }
               resolve(subscription);
-            } catch (error) {
+            } catch (error: any) {
+              if (typeof window !== "undefined") {
+                toast.error(error?.message || "Payment failed");
+              }
               reject(error);
             }
           },
@@ -253,7 +454,10 @@ class SubscriptionService {
         const rzp = new (window as any).Razorpay(options);
         rzp.open();
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (typeof window !== "undefined") {
+        toast.error(error?.message || "Payment failed");
+      }
       console.error("Error processing payment:", error);
       throw error;
     }

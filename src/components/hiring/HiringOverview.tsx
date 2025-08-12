@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { TabId } from "@/components/hiring/HiringSidebar";
 import {

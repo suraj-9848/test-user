@@ -13,13 +13,22 @@ import {
   Trophy,
   Target,
   AlertCircle,
+  Crown,
+  Zap,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useJWT } from "@/context/JWTContext";
+import {
+  subscriptionService,
+  ProPlan,
+  ProSubscription,
+} from "@/services/subscriptionService";
+import { usePro } from "@/context/usePro";
 
 // API Configuration
 const BACKEND_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
+  (process.env.NEXT_PUBLIC_BACKEND_BASE_URL as string) ||
+  "http://localhost:3000";
 
 // Create API wrapper for consistency
 const api = {
@@ -58,6 +67,36 @@ export default function StudentProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
 
+  // Pro subscription state (in-dashboard)
+  const [plans, setPlans] = useState<ProPlan[]>([]);
+  const [currentSubscription, setCurrentSubscription] =
+    useState<ProSubscription | null>(null);
+  const [proLoading, setProLoading] = useState<boolean>(true);
+  const [proError, setProError] = useState<string | null>(null);
+  const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
+  // Unknown flag to hide CTAs until status is known
+  const [proUnknown, setProUnknown] = useState<boolean>(true);
+  // Track Pro status and expiry for UI (local cache fallback)
+  const [isProUserLocal, setIsProUserLocal] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("isProUser") === "1";
+  });
+  const [proExpiresAtLocal, setProExpiresAtLocal] = useState<string | null>(
+    () => {
+      if (typeof window === "undefined") return null;
+      return localStorage.getItem("proExpiresAt") || null;
+    },
+  );
+
+  // Global Pro context (source of truth)
+  const { isProUser: isProUserCtx, expiresAt: proExpiresAtCtx } = usePro();
+
+  const proActive =
+    isProUserCtx || isProUserLocal || currentSubscription?.status === "active";
+  const proActiveUI =
+    proActive || (proError?.toLowerCase().includes("already pro") ?? false);
+  const proExpiresDisplay = proExpiresAtCtx || proExpiresAtLocal || undefined;
+
   const { data: session } = useSession();
   const { jwt } = useJWT();
   const name = session?.user?.name || "";
@@ -85,56 +124,64 @@ export default function StudentProfile() {
     const fetchProfileStats = async () => {
       try {
         setLoading(true);
-        setError("");
-
-        // Fetch courses data
-        const coursesResponse = await api.get("/api/student/courses");
-        const coursesEnrolled = coursesResponse.length;
-        interface Course {
-          status: string;
-          progress: number;
-        }
-
-        const coursesCompleted = coursesResponse.filter(
-          (course: Course) =>
-            course.status === "completed" || course.progress >= 100,
-        ).length;
-
-        // Try to get leaderboard data for rank and score
-        let rank = 0;
-        let score = 0;
-        let percentage = 0;
-
-        try {
-          // TODO: Replace with dedicated user stats endpoint
-          // For now, set default values - will be updated when proper endpoint is available
-          rank = 0; // Default rank
-          score = 0; // Default score
-          percentage = 0; // Default percentage
-        } catch (leaderboardError) {
-          console.log("Leaderboard data not available:", leaderboardError);
-        }
-
-        setProfileStats({
-          rank,
-          score,
-          percentage,
-          coursesCompleted,
-          coursesEnrolled,
-          memberSince: new Date().toLocaleDateString(), // Could be from user creation date if available from backend
-        });
-      } catch (err: unknown) {
+        const data = await api.get("/api/student/dashboard/stats");
+        setProfileStats(data?.data || null);
+      } catch (err) {
         console.error("Error fetching profile stats:", err);
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to load profile data";
-        setError(errorMessage);
+        setError("Failed to load profile stats");
       } finally {
         setLoading(false);
       }
     };
 
     fetchProfileStats();
-  }, [jwt, session?.user?.name, session?.user?.email]);
+  }, [jwt]);
+
+  // Fetch Pro info (plans + current subscription)
+  useEffect(() => {
+    const loadPro = async () => {
+      setProLoading(true);
+      setProUnknown(true);
+      setProError(null);
+      try {
+        // Always fetch public plans
+        const availablePlans = await subscriptionService.getAvailablePlans();
+        setPlans(availablePlans);
+
+        // Always fetch current subscription (uses credentials/cookies under the hood)
+        const sub = await subscriptionService.getCurrentSubscription();
+        setCurrentSubscription(sub.subscription);
+        setIsProUserLocal(!!sub.isProUser);
+        setProExpiresAtLocal(
+          sub.expiresAt || sub.subscription?.expiresAt || null,
+        );
+      } catch (e: any) {
+        console.warn("Pro section load failed:", e?.message || e);
+        setProError("Unable to load Pro details right now.");
+      } finally {
+        setProLoading(false);
+        setProUnknown(false);
+      }
+    };
+
+    loadPro();
+    // Optionally refresh when tab becomes visible
+    const onVis = () => {
+      if (document.visibilityState === "visible") {
+        loadPro();
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
+
+  // Keep local cache in sync with global context
+  useEffect(() => {
+    try {
+      setIsProUserLocal(!!isProUserCtx);
+      if (proExpiresAtCtx) setProExpiresAtLocal(proExpiresAtCtx);
+    } catch {}
+  }, [isProUserCtx, proExpiresAtCtx]);
 
   const handleInputChange = (field: string, value: string) => {
     setEditedProfile((prev) => ({
@@ -169,6 +216,105 @@ export default function StudentProfile() {
       reader.readAsDataURL(file);
     }
   };
+
+  // Subscribe from dashboard (compact flow)
+  const subscribeToPlan = async (plan: ProPlan) => {
+    // If status unknown, refresh first to avoid duplicate order errors
+    if (proUnknown) {
+      try {
+        const sub = await subscriptionService.getCurrentSubscription();
+        setCurrentSubscription(sub.subscription);
+        setIsProUserLocal(!!sub.isProUser);
+        setProExpiresAtLocal(
+          sub.expiresAt || sub.subscription?.expiresAt || null,
+        );
+      } catch {}
+    }
+
+    // Do not allow purchase if already Pro
+    if (proActiveUI) {
+      const expiryText =
+        proExpiresAtCtx || currentSubscription?.expiresAt
+          ? new Date(
+              (proExpiresAtCtx || currentSubscription!.expiresAt) as string,
+            ).toLocaleDateString()
+          : "current period";
+      setProError(`You're already Pro (expires on ${expiryText}).`);
+      return;
+    }
+
+    try {
+      setProcessingPlanId(plan.id);
+      setProError(null);
+      const subscription = await subscriptionService.processPayment(plan);
+      setCurrentSubscription(subscription);
+      // Reload pro details
+      const sub = await subscriptionService.getCurrentSubscription();
+      setCurrentSubscription(sub.subscription);
+      setIsProUserLocal(!!sub.isProUser);
+      setProExpiresAtLocal(
+        sub.expiresAt || sub.subscription?.expiresAt || null,
+      );
+      // Clear flags
+      sessionStorage.removeItem("selectedPlanAfterLogin");
+      sessionStorage.removeItem("redirectAfterLogin");
+    } catch (err: any) {
+      console.error("Profile subscribe error:", err);
+      const msg: string = err?.message || "";
+      if (
+        msg.toLowerCase().includes("already") &&
+        msg.toLowerCase().includes("subscription")
+      ) {
+        try {
+          const sub = await subscriptionService.getCurrentSubscription();
+          setCurrentSubscription(sub.subscription);
+          setIsProUserLocal(!!sub.isProUser);
+          setProExpiresAtLocal(
+            sub.expiresAt || sub.subscription?.expiresAt || null,
+          );
+          const expiryText =
+            sub.expiresAt || sub.subscription?.expiresAt
+              ? new Date(
+                  (sub.expiresAt || sub.subscription!.expiresAt) as string,
+                ).toLocaleDateString()
+              : "current period";
+          setProError(`You're already Pro (expires on ${expiryText}).`);
+        } catch (_) {
+          setProError("You're already Pro.");
+        }
+      } else {
+        setProError(err?.message || "Payment failed. Please try again.");
+      }
+    } finally {
+      setProcessingPlanId(null);
+    }
+  };
+
+  const alreadyProBanner =
+    (!currentSubscription && (isProUserCtx || isProUserLocal)) ||
+    currentSubscription?.status === "active" ? (
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6 mb-8">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Crown className="w-6 h-6 text-yellow-500" />
+            <div>
+              <h3 className="font-semibold text-gray-900">Pro Active</h3>
+              <p className="text-sm text-gray-600">
+                {proExpiresAtCtx || currentSubscription?.expiresAt
+                  ? `Expires on ${new Date(
+                      (proExpiresAtCtx ||
+                        currentSubscription!.expiresAt) as string,
+                    ).toLocaleDateString()}`
+                  : "Current period"}
+              </p>
+            </div>
+          </div>
+          <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+            ACTIVE
+          </div>
+        </div>
+      </div>
+    ) : null;
 
   if (loading) {
     return (
@@ -214,6 +360,13 @@ export default function StudentProfile() {
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold">My Profile</h1>
             <div className="flex items-center space-x-2">
+              {/* Show Pro badge if active */}
+              {proActiveUI && (
+                <span className="inline-flex items-center bg-yellow-400/20 border border-yellow-300/40 text-yellow-100 px-3 py-1 rounded-full mr-2">
+                  <Crown className="w-4 h-4 mr-1 text-yellow-300" />
+                  Pro Active
+                </span>
+              )}
               {isEditing ? (
                 <>
                   <button
@@ -245,7 +398,14 @@ export default function StudentProfile() {
 
           <div className="flex items-center space-x-6">
             <div className="relative">
-              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white/20">
+              <div
+                className={
+                  `w-24 h-24 rounded-full overflow-hidden border-4 ` +
+                  (proActiveUI
+                    ? "ring-2 ring-yellow-400 border-yellow-300"
+                    : "border-white/20")
+                }
+              >
                 <Image
                   src={displayAvatar}
                   alt={editedProfile.name}
@@ -254,6 +414,11 @@ export default function StudentProfile() {
                   className="w-full h-full object-cover"
                 />
               </div>
+              {proActiveUI && (
+                <div className="absolute -top-1 -right-1 bg-yellow-100 text-yellow-800 rounded-full p-[2px] border border-yellow-300 shadow-sm">
+                  <Crown className="w-3.5 h-3.5" />
+                </div>
+              )}
               {isEditing && (
                 <button
                   onClick={() => fileInputRef.current?.click()}
@@ -301,174 +466,331 @@ export default function StudentProfile() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6">
-            {[{ id: "profile", label: "Profile", icon: User }].map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as "profile")}
-                  className={`flex items-center space-x-2 py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === tab.id
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </nav>
+      {/* Make following sections scrollable within page layout */}
+      <div className="space-y-6 pb-24">
+        {/* Pro subscription section inside dashboard */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6">
+          <div className="flex items-start justify-between gap-6 flex-col md:flex-row">
+            <div className="flex-1">
+              <div className="flex items-center mb-3">
+                <Crown className="w-6 h-6 text-yellow-500 mr-2" />
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Nirudhyog Pro
+                </h3>
+              </div>
+
+              {currentSubscription ? (
+                <p className="text-gray-700">
+                  You have an active Pro subscription. Expires on
+                  <span className="font-medium">
+                    {" "}
+                    {new Date(
+                      currentSubscription.expiresAt,
+                    ).toLocaleDateString()}
+                  </span>
+                  .
+                </p>
+              ) : (
+                <>
+                  <p className="text-gray-600 mb-4">
+                    Get the competitive edge with these Pro benefits:
+                  </p>
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-gray-700">
+                    <li className="flex items-center">
+                      <Zap className="w-4 h-4 text-blue-500 mr-2" /> 24-Hour
+                      Early Job Access
+                    </li>
+                    <li className="flex items-center">
+                      <Zap className="w-4 h-4 text-blue-500 mr-2" /> Premium
+                      Profile Badge
+                    </li>
+                    <li className="flex items-center">
+                      <Zap className="w-4 h-4 text-blue-500 mr-2" /> Priority
+                      Support
+                    </li>
+                    <li className="flex items-center">
+                      <Zap className="w-4 h-4 text-blue-500 mr-2" /> Advanced
+                      Analytics
+                    </li>
+                    <li className="flex items-center">
+                      <Zap className="w-4 h-4 text-blue-500 mr-2" /> Resume
+                      Review
+                    </li>
+                    <li className="flex items-center">
+                      <Zap className="w-4 h-4 text-blue-500 mr-2" /> Enhanced
+                      Profile
+                    </li>
+                  </ul>
+                </>
+              )}
+            </div>
+
+            {/* Plans / CTA */}
+            <div className="w-full md:w-96">
+              {proLoading ? (
+                <div className="flex items-center justify-center h-40">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : proActiveUI ? (
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                  <p className="text-green-800 flex items-center">
+                    <Crown className="w-4 h-4 mr-2 text-yellow-600" />
+                    Pro is active. Expires on
+                    <span className="ml-1 font-medium">
+                      {" "}
+                      {new Date(
+                        (proExpiresDisplay ||
+                          currentSubscription?.expiresAt) as string,
+                      ).toLocaleDateString()}
+                    </span>
+                  </p>
+                </div>
+              ) : proUnknown ? (
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-gray-700">
+                  Checking your Pro status...
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {proError && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
+                      {proError}
+                    </div>
+                  )}
+                  {(plans || []).length === 0 ? (
+                    <div className="text-gray-500">
+                      No plans available right now.
+                    </div>
+                  ) : (
+                    (plans || []).map((plan) => (
+                      <div
+                        key={plan.id}
+                        className="border rounded-xl p-4 hover:shadow-sm transition"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-semibold text-gray-900">
+                              {plan.name}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {plan.duration_months} month
+                              {plan.duration_months > 1 ? "s" : ""}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xl font-bold">
+                              {plan.currency} {plan.price}
+                            </div>
+                            <button
+                              disabled={
+                                processingPlanId === plan.id ||
+                                proActiveUI ||
+                                proUnknown
+                              }
+                              onClick={() => subscribeToPlan(plan)}
+                              className="mt-2 inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-60"
+                              title={
+                                proUnknown
+                                  ? "Checking your Pro status..."
+                                  : proActiveUI
+                                    ? "You already have an active Pro subscription"
+                                    : undefined
+                              }
+                            >
+                              {processingPlanId === plan.id
+                                ? "Processing..."
+                                : proUnknown
+                                  ? "Checking..."
+                                  : proActiveUI
+                                    ? "Already Pro"
+                                    : "Go Pro"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  {/* Link to full Pro page in Hiring if needed */}
+                  <a
+                    href="/hiring?tab=pro"
+                    className="block text-sm text-blue-600 hover:underline text-right"
+                  >
+                    See full Pro details
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        <div className="p-6">
-          {/* Personal Info Tab */}
-          {activeTab === "profile" && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Basic Information */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Basic Information
-                  </h3>
+        {/* Tabs */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+          <div className="border-b border-gray-200">
+            <nav className="flex space-x-8 px-6">
+              {[{ id: "profile", label: "Profile", icon: User }].map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as "profile")}
+                    className={`flex items-center space-x-2 py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
+                      activeTab === tab.id
+                        ? "border-blue-500 text-blue-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Full Name
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editedProfile.name}
-                        onChange={(e) =>
-                          handleInputChange("name", e.target.value)
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        disabled
-                        title="Name is managed by Google Auth and cannot be edited here"
-                      />
-                    ) : (
-                      <p className="text-gray-900">{displayName}</p>
-                    )}
-                    {isEditing && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Name is managed by your Google account
-                      </p>
-                    )}
+          <div className="p-6">
+            {/* Personal Info Tab */}
+            {activeTab === "profile" && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Basic Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Basic Information
+                    </h3>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Full Name
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editedProfile.name}
+                          onChange={(e) =>
+                            handleInputChange("name", e.target.value)
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          disabled
+                          title="Name is managed by Google Auth and cannot be edited here"
+                        />
+                      ) : (
+                        <p className="text-gray-900">{displayName}</p>
+                      )}
+                      {isEditing && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Name is managed by your Google account
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="email"
+                          value={editedProfile.email}
+                          onChange={(e) =>
+                            handleInputChange("email", e.target.value)
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          disabled
+                          title="Email is managed by Google Auth and cannot be edited here"
+                        />
+                      ) : (
+                        <p className="text-gray-900">{displayEmail}</p>
+                      )}
+                      {isEditing && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Email is managed by your Google account
+                        </p>
+                      )}
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="email"
-                        value={editedProfile.email}
-                        onChange={(e) =>
-                          handleInputChange("email", e.target.value)
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        disabled
-                        title="Email is managed by Google Auth and cannot be edited here"
-                      />
-                    ) : (
-                      <p className="text-gray-900">{displayEmail}</p>
+                  {/* Statistics */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Learning Statistics
+                    </h3>
+
+                    {profileStats && (
+                      <>
+                        <div className="bg-blue-50 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-blue-600">
+                                Current Rank
+                              </p>
+                              <p className="text-2xl font-bold text-blue-900">
+                                {profileStats.rank > 0
+                                  ? `#${profileStats.rank}`
+                                  : "Not ranked yet"}
+                              </p>
+                            </div>
+                            <Trophy className="w-8 h-8 text-blue-600" />
+                          </div>
+                        </div>
+
+                        <div className="bg-green-50 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-green-600">
+                                Test Score
+                              </p>
+                              <p className="text-2xl font-bold text-green-900">
+                                {profileStats.score}
+                              </p>
+                            </div>
+                            <Target className="w-8 h-8 text-green-600" />
+                          </div>
+                        </div>
+
+                        <div className="bg-yellow-50 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-yellow-600">
+                                Average %
+                              </p>
+                              <p className="text-2xl font-bold text-yellow-900">
+                                {profileStats.percentage}%
+                              </p>
+                            </div>
+                            <Award className="w-8 h-8 text-yellow-600" />
+                          </div>
+                        </div>
+
+                        <div className="bg-purple-50 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-purple-600">
+                                Courses Progress
+                              </p>
+                              <p className="text-2xl font-bold text-purple-900">
+                                {profileStats.coursesCompleted}/
+                                {profileStats.coursesEnrolled}
+                              </p>
+                            </div>
+                            <BookOpen className="w-8 h-8 text-purple-600" />
+                          </div>
+                        </div>
+                      </>
                     )}
-                    {isEditing && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Email is managed by your Google account
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Member Since
+                      </label>
+                      <p className="text-gray-900">
+                        {profileStats?.memberSince ||
+                          new Date().toLocaleDateString()}
                       </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Statistics */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Learning Statistics
-                  </h3>
-
-                  {profileStats && (
-                    <>
-                      <div className="bg-blue-50 rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-medium text-blue-600">
-                              Current Rank
-                            </p>
-                            <p className="text-2xl font-bold text-blue-900">
-                              {profileStats.rank > 0
-                                ? `#${profileStats.rank}`
-                                : "Not ranked yet"}
-                            </p>
-                          </div>
-                          <Trophy className="w-8 h-8 text-blue-600" />
-                        </div>
-                      </div>
-
-                      <div className="bg-green-50 rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-medium text-green-600">
-                              Test Score
-                            </p>
-                            <p className="text-2xl font-bold text-green-900">
-                              {profileStats.score}
-                            </p>
-                          </div>
-                          <Target className="w-8 h-8 text-green-600" />
-                        </div>
-                      </div>
-
-                      <div className="bg-yellow-50 rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-medium text-yellow-600">
-                              Average %
-                            </p>
-                            <p className="text-2xl font-bold text-yellow-900">
-                              {profileStats.percentage}%
-                            </p>
-                          </div>
-                          <Award className="w-8 h-8 text-yellow-600" />
-                        </div>
-                      </div>
-
-                      <div className="bg-purple-50 rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-medium text-purple-600">
-                              Courses Progress
-                            </p>
-                            <p className="text-2xl font-bold text-purple-900">
-                              {profileStats.coursesCompleted}/
-                              {profileStats.coursesEnrolled}
-                            </p>
-                          </div>
-                          <BookOpen className="w-8 h-8 text-purple-600" />
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Member Since
-                    </label>
-                    <p className="text-gray-900">
-                      {profileStats?.memberSince ||
-                        new Date().toLocaleDateString()}
-                    </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

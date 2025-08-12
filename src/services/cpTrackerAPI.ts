@@ -11,6 +11,33 @@ import {
 } from "../types/cptracker";
 import { API_ENDPOINTS } from "../config/urls";
 
+// Define interfaces for response handling
+export interface LeaderboardResponse {
+  leaderboard: CPTrackerLeaderboard[];
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+    offset: number;
+  };
+}
+// Add this interface
+export interface LeaderboardResponse {
+  leaderboard: CPTrackerLeaderboard[];
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+    offset: number;
+  };
+}
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
 
@@ -134,42 +161,7 @@ export class CPTrackerAPI {
     }
   }
 
-  // Get CPTracker leaderboard
-  static async getCPTrackerLeaderboard(
-    filters?: LeaderboardFilters,
-  ): Promise<CPTrackerLeaderboard[]> {
-    try {
-      const params = new URLSearchParams();
-
-      if (filters?.batch) params.append("batch_id", filters.batch);
-      if (filters?.sortBy) params.append("sortBy", filters.sortBy);
-      if (filters?.sortOrder) params.append("sortOrder", filters.sortOrder);
-      if (filters?.limit) params.append("limit", filters.limit.toString());
-      if (filters?.offset) params.append("offset", filters.offset.toString());
-
-      const url = `${API_ENDPOINTS.CP_TRACKER.LEADERBOARD}${params.toString() ? "?" + params.toString() : ""}`;
-
-      const response =
-        await apiClient.get<CPTrackerApiResponse<CPTrackerLeaderboard[]>>(url);
-
-      if (!response.data.success) {
-        throw new Error(response.data.message || "Failed to fetch leaderboard");
-      }
-
-      return response.data.data || [];
-    } catch (error) {
-      if (typeof error === "object" && error !== null && "response" in error) {
-        const axiosError = error as any;
-        throw new Error(
-          axiosError.response?.data?.message || "Failed to fetch leaderboard",
-        );
-      }
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error("Failed to fetch leaderboard");
-    }
-  }
+  // Get CPTracker leaderboard with pagination
 
   // Get user's enrolled batches
   static async getUserBatches(): Promise<string[]> {
@@ -260,38 +252,67 @@ export class CPTrackerAPI {
     }
   }
 
-  // Get all CPTracker profiles (admin/instructor)
-  static async getAllCPTrackers(
+  // Get all CPTrackers with pagination (Admin only)
+  static async getCPTrackerLeaderboard(
     filters?: LeaderboardFilters,
-  ): Promise<CPTrackerProfile[]> {
+  ): Promise<LeaderboardResponse> {
     try {
       const params = new URLSearchParams();
 
-      if (filters?.batch) params.append("batch", filters.batch);
-      if (filters?.platform) params.append("platform", filters.platform);
+      if (filters?.batch) params.append("batch_id", filters.batch);
       if (filters?.sortBy) params.append("sortBy", filters.sortBy);
       if (filters?.sortOrder) params.append("sortOrder", filters.sortOrder);
       if (filters?.limit) params.append("limit", filters.limit.toString());
       if (filters?.offset) params.append("offset", filters.offset.toString());
+      if (filters?.page) params.append("page", filters.page.toString());
 
-      const url = `${API_ENDPOINTS.CP_TRACKER.ALL}${params.toString() ? "?" + params.toString() : ""}`;
+      const url = `${API_ENDPOINTS.CP_TRACKER.LEADERBOARD}${params.toString() ? "?" + params.toString() : ""}`;
 
-      const response =
-        await apiClient.get<CPTrackerApiResponse<CPTrackerProfile[]>>(url);
+      const response = await apiClient.get<CPTrackerApiResponse<any>>(url);
 
       if (!response.data.success) {
-        throw new Error(
-          response.data.message || "Failed to fetch all CP profiles",
-        );
+        throw new Error(response.data.message || "Failed to fetch leaderboard");
       }
 
-      return response.data.data || [];
-    } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message ||
-          error.message ||
-          "Failed to fetch all CP profiles",
-      );
+      const data = response.data.data;
+      // Handle different response formats
+      // New format: { leaderboard: [], pagination: {} }
+      if (data && typeof data === "object" && "leaderboard" in data) {
+        return {
+          leaderboard: data.leaderboard || [],
+          pagination: data.pagination,
+        };
+      }
+      // Old format: direct array
+      if (Array.isArray(data)) {
+        return {
+          leaderboard: data,
+          pagination: undefined,
+        };
+      }
+      // Handle object with trackers array (from getAllCPTrackers)
+      if (data && typeof data === "object" && "trackers" in data) {
+        return {
+          leaderboard: data.trackers || [],
+          pagination: data.pagination,
+        };
+      }
+      // Fallback
+      return {
+        leaderboard: [],
+        pagination: undefined,
+      };
+    } catch (error) {
+      if (typeof error === "object" && error !== null && "response" in error) {
+        const axiosError = error as any;
+        throw new Error(
+          axiosError.response?.data?.message || "Failed to fetch leaderboard",
+        );
+      }
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("Failed to fetch leaderboard");
     }
   }
 

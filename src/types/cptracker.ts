@@ -211,6 +211,7 @@ export interface LeaderboardFilters {
   sortOrder?: "asc" | "desc";
   limit?: number;
   offset?: number;
+  page?: number;
 }
 
 export interface BatchInfo {

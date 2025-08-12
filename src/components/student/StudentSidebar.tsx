@@ -11,6 +11,7 @@ import {
   Users,
   Code2,
   Link as LinkIcon,
+  Briefcase,
 } from "lucide-react";
 
 interface StudentSidebarProps {
@@ -29,6 +30,11 @@ export default function StudentSidebar({
       name: "Dashboard",
       href: "/student",
       icon: Home,
+    },
+    {
+      icon: Briefcase,
+      name: "Hiring",
+      href: "/hiring?tab=jobs",
     },
     {
       icon: BookOpen,

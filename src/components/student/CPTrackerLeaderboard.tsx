@@ -15,19 +15,90 @@ import {
 import { CPTrackerLeaderboard } from "../../types/cptracker";
 import { CPTrackerAPI } from "../../services/cpTrackerAPI";
 
-interface CPTrackerLeaderboardComponentProps {
-  data: CPTrackerLeaderboard[];
-  loading?: boolean;
-  currentUserId?: string;
-  onBatchChange?: (batchId: string) => void;
+interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  onPageChange: (page: number) => void;
 }
 
+const Pagination: React.FC<PaginationProps> = ({
+  currentPage,
+  totalPages,
+  totalItems,
+  itemsPerPage,
+  hasNextPage,
+  hasPreviousPage,
+  onPageChange,
+}) => {
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxPagesToShow = 5;
+    if (totalPages <= maxPagesToShow) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      const start = Math.max(1, currentPage - 2);
+      const end = Math.min(totalPages, start + maxPagesToShow - 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+    }
+    return pages;
+  };
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+  return (
+    <div className="px-6 py-4 border-t border-gray-200 flex justify-between items-center">
+      <div className="text-sm text-gray-600">
+        Showing {startItem} to {endItem} of {totalItems} entries
+      </div>
+      <div className="flex items-center space-x-2">
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={!hasPreviousPage}
+          className="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+        >
+          Previous
+        </button>
+        {getPageNumbers().map((pageNum) => (
+          <button
+            key={pageNum}
+            onClick={() => onPageChange(pageNum)}
+            className={`px-3 py-1 text-sm font-medium rounded transition-colors ${
+              pageNum === currentPage
+                ? "bg-blue-600 text-white"
+                : "text-gray-700 bg-gray-100 hover:bg-gray-200"
+            }`}
+          >
+            {pageNum}
+          </button>
+        ))}
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={!hasNextPage}
+          className="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export default function CPTrackerLeaderboardComponent({
-  data,
-  loading = false,
   currentUserId,
-  onBatchChange,
-}: CPTrackerLeaderboardComponentProps) {
+}: {
+  currentUserId?: string;
+}) {
+  const [leaderboardData, setLeaderboardData] = useState<
+    CPTrackerLeaderboard[]
+  >([]);
+  const [pagination, setPagination] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const [filters, setFilters] = useState({ batch: "" });
   const [searchTerm, setSearchTerm] = useState("");
   const [batchFilter, setBatchFilter] = useState("");
   const [userBatches, setUserBatches] = useState<string[]>([]);
@@ -43,25 +114,66 @@ export default function CPTrackerLeaderboardComponent({
         setUserBatches([]);
       }
     };
-
     fetchUserBatches();
   }, []);
 
-  const handleBatchChange = (value: string) => {
-    setBatchFilter(value);
-    if (onBatchChange) {
-      onBatchChange(value);
+  const fetchLeaderboard = async (page = 1) => {
+    try {
+      setLoading(true);
+      const result = await CPTrackerAPI.getCPTrackerLeaderboard({
+        page,
+        limit: pageSize,
+        batch: batchFilter || undefined,
+      });
+      if (Array.isArray(result)) {
+        setLeaderboardData(result);
+        setPagination(null);
+      } else if (
+        result &&
+        typeof result === "object" &&
+        "leaderboard" in result
+      ) {
+        setLeaderboardData(result.leaderboard || []);
+        setPagination(result.pagination || null);
+      } else {
+        setLeaderboardData([]);
+        setPagination(null);
+      }
+      setCurrentPage(page);
+    } catch (error) {
+      console.error("Error fetching leaderboard:", error);
+      setLeaderboardData([]);
+      setPagination(null);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Filter data based on search and filters
-  const filteredData = data.filter((item) => {
+  useEffect(() => {
+    fetchLeaderboard(1);
+  }, [pageSize, batchFilter]);
+
+  const handlePageChange = (page: number) => {
+    fetchLeaderboard(page);
+  };
+
+  const handlePageSizeChange = (newSize: number) => {
+    setPageSize(newSize);
+    setCurrentPage(1);
+  };
+
+  const handleBatchChange = (value: string) => {
+    setBatchFilter(value);
+    setCurrentPage(1);
+  };
+
+  // Filter data based on search
+  const filteredData = leaderboardData.filter((item) => {
     const matchesSearch =
       searchTerm === "" ||
       (item.user.username &&
         item.user.username.toLowerCase().includes(searchTerm.toLowerCase()));
-
-    return matchesSearch; // Batch filtering is now handled by the parent component
+    return matchesSearch;
   });
 
   const getRankIcon = (rank: number) => {
@@ -111,11 +223,9 @@ export default function CPTrackerLeaderboardComponent({
 
   return (
     <div className="space-y-6">
-      {/* Header with Stats */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-        {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Search */}
+      {/* Filters and Page Size Selector */}
+      <div className="flex justify-between items-center">
+        <div className="flex space-x-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <input
@@ -126,8 +236,6 @@ export default function CPTrackerLeaderboardComponent({
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-
-          {/* Batch Filter */}
           <select
             value={batchFilter}
             onChange={(e) => handleBatchChange(e.target.value)}
@@ -140,12 +248,19 @@ export default function CPTrackerLeaderboardComponent({
               </option>
             ))}
           </select>
-
-          {/* Results count */}
-          <div className="flex items-center text-sm text-gray-600">
-            <Filter className="h-4 w-4 mr-2" />
-            Showing {filteredData.length} results
-          </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-gray-600">Show:</span>
+          <select
+            value={pageSize}
+            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+            className="px-3 py-1 border border-gray-300 rounded text-sm"
+          >
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+          <span className="text-sm text-gray-600">entries</span>
         </div>
       </div>
 
@@ -388,6 +503,18 @@ export default function CPTrackerLeaderboardComponent({
                 : "Be the first to connect your CP platforms and join the leaderboard!"}
             </p>
           </div>
+        )}
+        {/* Pagination Component */}
+        {pagination && pagination.totalPages > 1 && (
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.totalItems}
+            itemsPerPage={pagination.itemsPerPage}
+            hasNextPage={pagination.hasNextPage}
+            hasPreviousPage={pagination.hasPreviousPage}
+            onPageChange={handlePageChange}
+          />
         )}
       </div>
     </div>

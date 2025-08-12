@@ -16,10 +16,13 @@ import {
   User as UserIcon,
   Code2,
   LinkIcon,
+  Briefcase,
+  Crown,
 } from "lucide-react";
 import { useJWT } from "@/context/JWTContext";
 import { getAdminDashboardUrl } from "@/config/urls";
 import { getUserFromJWT } from "@/utils";
+import { usePro } from "@/context/usePro";
 
 interface StudentNavbarProps {
   onToggleSidebar?: () => void;
@@ -36,6 +39,7 @@ const StudentNavbar = ({ onToggleSidebar }: StudentNavbarProps) => {
   const logoutMenuRef = useRef<HTMLDivElement>(null);
 
   const user = getUserFromJWT(jwt);
+  const { isProUser, expiresAt } = usePro();
 
   // Navigation items for mobile menu
   const navigationItems = [
@@ -43,6 +47,11 @@ const StudentNavbar = ({ onToggleSidebar }: StudentNavbarProps) => {
       name: "Dashboard",
       href: "/student",
       icon: Home,
+    },
+    {
+      icon: Briefcase,
+      name: "Hiring",
+      href: "/hiring?tab=jobs",
     },
     {
       icon: BookOpen,
@@ -225,19 +234,41 @@ const StudentNavbar = ({ onToggleSidebar }: StudentNavbarProps) => {
               onClick={() => setIsLogoutMenuOpen(!isLogoutMenuOpen)}
               className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
             >
-              {user?.profile_picture ? (
-                <img
-                  src={user.profile_picture}
-                  alt="Profile"
-                  className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                />
-              ) : (
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-medium text-sm">
-                    {user?.username ? user.username[0].toUpperCase() : "S"}
-                  </span>
-                </div>
-              )}
+              <div className="relative">
+                {user?.profile_picture ? (
+                  <img
+                    src={user.profile_picture}
+                    alt="Profile"
+                    className={`w-8 h-8 rounded-full object-cover flex-shrink-0 ring-2 ${
+                      isProUser ? "ring-yellow-400" : "ring-gray-200"
+                    }`}
+                  />
+                ) : (
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ring-2 ${
+                      isProUser
+                        ? "ring-yellow-400 bg-yellow-500/80"
+                        : "ring-gray-200 bg-gradient-to-r from-blue-500 to-purple-500"
+                    }`}
+                  >
+                    <span className="text-white font-medium text-sm">
+                      {user?.username ? user.username[0].toUpperCase() : "S"}
+                    </span>
+                  </div>
+                )}
+                {isProUser && (
+                  <div
+                    className="absolute -top-1 -right-1 bg-yellow-100 text-yellow-800 rounded-full p-[2px] border border-yellow-300 shadow-sm"
+                    title={
+                      expiresAt
+                        ? `Pro until ${new Date(expiresAt).toLocaleDateString()}`
+                        : "Pro active"
+                    }
+                  >
+                    <Crown className="w-3.5 h-3.5" />
+                  </div>
+                )}
+              </div>
               <span className="text-sm font-medium text-gray-700 hidden sm:inline">
                 {user?.username || "Student"}
               </span>
@@ -249,24 +280,51 @@ const StudentNavbar = ({ onToggleSidebar }: StudentNavbarProps) => {
                 {/* User Info Section */}
                 <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-100">
                   <div className="flex items-center gap-3">
-                    {user?.profile_picture ? (
-                      <img
-                        src={user.profile_picture}
-                        alt="Profile"
-                        className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-sm">
-                        <span className="text-white font-semibold text-lg">
-                          {user?.username
-                            ? user.username[0].toUpperCase()
-                            : "S"}
-                        </span>
-                      </div>
-                    )}
+                    <div className="relative">
+                      {user?.profile_picture ? (
+                        <img
+                          src={user.profile_picture}
+                          alt="Profile"
+                          className={`w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm ring-2 ${
+                            isProUser ? "ring-yellow-400" : "ring-gray-200"
+                          }`}
+                        />
+                      ) : (
+                        <div
+                          className={`w-12 h-12 rounded-full flex items-center justify-center shadow-sm ring-2 ${
+                            isProUser
+                              ? "ring-yellow-400 bg-yellow-500/80"
+                              : "ring-gray-200 bg-gradient-to-r from-blue-500 to-purple-500"
+                          }`}
+                        >
+                          <span className="text-white font-semibold text-lg">
+                            {user?.username
+                              ? user.username[0].toUpperCase()
+                              : "S"}
+                          </span>
+                        </div>
+                      )}
+                      {isProUser && (
+                        <div
+                          className="absolute -top-1 -right-1 bg-yellow-100 text-yellow-800 rounded-full p-[2px] border border-yellow-300 shadow-sm"
+                          title={
+                            expiresAt
+                              ? `Pro until ${new Date(expiresAt).toLocaleDateString()}`
+                              : "Pro active"
+                          }
+                        >
+                          <Crown className="w-3.5 h-3.5" />
+                        </div>
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-gray-900 truncate">
+                      <div className="text-sm font-semibold text-gray-900 truncate flex items-center gap-2">
                         {user?.username || "Student"}
+                        {isProUser && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-100 text-yellow-800 border border-yellow-300">
+                            <Crown className="w-3 h-3" /> Pro
+                          </span>
+                        )}
                       </div>
                       <div className="text-xs text-gray-600 truncate">
                         {user?.email || "No email"}

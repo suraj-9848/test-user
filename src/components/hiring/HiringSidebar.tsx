@@ -18,9 +18,9 @@ export default function HiringSidebar({
   ];
 
   return (
-    <div className="flex min-h-screen relative pb-16 sm:pb-0">
+    <div className="flex min-h-screen relative pt-24 pb-[6rem] sm:pb-0">
       {/* Sidebar navigation */}
-      <aside className="hidden sm:flex sticky top-0 h-screen bg-white/50 backdrop-blur-lg flex-col items-center justify-center w-20 px-2 py-8 space-y-6 shadow-lg transition-all duration-300 hover:w-48 hover:px-4 group">
+      <aside className="hidden sm:flex sticky top-24 h-[calc(100vh-7rem)] bg-white/50 backdrop-blur-lg flex-col items-center justify-center w-20 px-2 py-8 space-y-6 shadow-lg transition-all duration-300 hover:w-48 hover:px-4 group">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -45,7 +45,7 @@ export default function HiringSidebar({
         {/* Your main content goes here */}
       </main>
       {/* Mobile bottom navigation */}
-      <nav className="sm:hidden fixed bottom-4 left-1/2 z-50 transform -translate-x-1/2 max-w-5xl w-[90%] flex justify-around items-center rounded-full border border-gray-200 bg-white/82 backdrop-blur-sm px-6 py-2 shadow-md">
+      <nav className="sm:hidden fixed bottom-[1.25rem] left-1/2 z-50 transform -translate-x-1/2 max-w-5xl w-[92%] flex justify-around items-center rounded-full border border-gray-200 bg-white/90 backdrop-blur-sm px-6 py-2 shadow-md">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;

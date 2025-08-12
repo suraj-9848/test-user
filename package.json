@@ -13,11 +13,13 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "@tailwindcss/typography": "^0.5.16",
     "axios": "^1.7.7",
     "clsx": "^2.1.1",
     "html-react-parser": "^5.2.6",
     "lucide-react": "^0.513.0",
+    "monaco-editor": "^0.52.2",
     "next": "15.3.3",
     "next-auth": "^4.24.11",
     "prettier": "^3.6.2",

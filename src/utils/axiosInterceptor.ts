@@ -64,6 +64,11 @@ const clearTokensAndRedirect = async () => {
   localStorage.removeItem("jwt");
   sessionStorage.removeItem("adminToken");
   sessionStorage.removeItem("adminUser");
+  // Also clear Pro cache to avoid stale UI post logout
+  try {
+    localStorage.removeItem("isProUser");
+    localStorage.removeItem("proExpiresAt");
+  } catch {}
 
   // Call backend logout to clear refresh token
   try {
