@@ -1,4 +1,3 @@
-// lms-frontend/src/components/TestInterface.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -10,8 +9,9 @@ import {
   Check,
   X,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
-import MonacoCodeEditor from "./MonacoCodeEditor";
+// import MonacoCodeEditor from "../MonacoCodeEditor";
 
 interface TestCase {
   input: string;
@@ -34,7 +34,6 @@ interface Question {
   hidden_testcases?: TestCase[];
   time_limit_ms?: number;
   memory_limit_mb?: number;
-  // Add these to parse from your backend
   codeLanguage?: string;
 }
 
@@ -43,9 +42,9 @@ interface TestInterfaceProps {
     id: string;
     title: string;
     durationInMinutes: number;
-    questions: Question[];
-  };
-  attempt: any; // Your existing attempt structure
+    questions?: Question[]; // Make questions optional initially
+  } | null; // Allow test to be null
+  attempt: any;
   onTestComplete: () => void;
   onBack: () => void;
 }
@@ -101,34 +100,46 @@ const TestInterface: React.FC<TestInterfaceProps> = ({
   const [codeStates, setCodeStates] = useState<
     Record<string, { code: string; language: string; results?: TestCase[] }>
   >({});
-  const [timeRemaining, setTimeRemaining] = useState(
-    test.durationInMinutes * 60,
-  );
+  const [timeRemaining, setTimeRemaining] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
 
   // Parse questions and normalize the type field
-  const normalizedQuestions = test.questions.map((q) => ({
-    ...q,
-    type:
-      q.type ||
-      ((q.questionType === "CODE"
-        ? "CODE"
-        : q.questionType === "MCQ"
-          ? "MCQ"
-          : "DESCRIPTIVE") as "MCQ" | "DESCRIPTIVE" | "CODE"),
-    // Parse test cases if they're stored as JSON strings
-    visible_testcases:
-      typeof q.visible_testcases === "string"
-        ? JSON.parse(q.visible_testcases)
-        : q.visible_testcases || [],
-    hidden_testcases:
-      typeof q.hidden_testcases === "string"
-        ? JSON.parse(q.hidden_testcases)
-        : q.hidden_testcases || [],
-  }));
+  const normalizedQuestions =
+    test?.questions?.map((q) => ({
+      ...q,
+      type:
+        q.type ||
+        ((q.questionType === "CODE"
+          ? "CODE"
+          : q.questionType === "MCQ"
+            ? "MCQ"
+            : "DESCRIPTIVE") as "MCQ" | "DESCRIPTIVE" | "CODE"),
+      // Parse test cases if they're stored as JSON strings
+      visible_testcases:
+        typeof q.visible_testcases === "string"
+          ? JSON.parse(q.visible_testcases)
+          : q.visible_testcases || [],
+      hidden_testcases:
+        typeof q.hidden_testcases === "string"
+          ? JSON.parse(q.hidden_testcases)
+          : q.hidden_testcases || [],
+    })) || [];
+
+  // Separate questions by type
+  const mcqQuestions = normalizedQuestions.filter((q) => q.type === "MCQ");
+  const codeQuestions = normalizedQuestions.filter((q) => q.type === "CODE");
+
+  // Initialize timer
+  useEffect(() => {
+    if (test?.durationInMinutes) {
+      setTimeRemaining(test.durationInMinutes * 60);
+    }
+  }, [test?.durationInMinutes]);
 
   // Timer effect
   useEffect(() => {
+    if (timeRemaining <= 0) return;
+
     const timer = setInterval(() => {
       setTimeRemaining((prev) => {
         if (prev <= 1) {
@@ -140,11 +151,7 @@ const TestInterface: React.FC<TestInterfaceProps> = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [onTestComplete]);
-
-  // Separate questions by type
-  const mcqQuestions = normalizedQuestions.filter((q) => q.type === "MCQ");
-  const codeQuestions = normalizedQuestions.filter((q) => q.type === "CODE");
+  }, [timeRemaining, onTestComplete]);
 
   // Set default tab based on available questions
   useEffect(() => {
@@ -159,18 +166,37 @@ const TestInterface: React.FC<TestInterfaceProps> = ({
 
   // Initialize code states for coding questions
   useEffect(() => {
-    const initialCodeStates: Record<
-      string,
-      { code: string; language: string }
-    > = {};
-    codeQuestions.forEach((q) => {
-      initialCodeStates[q.id] = {
-        code: LANGUAGE_TEMPLATES.javascript,
-        language: "javascript",
-      };
-    });
-    setCodeStates(initialCodeStates);
-  }, [codeQuestions]);
+    if (codeQuestions.length > 0) {
+      const initialCodeStates: Record<
+        string,
+        { code: string; language: string }
+      > = {};
+      codeQuestions.forEach((q) => {
+        initialCodeStates[q.id] = {
+          code: LANGUAGE_TEMPLATES.javascript,
+          language: "javascript",
+        };
+      });
+      setCodeStates(initialCodeStates);
+    }
+  }, [codeQuestions.length]);
+
+  // Early return AFTER all hooks have been called
+  if (!test || !test.questions || test.questions.length === 0) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <h2 className="text-lg font-semibold text-gray-800 mb-2">
+            Loading Test...
+          </h2>
+          <p className="text-gray-600">
+            Please wait while we prepare your test.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -205,7 +231,6 @@ const TestInterface: React.FC<TestInterfaceProps> = ({
   };
 
   const handleRunCode = async (questionId: string) => {
-    // TODO: Implement your Judge0 API call here
     setIsRunning(true);
     try {
       const codeState = codeStates[questionId];
@@ -465,7 +490,15 @@ const TestInterface: React.FC<TestInterfaceProps> = ({
                 );
               } else if (question.type === "CODE") {
                 const codeState = codeStates[question.id];
-                if (!codeState) return <div>Loading...</div>;
+                if (!codeState)
+                  return (
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="text-center">
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-purple-600" />
+                        <p className="text-gray-600">Loading code editor...</p>
+                      </div>
+                    </div>
+                  );
 
                 return (
                   <div className="flex-1 flex">
@@ -512,69 +545,7 @@ const TestInterface: React.FC<TestInterfaceProps> = ({
                               </h3>
                               <div className="space-y-4">
                                 {question.visible_testcases.map(
-                                  (
-                                    testCase: {
-                                      input:
-                                        | string
-                                        | number
-                                        | bigint
-                                        | boolean
-                                        | React.ReactElement<
-                                            unknown,
-                                            | string
-                                            | React.JSXElementConstructor<any>
-                                          >
-                                        | Iterable<React.ReactNode>
-                                        | React.ReactPortal
-                                        | Promise<
-                                            | string
-                                            | number
-                                            | bigint
-                                            | boolean
-                                            | React.ReactPortal
-                                            | React.ReactElement<
-                                                unknown,
-                                                | string
-                                                | React.JSXElementConstructor<any>
-                                              >
-                                            | Iterable<React.ReactNode>
-                                            | null
-                                            | undefined
-                                          >
-                                        | null
-                                        | undefined;
-                                      expected_output:
-                                        | string
-                                        | number
-                                        | bigint
-                                        | boolean
-                                        | React.ReactElement<
-                                            unknown,
-                                            | string
-                                            | React.JSXElementConstructor<any>
-                                          >
-                                        | Iterable<React.ReactNode>
-                                        | React.ReactPortal
-                                        | Promise<
-                                            | string
-                                            | number
-                                            | bigint
-                                            | boolean
-                                            | React.ReactPortal
-                                            | React.ReactElement<
-                                                unknown,
-                                                | string
-                                                | React.JSXElementConstructor<any>
-                                              >
-                                            | Iterable<React.ReactNode>
-                                            | null
-                                            | undefined
-                                          >
-                                        | null
-                                        | undefined;
-                                    },
-                                    index: any,
-                                  ) => (
+                                  (testCase: any, index: number) => (
                                     <div
                                       key={index}
                                       className="bg-gray-50 p-4 rounded-lg"
@@ -663,14 +634,14 @@ const TestInterface: React.FC<TestInterfaceProps> = ({
                       </div>
 
                       {/* Code Editor */}
-                      <div className="flex-1">
-                        <MonacoCodeEditor
+                      <div className="flex-1 bg-gray-900 text-white font-mono text-sm">
+                        <textarea
                           value={codeState.code}
-                          onChange={(code) =>
-                            handleCodeChange(question.id, code)
+                          onChange={(e) =>
+                            handleCodeChange(question.id, e.target.value)
                           }
-                          language={codeState.language}
-                          height="100%"
+                          className="w-full h-full p-4 bg-gray-900 text-white font-mono text-sm resize-none border-none outline-none"
+                          placeholder="Write your code here..."
                         />
                       </div>
 

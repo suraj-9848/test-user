@@ -35,8 +35,34 @@ export interface Question {
   correctAnswer?: string;
   explanation?: string;
   order: number;
-  originalType?: string;
+
+  // Enhanced fields for better type handling
+  originalType?: string; // Backend type (MCQ, DESCRIPTIVE, CODE)
+  type?: string; // Alternative field name
   expectedWordCount?: number | null;
+
+  // Coding question specific fields
+  codeLanguage?: string;
+  constraints?: string;
+  visible_testcases?: TestCase[];
+  visibleTestcases?: TestCase[]; // Alternative field name
+  visibleTestCases?: TestCase[]; // Another alternative
+  hidden_testcases?: TestCase[];
+  hiddenTestcases?: TestCase[]; // Alternative field name
+  hiddenTestCases?: TestCase[]; // Another alternative
+  time_limit_ms?: number;
+  memory_limit_mb?: number;
+}
+
+// Enhanced TestCase interface
+export interface TestCase {
+  input: string;
+  expected_output: string;
+  actual_output?: string;
+  status?: "PASSED" | "FAILED" | "ERROR";
+  execution_time?: number;
+  memory_used?: number;
+  error_message?: string;
 }
 
 export enum QuestionType {
@@ -54,7 +80,7 @@ export enum BackendQuestionType {
   CODE = "CODE",
 }
 
-// Mapping from backend types to frontend types
+// Enhanced mapping from backend types to frontend types
 export const mapBackendToFrontendType = (backendType: string): QuestionType => {
   switch (backendType) {
     case BackendQuestionType.MCQ:
@@ -62,7 +88,7 @@ export const mapBackendToFrontendType = (backendType: string): QuestionType => {
     case BackendQuestionType.DESCRIPTIVE:
       return QuestionType.LONG_ANSWER; // Map DESCRIPTIVE to LONG_ANSWER
     case BackendQuestionType.CODE:
-      return QuestionType.SHORT_ANSWER; // Map CODE to SHORT_ANSWER
+      return QuestionType.LONG_ANSWER; // Map CODE to LONG_ANSWER (but preserve originalType for detection)
     default:
       console.warn(
         `Unknown backend question type: ${backendType}, defaulting to MCQ`,
@@ -71,19 +97,25 @@ export const mapBackendToFrontendType = (backendType: string): QuestionType => {
   }
 };
 
-// Mapping from frontend types to backend types (for submission)
+// Enhanced mapping from frontend types to backend types (for submission)
 export const mapFrontendToBackendType = (
   frontendType: QuestionType,
+  originalType?: string,
 ): string => {
+  // If we have the original backend type, use it for accurate mapping
+  if (originalType) {
+    return originalType;
+  }
+
+  // Fallback mapping
   switch (frontendType) {
     case QuestionType.MCQ:
-      return BackendQuestionType.MCQ;
-    case QuestionType.LONG_ANSWER:
-    case QuestionType.SHORT_ANSWER:
-      return BackendQuestionType.DESCRIPTIVE;
     case QuestionType.MULTIPLE_SELECT:
     case QuestionType.TRUE_FALSE:
-      return BackendQuestionType.MCQ; // Fallback to MCQ for unsupported types
+      return BackendQuestionType.MCQ;
+    case QuestionType.SHORT_ANSWER:
+    case QuestionType.LONG_ANSWER:
+      return BackendQuestionType.DESCRIPTIVE;
     default:
       return BackendQuestionType.MCQ;
   }
@@ -97,6 +129,7 @@ export interface QuizOption {
   text?: string;
   label?: string;
   value?: string;
+  option_text?: string; // Backend field name
 }
 
 export interface TestAttempt {
@@ -110,36 +143,38 @@ export interface TestAttempt {
   submittedAt?: string;
   lastUpdated: string;
   answers: TestAnswer[];
-  // Time remaining in seconds for the current attempt (mock service uses this property)
+  // Time remaining in seconds for the current attempt
   timeRemaining?: number;
   // Alias for remaining time, if used elsewhere
   remainingTime?: number;
 }
 
 export enum AttemptStatus {
-  STARTED = "STARTED",
   IN_PROGRESS = "IN_PROGRESS",
   SUBMITTED = "SUBMITTED",
   EVALUATED = "EVALUATED",
+  EXPIRED = "EXPIRED",
+  CANCELLED = "CANCELLED",
 }
 
 export interface TestAnswer {
   id: string;
   questionId: string;
   selectedOptions: string[];
-  textAnswer?: string;
-  isCorrect?: boolean;
-  marksAwarded?: number;
-  timeSpent?: number;
+  textAnswer: string;
+  timeSpent: number;
+  // Additional fields for coding questions
+  codeSubmission?: string;
+  programmingLanguage?: string;
+  executionResults?: TestCase[];
 }
 
-// Monitoring and Security Types
 export interface MonitoringEvent {
   id: string;
   attemptId: string;
   eventType: MonitoringEventType;
   timestamp: string;
-  metadata?: Record<string, any>;
+  metadata: Record<string, unknown>;
   severity: SecuritySeverity;
 }
 
@@ -151,13 +186,8 @@ export enum MonitoringEventType {
   PASTE = "PASTE",
   CONTEXT_MENU = "CONTEXT_MENU",
   KEYBOARD_SHORTCUT = "KEYBOARD_SHORTCUT",
-  BROWSER_CLOSE_ATTEMPT = "BROWSER_CLOSE_ATTEMPT",
   CAMERA_DISABLED = "CAMERA_DISABLED",
   MICROPHONE_DISABLED = "MICROPHONE_DISABLED",
-  FACE_NOT_DETECTED = "FACE_NOT_DETECTED",
-  MULTIPLE_FACES = "MULTIPLE_FACES",
-  SCREEN_RECORDING_DETECTED = "SCREEN_RECORDING_DETECTED",
-  DEVELOPER_TOOLS_OPENED = "DEVELOPER_TOOLS_OPENED",
   SUSPICIOUS_ACTIVITY = "SUSPICIOUS_ACTIVITY",
 }
 
@@ -168,66 +198,6 @@ export enum SecuritySeverity {
   CRITICAL = "CRITICAL",
 }
 
-export interface VideoRecording {
-  id: string;
-  attemptId: string;
-  s3Url: string;
-  fileName: string;
-  duration: number;
-  createdAt: string;
-  expiresAt: string; // 1 week from creation
-  status: RecordingStatus;
-}
-
-export enum RecordingStatus {
-  RECORDING = "RECORDING",
-  PROCESSING = "PROCESSING",
-  COMPLETED = "COMPLETED",
-  FAILED = "FAILED",
-  EXPIRED = "EXPIRED",
-}
-
-export interface CameraSettings {
-  enabled: boolean;
-  resolution: {
-    width: number;
-    height: number;
-  };
-  frameRate: number;
-  facingMode: "user" | "environment";
-}
-
-export interface TestSettings {
-  fullscreenRequired: boolean;
-  cameraRequired: boolean;
-  microphoneRequired: boolean;
-  screenRecordingBlocked: boolean;
-  copyPasteBlocked: boolean;
-  rightClickBlocked: boolean;
-  developerToolsBlocked: boolean;
-  tabSwitchingAllowed: boolean;
-  maxTabSwitches: number;
-  autoSubmitOnViolation: boolean;
-  watermarkText: string;
-  faceDetectionEnabled: boolean;
-  suspiciousActivityThreshold: number;
-}
-
-export interface TestSubmissionData {
-  attemptId: string;
-  answers: TestAnswer[];
-  monitoringEvents: MonitoringEvent[];
-  videoRecordingId?: string;
-  submissionType:
-    | "MANUAL"
-    | "AUTO_TIME"
-    | "AUTO_VIOLATION"
-    | "AUTO_BROWSER_CLOSE";
-  finalScore?: number;
-  completedAt: string;
-}
-
-// UI State Types
 export interface TestUIState {
   currentQuestionIndex: number;
   isFullscreen: boolean;
@@ -241,26 +211,136 @@ export interface TestUIState {
   lastActivity: string;
 }
 
-// API Response Types
-export interface TestAPIResponse<T = any> {
-  success: boolean;
-  message: string;
-  data?: T;
-  error?: string;
+export enum RecordingStatus {
+  IDLE = "IDLE",
+  RECORDING = "RECORDING",
+  PAUSED = "PAUSED",
+  COMPLETED = "COMPLETED",
+  ERROR = "ERROR",
 }
 
-export interface AvailableTestsResponse {
-  availableTests: Test[];
-}
-
-export interface TestQuestionsResponse {
-  test: Test;
-  questions: Question[];
-  attempt: TestAttempt;
+// Test submission related interfaces
+export interface TestSubmissionData {
+  testId: string;
+  responses: Array<{
+    questionId: string;
+    answer: string | string[];
+    timeSpent?: number;
+    codeSubmission?: string;
+    programmingLanguage?: string;
+  }>;
+  submissionType:
+    | "MANUAL"
+    | "AUTO_TIME"
+    | "AUTO_VIOLATION"
+    | "AUTO_BROWSER_CLOSE";
+  totalTimeSpent: number;
+  monitoringEvents?: MonitoringEvent[];
 }
 
 export interface SubmitTestResponse {
-  attempt: TestAttempt;
+  success: boolean;
+  message: string;
+  submissionId: string;
   score?: number;
-  passed?: boolean;
+  totalMarks: number;
+  percentage?: number;
+  hasDescriptiveQuestions: boolean;
+  evaluationPending: boolean;
+}
+
+// Enhanced interfaces for coding questions
+export interface CodeExecutionRequest {
+  questionId: string;
+  code: string;
+  language: string;
+  testCases?: TestCase[];
+}
+
+export interface CodeExecutionResponse {
+  success: boolean;
+  results: TestCase[];
+  compilationError?: string;
+  executionError?: string;
+  totalTestCases: number;
+  passedTestCases: number;
+}
+
+// Judge0 related interfaces
+export interface Judge0SubmissionRequest {
+  source_code: string;
+  language_id: number;
+  stdin?: string;
+  expected_output?: string;
+  cpu_time_limit?: number;
+  memory_limit?: number;
+}
+
+export interface Judge0SubmissionResponse {
+  token: string;
+}
+
+export interface Judge0Result {
+  stdout: string | null;
+  stderr: string | null;
+  compile_output: string | null;
+  message: string | null;
+  status: {
+    id: number;
+    description: string;
+  };
+  time: string | null;
+  memory: number | null;
+}
+
+// Enhanced test result interfaces
+export interface TestResult {
+  id: string;
+  testId: string;
+  studentId: string;
+  score: number;
+  totalMarks: number;
+  percentage: number;
+  submittedAt: string;
+  evaluatedAt?: string;
+  status: "PENDING" | "EVALUATED" | "PARTIAL";
+  responses: TestResultResponse[];
+  feedback?: string;
+  rank?: number;
+  timeTaken: number;
+}
+
+export interface TestResultResponse {
+  questionId: string;
+  questionText: string;
+  questionType: QuestionType;
+  marks: number;
+  studentAnswer: string | string[];
+  correctAnswer?: string | string[];
+  score: number;
+  feedback?: string;
+  isCorrect: boolean;
+  codeSubmission?: string;
+  executionResults?: TestCase[];
+}
+
+// Leaderboard interfaces
+export interface LeaderboardEntry {
+  rank: number;
+  studentId: string;
+  studentName: string;
+  score: number;
+  totalMarks: number;
+  percentage: number;
+  timeTaken: number;
+  submittedAt: string;
+}
+
+export interface TestLeaderboard {
+  testId: string;
+  testTitle: string;
+  totalStudents: number;
+  entries: LeaderboardEntry[];
+  currentStudentRank?: number;
+  lastUpdated: string;
 }

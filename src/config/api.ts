@@ -1,5 +1,3 @@
-import { mapBackendToFrontendType } from "@/types/test";
-
 // API Configuration
 const BASE_URL =
   process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:3000";
@@ -14,75 +12,128 @@ const getAuthToken = (): string | null => {
   return token;
 };
 
-// Transform backend questions to frontend format
 const transformQuestions = (questions: any[]): any[] => {
-  return questions.map((question) => {
-    console.log("Transforming question:", question);
-    console.log("Question options/choices:", {
-      options: question.options,
-      choices: question.choices,
-      answers: question.answers,
-      allKeys: Object.keys(question),
+  return questions.map((q) => {
+    console.log("🔄 Transforming question:", {
+      id: q.id,
+      type: q.type,
+      questionType: q.questionType,
+      question_text: q.question_text,
+      questionText: q.questionText,
+      visible_testcases: q.visible_testcases,
+      constraints: q.constraints,
     });
 
-    // Handle options - they might be in a different format
-    let options = [];
-
-    // Check all possible field names for options
-    const possibleOptionFields = [
-      "options",
-      "choices",
-      "answers",
-      "alternatives",
-      "options_list",
-      "choices_list",
-    ];
-
-    for (const fieldName of possibleOptionFields) {
-      if (question[fieldName] && Array.isArray(question[fieldName])) {
-        console.log(
-          `Found options in field: ${fieldName}`,
-          question[fieldName],
-        );
-        options = question[fieldName];
-        break;
-      }
-    }
-
-    // If no options found, check if there are nested objects that might contain options
-    if (options.length === 0) {
-      console.log(
-        "No options found in standard fields, checking nested objects...",
-      );
-      Object.keys(question).forEach((key) => {
-        if (typeof question[key] === "object" && question[key] !== null) {
-          console.log(`Checking nested object in field: ${key}`, question[key]);
-        }
-      });
-    }
-
-    console.log("Final options array:", options);
-
-    // Map backend field names to frontend field names
+    // Enhanced field mapping with multiple fallbacks
     const transformedQuestion = {
-      id: question.id,
-      questionText: question.question_text || question.questionText || "",
-      questionType: mapBackendToFrontendType(
-        question.type || question.questionType,
-      ),
-      marks: question.marks || 0,
-      options: options,
-      correctAnswer: question.correctAnswer,
-      explanation: question.explanation,
-      order: question.order || 0,
-      originalType: question.type || question.questionType, // Preserve original backend type
-      // Keep any other fields that might be useful
-      expectedWordCount: question.expectedWordCount,
+      id: q.id,
+      questionText: q.question_text || q.questionText || "",
+      marks: q.marks || 1,
+      order: q.order || 1,
+
+      // Preserve original type information for coding questions
+      originalType: q.type,
+      type: q.type, // Keep backend type
+
+      // Map backend types to frontend QuestionType enum
+      questionType: mapBackendToFrontendType(q.type),
+
+      // Handle options for MCQ questions
+      options:
+        q.options?.map((opt: any) => ({
+          id: opt.id,
+          optionText: opt.text || opt.option_text || opt.optionText,
+          optionOrder: opt.order || opt.option_order || 0,
+          text: opt.text || opt.option_text || opt.optionText, // Fallback field
+          label: opt.text || opt.option_text || opt.optionText, // Another fallback
+        })) || [],
+
+      // Enhanced coding question fields with multiple fallback paths
+      codeLanguage: q.codeLanguage || q.code_language || q.programming_language,
+      constraints: q.constraints,
+
+      // FIXED: Handle test cases that are already parsed arrays from backend
+      visible_testcases: Array.isArray(q.visible_testcases)
+        ? q.visible_testcases
+        : parseTestCases(q.visible_testcases),
+      visibleTestcases: Array.isArray(q.visible_testcases)
+        ? q.visible_testcases
+        : parseTestCases(q.visible_testcases),
+      visibleTestCases: Array.isArray(q.visible_testcases)
+        ? q.visible_testcases
+        : parseTestCases(q.visible_testcases),
+
+      hidden_testcases: Array.isArray(q.hidden_testcases)
+        ? q.hidden_testcases
+        : parseTestCases(q.hidden_testcases),
+      hiddenTestcases: Array.isArray(q.hidden_testcases)
+        ? q.hidden_testcases
+        : parseTestCases(q.hidden_testcases),
+      hiddenTestCases: Array.isArray(q.hidden_testcases)
+        ? q.hidden_testcases
+        : parseTestCases(q.hidden_testcases),
+
+      time_limit_ms: q.time_limit_ms || q.timeLimitMs || 5000,
+      memory_limit_mb: q.memory_limit_mb || q.memoryLimitMb || 256,
+
+      // Additional fields that might be useful
+      expectedWordCount: q.expectedWordCount || q.expected_word_count,
     };
 
-    console.log("Transformed question:", transformedQuestion);
+    console.log("✅ Transformed question:", {
+      id: transformedQuestion.id,
+      type: transformedQuestion.type,
+      originalType: transformedQuestion.originalType,
+      hasConstraints: !!transformedQuestion.constraints,
+      visibleTestCasesCount: transformedQuestion.visible_testcases?.length || 0,
+      hiddenTestCasesCount: transformedQuestion.hidden_testcases?.length || 0,
+    });
+
     return transformedQuestion;
   });
+};
+
+// Enhanced test case parsing function
+const parseTestCases = (testCases: any): any[] => {
+  if (!testCases) {
+    return [];
+  }
+
+  // If it's already an array, return it
+  if (Array.isArray(testCases)) {
+    return testCases;
+  }
+
+  // If it's a string, try to parse it as JSON
+  if (typeof testCases === "string") {
+    try {
+      const parsed = JSON.parse(testCases);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      console.error("Failed to parse test cases JSON:", error);
+      return [];
+    }
+  }
+
+  console.warn("Unknown test cases format:", typeof testCases, testCases);
+  return [];
+};
+
+// Enhanced type mapping function
+const mapBackendToFrontendType = (backendType: string): string => {
+  switch (backendType) {
+    case "MCQ":
+      return "MCQ";
+    case "DESCRIPTIVE":
+      return "LONG_ANSWER"; // Map DESCRIPTIVE to LONG_ANSWER
+    case "CODE":
+      return "LONG_ANSWER"; // Map CODE to LONG_ANSWER but preserve originalType
+    default:
+      console.warn(
+        `Unknown backend question type: ${backendType}, defaulting to MCQ`,
+      );
+      return "MCQ";
+  }
 };
 
 // Import enhanced API client with automatic token refresh

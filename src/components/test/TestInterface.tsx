@@ -71,6 +71,13 @@ export default function TestInterface({
   // Ref to store cleanup for security monitoring event listeners
   const securityCleanupRef = useRef<() => void>(() => {});
 
+  // Check if current question is a coding question
+  const currentQuestion = questions[uiState.currentQuestionIndex];
+  const isCurrentQuestionCode =
+    currentQuestion?.originalType === "CODE" ||
+    (currentQuestion as any)?.type === "CODE" ||
+    (currentQuestion as any)?.questionType === "CODE";
+
   // Trigger permissions (camera & fullscreen) then start test
   const handleStartTest = async () => {
     try {
@@ -81,7 +88,7 @@ export default function TestInterface({
       });
 
       streamRef.current = stream;
-      setUIState((prev) => ({ ...prev, cameraStatus: "enabled" }));
+      setUIState((prev: any) => ({ ...prev, cameraStatus: "enabled" }));
 
       // Request fullscreen on user gesture
       await enterFullscreen();
@@ -114,6 +121,7 @@ export default function TestInterface({
             console.log(`Question ${index + 1}:`, {
               id: q.id,
               type: q.questionType,
+              originalType: (q as any).originalType || (q as any).type,
               text: q.questionText
                 ? q.questionText.substring(0, 50) + "..."
                 : "No text",
@@ -134,7 +142,7 @@ export default function TestInterface({
         setAnswers(initialAnswers);
 
         // Use remaining time from attempt
-        setUIState((prev) => ({
+        setUIState((prev: any) => ({
           ...prev,
           timeRemaining: Math.floor(
             attempt.timeRemaining ?? test.durationInMinutes * 60,
@@ -207,7 +215,7 @@ export default function TestInterface({
           ).msRequestFullscreen();
         }
 
-        setUIState((prev) => ({ ...prev, isFullscreen: true }));
+        setUIState((prev: any) => ({ ...prev, isFullscreen: true }));
       }
     } catch (error) {
       console.error("Failed to enter fullscreen:", error);
@@ -230,7 +238,7 @@ export default function TestInterface({
       });
 
       streamRef.current = stream;
-      setUIState((prev) => ({ ...prev, cameraStatus: "enabled" }));
+      setUIState((prev: any) => ({ ...prev, cameraStatus: "enabled" }));
 
       // Start recording
       const mediaRecorder = new MediaRecorder(stream, {
@@ -256,7 +264,7 @@ export default function TestInterface({
       mediaRecorder.start(10000); // Record in 10-second chunks
     } catch (error) {
       console.error("Failed to start camera:", error);
-      setUIState((prev) => ({ ...prev, cameraStatus: "error" }));
+      setUIState((prev: any) => ({ ...prev, cameraStatus: "error" }));
       logMonitoringEvent(
         MonitoringEventType.CAMERA_DISABLED,
         SecuritySeverity.CRITICAL,
@@ -279,7 +287,7 @@ export default function TestInterface({
         (document as any).msFullscreenElement
       );
 
-      setUIState((prev) => ({ ...prev, isFullscreen: isFs }));
+      setUIState((prev: any) => ({ ...prev, isFullscreen: isFs }));
       if (!isFs) {
         // Exited fullscreen: immediate violation
         logMonitoringEvent(
@@ -526,7 +534,7 @@ export default function TestInterface({
     if (isTestSubmitted) return;
 
     setIsTestSubmitted(true);
-    setUIState((prev) => ({ ...prev, isSubmitting: true }));
+    setUIState((prev: any) => ({ ...prev, isSubmitting: true }));
 
     await submitTest(submissionType);
   };
@@ -600,7 +608,7 @@ export default function TestInterface({
     } catch (error) {
       console.error("Failed to submit test:", error);
       setError("Failed to submit test. Please try again.");
-      setUIState((prev) => ({ ...prev, isSubmitting: false }));
+      setUIState((prev: any) => ({ ...prev, isSubmitting: false }));
     }
   };
 
@@ -641,7 +649,7 @@ export default function TestInterface({
     securityCleanupRef.current();
 
     // Update camera status to indicate it's disabled
-    setUIState((prev) => ({
+    setUIState((prev: any) => ({
       ...prev,
       cameraStatus: "disabled",
       recordingStatus: RecordingStatus.COMPLETED,
@@ -668,7 +676,7 @@ export default function TestInterface({
 
     // Update last activity
     lastActivityRef.current = new Date();
-    setUIState((prev) => ({
+    setUIState((prev: any) => ({
       ...prev,
       lastActivity: new Date().toISOString(),
     }));
@@ -677,7 +685,7 @@ export default function TestInterface({
   // Navigation functions
   const goToQuestion = (index: number) => {
     if (index >= 0 && index < questions.length) {
-      setUIState((prev) => ({ ...prev, currentQuestionIndex: index }));
+      setUIState((prev: any) => ({ ...prev, currentQuestionIndex: index }));
     }
   };
 
@@ -696,7 +704,7 @@ export default function TestInterface({
 
   // Dismiss warning
   const dismissWarning = () => {
-    setUIState((prev) => ({
+    setUIState((prev: any) => ({
       ...prev,
       showWarning: false,
       warningMessage: "",
@@ -762,7 +770,6 @@ export default function TestInterface({
     );
   }
 
-  const currentQuestion = questions[uiState.currentQuestionIndex];
   const currentAnswer = answers.find(
     (a) => a.questionId === currentQuestion?.id,
   );
@@ -771,7 +778,7 @@ export default function TestInterface({
     // Fullscreen overlay hides all underlying layout
     <div
       ref={fullscreenRef}
-      className="fixed inset-0 bg-gray-50 z-50 flex flex-col overflow-auto"
+      className="fixed inset-0 bg-gray-50 z-50 flex flex-col overflow-hidden"
       style={{ minHeight: "100vh", maxHeight: "100vh" }}
     >
       {/* Watermark */}
@@ -809,101 +816,197 @@ export default function TestInterface({
         </div>
       )}
 
-      {/* Test Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900">
-                {test.title}
-              </h1>
-              <p className="text-sm text-gray-600">
-                Question {uiState.currentQuestionIndex + 1} of{" "}
-                {questions.length}
-              </p>
-            </div>
+      {/* Conditional Layout based on question type */}
+      {isCurrentQuestionCode ? (
+        // Full-width layout for coding questions (like LeetCode)
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="bg-white shadow-sm border-b px-6 py-4 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900">
+                  {test.title}
+                </h1>
+                <p className="text-sm text-gray-600">
+                  Question {uiState.currentQuestionIndex + 1} of{" "}
+                  {questions.length}
+                </p>
+              </div>
 
-            <div className="flex items-center space-x-6">
-              <TestTimer
-                initialTime={uiState.timeRemaining}
-                onTimeExpired={handleTimeExpired}
-              />
+              <div className="flex items-center space-x-6">
+                <TestTimer
+                  initialTime={uiState.timeRemaining}
+                  onTimeExpired={handleTimeExpired}
+                />
+
+                <button
+                  onClick={() => setShowSubmitConfirmation(true)}
+                  disabled={uiState.isSubmitting}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center"
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  {uiState.isSubmitting ? "Submitting..." : "Submit Test"}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Question Navigation */}
+          <div className="bg-white border-b px-6 py-3 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={prevQuestion}
+                disabled={uiState.currentQuestionIndex === 0}
+                className="flex items-center px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </button>
+
+              <div className="flex space-x-2">
+                {questions.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => goToQuestion(index)}
+                    className={`w-8 h-8 rounded text-xs font-medium ${
+                      index === uiState.currentQuestionIndex
+                        ? "bg-blue-600 text-white"
+                        : answers[index]?.selectedOptions.length > 0 ||
+                            answers[index]?.textAnswer
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
+              </div>
 
               <button
-                onClick={() => setShowSubmitConfirmation(true)}
-                disabled={uiState.isSubmitting}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center"
+                onClick={nextQuestion}
+                disabled={uiState.currentQuestionIndex === questions.length - 1}
+                className="flex items-center px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
               >
-                <Send className="h-4 w-4 mr-2" />
-                {uiState.isSubmitting ? "Submitting..." : "Submit Test"}
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
               </button>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Question Navigation */}
-      <div className="bg-white border-b">
-        <div className="max-w-6xl mx-auto px-4 py-2">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={prevQuestion}
-              disabled={uiState.currentQuestionIndex === 0}
-              className="flex items-center px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Previous
-            </button>
-
-            <div className="flex space-x-2">
-              {questions.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => goToQuestion(index)}
-                  className={`w-8 h-8 rounded text-xs font-medium ${
-                    index === uiState.currentQuestionIndex
-                      ? "bg-blue-600 text-white"
-                      : answers[index]?.selectedOptions.length > 0 ||
-                          answers[index]?.textAnswer
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                >
-                  {index + 1}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={nextQuestion}
-              disabled={uiState.currentQuestionIndex === questions.length - 1}
-              className="flex items-center px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
-            >
-              Next
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </button>
+          {/* Full-width coding interface */}
+          <div className="flex-1 min-h-0">
+            {currentQuestion && currentAnswer && (
+              <QuestionRenderer
+                question={currentQuestion}
+                answer={currentAnswer}
+                onAnswerChange={handleAnswerChange}
+              />
+            )}
           </div>
         </div>
-      </div>
+      ) : (
+        // Standard centered layout for non-coding questions
+        <>
+          {/* Test Header */}
+          <div className="bg-white shadow-sm border-b">
+            <div className="max-w-6xl mx-auto px-4 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-xl font-semibold text-gray-900">
+                    {test.title}
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    Question {uiState.currentQuestionIndex + 1} of{" "}
+                    {questions.length}
+                  </p>
+                </div>
 
-      {/* Question Content */}
-      <div
-        className="flex justify-center items-start w-full py-8 px-2 overflow-auto"
-        style={{ minHeight: "400px", minWidth: "100vw" }}
-      >
-        <div
-          className="bg-white shadow-lg rounded-xl p-10 w-full max-w-5xl min-h-[400px] flex flex-col justify-center overflow-auto"
-          style={{ minHeight: "400px", minWidth: "700px", fontSize: "1.18rem" }}
-        >
-          {currentQuestion && currentAnswer && (
-            <QuestionRenderer
-              question={currentQuestion}
-              answer={currentAnswer}
-              onAnswerChange={handleAnswerChange}
-            />
-          )}
-        </div>
-      </div>
+                <div className="flex items-center space-x-6">
+                  <TestTimer
+                    initialTime={uiState.timeRemaining}
+                    onTimeExpired={handleTimeExpired}
+                  />
+
+                  <button
+                    onClick={() => setShowSubmitConfirmation(true)}
+                    disabled={uiState.isSubmitting}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center"
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    {uiState.isSubmitting ? "Submitting..." : "Submit Test"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Question Navigation */}
+          <div className="bg-white border-b">
+            <div className="max-w-6xl mx-auto px-4 py-2">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={prevQuestion}
+                  disabled={uiState.currentQuestionIndex === 0}
+                  className="flex items-center px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </button>
+
+                <div className="flex space-x-2">
+                  {questions.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => goToQuestion(index)}
+                      className={`w-8 h-8 rounded text-xs font-medium ${
+                        index === uiState.currentQuestionIndex
+                          ? "bg-blue-600 text-white"
+                          : answers[index]?.selectedOptions.length > 0 ||
+                              answers[index]?.textAnswer
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={nextQuestion}
+                  disabled={
+                    uiState.currentQuestionIndex === questions.length - 1
+                  }
+                  className="flex items-center px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Question Content */}
+          <div className="flex justify-center items-start w-full py-8 px-2 overflow-auto flex-1">
+            <div
+              className="bg-white shadow-lg rounded-xl p-10 w-full max-w-5xl min-h-[400px] flex flex-col justify-center overflow-auto"
+              style={{
+                minHeight: "400px",
+                minWidth: "700px",
+                fontSize: "1.18rem",
+              }}
+            >
+              {currentQuestion && currentAnswer && (
+                <QuestionRenderer
+                  question={currentQuestion}
+                  answer={currentAnswer}
+                  onAnswerChange={handleAnswerChange}
+                />
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Submit Confirmation Modal */}
       {showSubmitConfirmation && (
