@@ -68,7 +68,8 @@ interface QuestionRendererProps {
 }
 
 class Judge0Service {
-  private static readonly BASE_URL = process.env.JUDGE0_BASE_URL;
+  private static readonly BASE_URL =
+    process.env.JUDGE0_BASE_URL || "http://159.89.166.122:2358";
 
   static async submitCode(
     sourceCode: string,
@@ -79,23 +80,15 @@ class Judge0Service {
     memoryLimit: number = 256,
   ): Promise<string> {
     try {
-      // Encode strings to base64 to avoid UTF-8 issues
       const payload = {
-        source_code: btoa(sourceCode), // Base64 encode
+        source_code: btoa(sourceCode),
         language_id: languageId,
-        stdin: btoa(stdin), // Base64 encode
-        expected_output: btoa(expectedOutput), // Base64 encode
+        stdin: btoa(stdin),
+        expected_output: btoa(expectedOutput),
         cpu_time_limit: timeLimit,
-        memory_limit: memoryLimit * 1024, // Convert MB to KB
+        memory_limit: memoryLimit * 1024,
         wall_time_limit: timeLimit + 1,
       };
-
-      console.log("Judge0 submission payload:", {
-        ...payload,
-        source_code: sourceCode, // Log original for debugging
-        stdin: stdin,
-        expected_output: expectedOutput,
-      });
 
       const response = await fetch(
         `${this.BASE_URL}/submissions?base64_encoded=true&wait=false`,
