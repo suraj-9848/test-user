@@ -1,4 +1,3 @@
-// lms-frontend/src/components/TestInterface.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
