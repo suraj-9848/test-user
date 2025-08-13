@@ -28,6 +28,42 @@ interface TestInterfaceProps {
   onBack: () => void;
 }
 
+class CodeExecutionService {
+  static async executeCode(
+    questionId: string,
+    code: string,
+    language: string,
+    testId: string,
+  ): Promise<any[]> {
+    try {
+      console.log("Executing code:", { questionId, language, testId });
+
+      return [];
+    } catch (error) {
+      console.error("Code execution error:", error);
+      throw error;
+    }
+  }
+
+  static async submitCode(
+    questionId: string,
+    code: string,
+    language: string,
+    testId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      console.log("Submitting code:", { questionId, language, testId });
+      return {
+        success: true,
+        message: "Code submitted successfully",
+      };
+    } catch (error) {
+      console.error("Code submission error:", error);
+      throw error;
+    }
+  }
+}
+
 export default function TestInterface({
   test,
   attempt,
@@ -56,8 +92,6 @@ export default function TestInterface({
   const [isTestSubmitted, setIsTestSubmitted] = useState(false);
   const [testStarted, setTestStarted] = useState(false);
   const [fullscreenExitCount, setFullscreenExitCount] = useState(0);
-
-  // Monitoring events state
   const [monitoringEvents, setMonitoringEvents] = useState<MonitoringEvent[]>(
     [],
   );
@@ -68,7 +102,6 @@ export default function TestInterface({
   const lastActivityRef = useRef<Date>(new Date());
   const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const fullscreenRef = useRef<HTMLDivElement>(null);
-  // Ref to store cleanup for security monitoring event listeners
   const securityCleanupRef = useRef<() => void>(() => {});
 
   // Check if current question is a coding question
@@ -167,8 +200,7 @@ export default function TestInterface({
       cleanup();
     };
   }, [test.id, attempt.id, testStarted]);
-
-  // Enter fullscreen mode - improved cross-platform support
+  // Enter fullscreen mode
   const enterFullscreen = async () => {
     try {
       if (fullscreenRef.current) {
@@ -261,7 +293,7 @@ export default function TestInterface({
         await uploadVideoRecording(videoBlob);
       };
 
-      mediaRecorder.start(10000); // Record in 10-second chunks
+      mediaRecorder.start(10000);
     } catch (error) {
       console.error("Failed to start camera:", error);
       setUIState((prev: any) => ({ ...prev, cameraStatus: "error" }));
@@ -276,9 +308,7 @@ export default function TestInterface({
     }
   };
 
-  // Start security monitoring
   const startSecurityMonitoring = () => {
-    // Track fullscreen exit - improved cross-platform detection
     const handleFullscreenChange = () => {
       const isFs = !!(
         document.fullscreenElement ||
@@ -560,10 +590,41 @@ export default function TestInterface({
       const formattedResponses: {
         questionId: string;
         answer: string[] | string;
+        codeSubmission?: {
+          code: string;
+          language: string;
+          executionResults?: any;
+        };
       }[] = questions.map((q) => {
         const answer = answers.find((a) => a.questionId === q.id);
         let formattedAnswer: string[] | string;
-        if (q.questionType === QuestionType.MCQ) {
+        let codeSubmission;
+
+        const isCodeQuestion =
+          (q as any).originalType === "CODE" ||
+          (q as any).type === "CODE" ||
+          (q as any).questionType === "CODE";
+
+        if (isCodeQuestion) {
+          // For code questions, save the code and language
+          formattedAnswer = answer?.textAnswer || "";
+
+          // Check if there's a submission in localStorage
+          const submissionData = localStorage.getItem(`submission_${q.id}`);
+          if (submissionData) {
+            const parsed = JSON.parse(submissionData);
+            codeSubmission = {
+              code: parsed.code,
+              language: parsed.language,
+              executionResults: parsed.results,
+            };
+          } else {
+            codeSubmission = {
+              code: answer?.textAnswer || "",
+              language: "javascript", // default
+            };
+          }
+        } else if (q.questionType === QuestionType.MCQ) {
           if (
             answer &&
             Array.isArray(answer.selectedOptions) &&
@@ -576,10 +637,17 @@ export default function TestInterface({
         } else {
           formattedAnswer = answer?.textAnswer || "";
         }
-        return {
+
+        const response: any = {
           questionId: q.id,
           answer: formattedAnswer,
         };
+
+        if (codeSubmission) {
+          response.codeSubmission = codeSubmission;
+        }
+
+        return response;
       });
 
       // Always send at least one response (API requires non-empty array)
@@ -592,7 +660,7 @@ export default function TestInterface({
 
       console.log("Submitting test with responses:", formattedResponses);
 
-      // Submit test data -  Use test.id instead of attempt.id
+      // Submit test data - Use test.id instead of attempt.id
       await apiService.submitTest(test.id, formattedResponses);
 
       // Exit fullscreen
@@ -682,7 +750,24 @@ export default function TestInterface({
     }));
   };
 
-  // Navigation functions
+  const handleRunCode = async (
+    questionId: string,
+    code: string,
+    language: string,
+  ): Promise<any[]> => {
+    try {
+      return await CodeExecutionService.executeCode(
+        questionId,
+        code,
+        language,
+        test.id,
+      );
+    } catch (error) {
+      console.error("Code execution error:", error);
+      throw error;
+    }
+  };
+
   const goToQuestion = (index: number) => {
     if (index >= 0 && index < questions.length) {
       setUIState((prev: any) => ({ ...prev, currentQuestionIndex: index }));
@@ -900,12 +985,12 @@ export default function TestInterface({
                 question={currentQuestion}
                 answer={currentAnswer}
                 onAnswerChange={handleAnswerChange}
+                onRunCode={handleRunCode}
               />
             )}
           </div>
         </div>
       ) : (
-        // Standard centered layout for non-coding questions
         <>
           {/* Test Header */}
           <div className="bg-white shadow-sm border-b">
@@ -1001,6 +1086,7 @@ export default function TestInterface({
                   question={currentQuestion}
                   answer={currentAnswer}
                   onAnswerChange={handleAnswerChange}
+                  onRunCode={handleRunCode}
                 />
               )}
             </div>
@@ -1008,7 +1094,6 @@ export default function TestInterface({
         </>
       )}
 
-      {/* Submit Confirmation Modal */}
       {showSubmitConfirmation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
@@ -1017,7 +1102,7 @@ export default function TestInterface({
             </h3>
             <p className="text-gray-600 mb-6">
               Are you sure you want to submit your test? This action cannot be
-              undone.
+              undone. All your code submissions will be evaluated automatically.
             </p>
             <div className="flex space-x-3">
               <button

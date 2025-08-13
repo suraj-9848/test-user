@@ -13,16 +13,43 @@ import {
   MemoryStick,
   Check,
   X,
+  AlertTriangle,
+  RefreshCw,
+  Loader2,
 } from "lucide-react";
-import MonacoCodeEditor from "../MonacoCodeEditor";
+import SimpleCodeEditor from "./SimpleCodeEditor";
+import { LANGUAGE_TEMPLATES, PROGRAMMING_LANGUAGES } from "@/utils/languages";
 
 interface TestCase {
   input: string;
   expected_output: string;
   actual_output?: string;
-  status?: "PASSED" | "FAILED" | "ERROR";
+  status?:
+    | "PASSED"
+    | "FAILED"
+    | "ERROR"
+    | "RUNTIME_ERROR"
+    | "TIME_LIMIT_EXCEEDED"
+    | "COMPILATION_ERROR";
   execution_time?: number;
   memory_used?: number;
+  error_message?: string;
+  compile_output?: string;
+}
+
+interface Judge0Result {
+  token: string;
+  status: {
+    id: number;
+    description: string;
+  };
+  stdout?: string;
+  stderr?: string;
+  compile_output?: string;
+  message?: string;
+  time?: string;
+  memory?: number;
+  exit_code?: number;
 }
 
 interface QuestionRendererProps {
@@ -40,50 +67,251 @@ interface QuestionRendererProps {
   ) => Promise<TestCase[]>;
 }
 
-const LANGUAGE_TEMPLATES = {
-  javascript: `// Write your solution here
-function solution() {
-    
-}`,
-  python: `# Write your solution here
-def solution():
-    pass`,
-  java: `// Write your solution here
-public class Solution {
-    public void solution() {
-        
+class Judge0Service {
+  private static readonly BASE_URL = process.env.JUDGE0_BASE_URL;
+
+  static async submitCode(
+    sourceCode: string,
+    languageId: number,
+    stdin: string = "",
+    expectedOutput: string = "",
+    timeLimit: number = 5,
+    memoryLimit: number = 256,
+  ): Promise<string> {
+    try {
+      // Encode strings to base64 to avoid UTF-8 issues
+      const payload = {
+        source_code: btoa(sourceCode), // Base64 encode
+        language_id: languageId,
+        stdin: btoa(stdin), // Base64 encode
+        expected_output: btoa(expectedOutput), // Base64 encode
+        cpu_time_limit: timeLimit,
+        memory_limit: memoryLimit * 1024, // Convert MB to KB
+        wall_time_limit: timeLimit + 1,
+      };
+
+      console.log("Judge0 submission payload:", {
+        ...payload,
+        source_code: sourceCode, // Log original for debugging
+        stdin: stdin,
+        expected_output: expectedOutput,
+      });
+
+      const response = await fetch(
+        `${this.BASE_URL}/submissions?base64_encoded=true&wait=false`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      const responseText = await response.text();
+      console.log("Judge0 raw response:", responseText);
+
+      if (!response.ok) {
+        throw new Error(
+          `Judge0 API Error (${response.status}): ${responseText}`,
+        );
+      }
+
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (e) {
+        throw new Error(`Invalid JSON response: ${responseText}`);
+      }
+
+      if (!result.token) {
+        throw new Error("No token returned from Judge0");
+      }
+
+      console.log("Judge0 submission successful, token:", result.token);
+      return result.token;
+    } catch (error) {
+      console.error("Judge0 submission error:", error);
+      throw error;
     }
-}`,
-  cpp: `// Write your solution here
-#include <iostream>
-using namespace std;
+  }
 
-int main() {
-    // Write your solution here
-    return 0;
-}`,
-  c: `// Write your solution here
-#include <stdio.h>
+  static async getResult(token: string): Promise<Judge0Result> {
+    try {
+      const response = await fetch(
+        `${this.BASE_URL}/submissions/${token}?base64_encoded=true`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        },
+      );
 
-int main() {
-    // Write your solution here
-    return 0;
-}`,
-};
+      const responseText = await response.text();
+      console.log("Judge0 result response:", responseText);
 
-const LANGUAGES = [
-  { id: "javascript", name: "JavaScript" },
-  { id: "python", name: "Python" },
-  { id: "java", name: "Java" },
-  { id: "cpp", name: "C++" },
-  { id: "c", name: "C" },
-];
+      if (!response.ok) {
+        throw new Error(
+          `Judge0 API Error (${response.status}): ${responseText}`,
+        );
+      }
+
+      const result = JSON.parse(responseText);
+
+      // Decode base64 encoded fields
+      if (result.stdout) {
+        try {
+          result.stdout = atob(result.stdout);
+        } catch (e) {
+          console.warn("Failed to decode stdout:", e);
+        }
+      }
+
+      if (result.stderr) {
+        try {
+          result.stderr = atob(result.stderr);
+        } catch (e) {
+          console.warn("Failed to decode stderr:", e);
+        }
+      }
+
+      if (result.compile_output) {
+        try {
+          result.compile_output = atob(result.compile_output);
+        } catch (e) {
+          console.warn("Failed to decode compile_output:", e);
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Judge0 result fetch error:", error);
+      throw error;
+    }
+  }
+
+  static async executeTestCase(
+    code: string,
+    language: string,
+    input: string,
+    expectedOutput: string,
+    options: { timeLimit?: number; memoryLimit?: number } = {},
+  ): Promise<TestCase> {
+    const lang = PROGRAMMING_LANGUAGES.find((l) => l.id === language);
+    if (!lang) {
+      throw new Error(`Unsupported language: ${language}`);
+    }
+
+    const timeLimit = options.timeLimit || 5000; // ms
+    const memoryLimit = options.memoryLimit || 256; // MB
+
+    try {
+      // Submit code
+      const token = await this.submitCode(
+        code,
+        lang.judge0Id,
+        input,
+        expectedOutput,
+        timeLimit / 1000,
+        memoryLimit,
+      );
+
+      // Poll for result
+      let attempts = 0;
+      const maxAttempts = 20;
+
+      while (attempts < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second
+
+        const result = await this.getResult(token);
+
+        // Check if processing is complete
+        if (result.status.id !== 1 && result.status.id !== 2) {
+          // Not "In Queue" or "Processing"
+          return this.parseResult(result, input, expectedOutput);
+        }
+
+        attempts++;
+      }
+
+      throw new Error("Execution timeout - Judge0 took too long to process");
+    } catch (error) {
+      console.error("Test case execution error:", error);
+      return {
+        input,
+        expected_output: expectedOutput,
+        actual_output: "",
+        status: "ERROR",
+        error_message: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+  private static parseResult(
+    result: Judge0Result,
+    input: string,
+    expectedOutput: string,
+  ): TestCase {
+    const testCase: TestCase = {
+      input,
+      expected_output: expectedOutput,
+      actual_output: result.stdout || "",
+      execution_time: result.time ? parseFloat(result.time) * 1000 : undefined, // Convert to ms
+      memory_used: result.memory ? result.memory / 1024 : undefined, // Convert to MB
+    };
+
+    // Determine status based on Judge0 status ID
+    switch (result.status.id) {
+      case 3: // Accepted
+        const actualTrimmed = (result.stdout || "").trim();
+        const expectedTrimmed = expectedOutput.trim();
+        testCase.status =
+          actualTrimmed === expectedTrimmed ? "PASSED" : "FAILED";
+
+        if (testCase.status === "FAILED" && expectedTrimmed) {
+          testCase.error_message = `Output mismatch. Expected: "${expectedTrimmed}", Got: "${actualTrimmed}"`;
+        }
+        break;
+      case 4: // Wrong Answer
+        testCase.status = "FAILED";
+        testCase.error_message = `Wrong Answer. Expected: "${expectedOutput.trim()}", Got: "${(result.stdout || "").trim()}"`;
+        break;
+      case 5: // Time Limit Exceeded
+        testCase.status = "TIME_LIMIT_EXCEEDED";
+        testCase.error_message = "Time limit exceeded";
+        break;
+      case 6: // Compilation Error
+        testCase.status = "COMPILATION_ERROR";
+        testCase.error_message = result.compile_output || "Compilation failed";
+        testCase.compile_output = result.compile_output;
+        break;
+      case 7:
+      case 8:
+      case 9:
+      case 10:
+      case 11:
+      case 12: // Runtime Errors
+        testCase.status = "RUNTIME_ERROR";
+        testCase.error_message =
+          result.stderr || result.message || "Runtime error occurred";
+        break;
+      default:
+        testCase.status = "ERROR";
+        testCase.error_message =
+          result.message || result.status.description || "Unknown error";
+    }
+
+    return testCase;
+  }
+}
 
 export default function QuestionRenderer({
   question,
   answer,
   onAnswerChange,
-  onRunCode,
 }: QuestionRendererProps) {
   const [textValue, setTextValue] = useState(answer.textAnswer || "");
   const [codeValue, setCodeValue] = useState(
@@ -92,8 +320,14 @@ export default function QuestionRenderer({
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
   const [testResults, setTestResults] = useState<TestCase[]>([]);
   const [isRunning, setIsRunning] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionStatus, setSubmissionStatus] = useState<{
+    submitted: boolean;
+    message: string;
+    success: boolean;
+  }>({ submitted: false, message: "", success: false });
 
-  // Enhanced detection for CODE questions - check multiple possible fields
+  // Enhanced detection for CODE questions
   const questionData = question as any;
   const isCodeQuestion =
     questionData.originalType === "CODE" ||
@@ -106,46 +340,29 @@ export default function QuestionRenderer({
     type: questionData.type,
     questionType: question.questionType,
     isCodeQuestion,
-    rawQuestion: questionData,
   });
 
-  // Enhanced parsing function for test cases with better error handling
+  // Parse test cases with enhanced error handling
   const parseTestCases = (testCases: any): TestCase[] => {
-    if (!testCases) {
-      console.log("No test cases provided");
-      return [];
-    }
+    if (!testCases) return [];
 
-    // If it's already an array, return it
-    if (Array.isArray(testCases)) {
-      console.log("Test cases already parsed as array:", testCases);
-      return testCases;
-    }
+    if (Array.isArray(testCases)) return testCases;
 
-    // If it's a string, try to parse it as JSON
     if (typeof testCases === "string") {
       try {
         const parsed = JSON.parse(testCases);
-        console.log("Successfully parsed test cases from JSON string:", parsed);
         return Array.isArray(parsed) ? parsed : [];
       } catch (error) {
-        console.error(
-          "Failed to parse test cases JSON:",
-          error,
-          "Raw data:",
-          testCases,
-        );
+        console.error("Failed to parse test cases:", error);
         return [];
       }
     }
 
-    console.log("Unknown test cases format:", typeof testCases, testCases);
     return [];
   };
 
-  // Enhanced data extraction with multiple fallback paths
+  // Get question data with fallbacks
   const getQuestionData = () => {
-    // Try multiple possible field names for each property
     const visibleTestCases = parseTestCases(
       questionData.visible_testcases ||
         questionData.visibleTestcases ||
@@ -180,30 +397,12 @@ export default function QuestionRenderer({
       questionData.memoryLimit ||
       256;
 
-    const codeLanguage =
-      questionData.codeLanguage ||
-      questionData.code_language ||
-      questionData.language ||
-      "javascript";
-
-    console.log("Extracted question data:", {
-      isCodeQuestion,
-      visibleTestCases: visibleTestCases.length,
-      hiddenTestCases: hiddenTestCases.length,
-      constraints: !!constraints,
-      timeLimit,
-      memoryLimit,
-      codeLanguage,
-      rawQuestion: questionData,
-    });
-
     return {
       visibleTestCases,
       hiddenTestCases,
       constraints,
       timeLimit,
       memoryLimit,
-      codeLanguage,
     };
   };
 
@@ -213,25 +412,21 @@ export default function QuestionRenderer({
     constraints,
     timeLimit,
     memoryLimit,
-    codeLanguage,
   } = getQuestionData();
 
   useEffect(() => {
     if (isCodeQuestion) {
-      const defaultLanguage = codeLanguage || "javascript";
-      setSelectedLanguage(defaultLanguage);
-
       if (!answer.textAnswer) {
         const template =
           LANGUAGE_TEMPLATES[
-            defaultLanguage as keyof typeof LANGUAGE_TEMPLATES
+            selectedLanguage as keyof typeof LANGUAGE_TEMPLATES
           ] || LANGUAGE_TEMPLATES.javascript;
         setCodeValue(template);
       } else {
         setCodeValue(answer.textAnswer);
       }
     }
-  }, [isCodeQuestion, answer.textAnswer, codeLanguage]);
+  }, [isCodeQuestion, answer.textAnswer, selectedLanguage]);
 
   const handleOptionChange = (
     optionId: string,
@@ -268,51 +463,184 @@ export default function QuestionRenderer({
     setSelectedLanguage(language);
     const template =
       LANGUAGE_TEMPLATES[language as keyof typeof LANGUAGE_TEMPLATES];
-    if (template && !codeValue.trim()) {
+    if (template && !(codeValue as any).trim()) {
       setCodeValue(template);
       onAnswerChange(question.id, [], template);
     }
   };
 
   const handleRunCode = async () => {
-    if (!onRunCode || !isCodeQuestion) {
-      // Mock Judge0 call for testing
-      setIsRunning(true);
-      try {
-        // Simulate API call delay
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-
-        // Mock test results based on visible test cases
-        const mockResults: TestCase[] = visibleTestCases.map(
-          (testCase, index) => ({
-            input: testCase.input,
-            expected_output: testCase.expected_output,
-            actual_output: testCase.expected_output, // Mock as passing
-            status: "PASSED" as const,
-            execution_time: Math.random() * 100,
-            memory_used: Math.random() * 50,
-          }),
-        );
-
-        setTestResults(mockResults);
-      } catch (error) {
-        console.error("Error running code:", error);
-        setTestResults([]);
-      } finally {
-        setIsRunning(false);
-      }
+    if (!codeValue.trim()) {
+      alert("Please write some code before running tests.");
       return;
     }
 
     setIsRunning(true);
+    setTestResults([]);
+
     try {
-      const results = await onRunCode(question.id, codeValue, selectedLanguage);
+      // If no visible test cases, create a simple test to run the code
+      let testCasesToRun = visibleTestCases;
+      if (testCasesToRun.length === 0) {
+        testCasesToRun = [{ input: "", expected_output: "" }];
+      }
+
+      const results: TestCase[] = [];
+
+      for (let i = 0; i < testCasesToRun.length; i++) {
+        const testCase = testCasesToRun[i];
+
+        try {
+          console.log(
+            `Running test case ${i + 1}: Input="${testCase.input}", Expected="${testCase.expected_output}"`,
+          );
+
+          const result = await Judge0Service.executeTestCase(
+            codeValue,
+            selectedLanguage,
+            testCase.input || "",
+            testCase.expected_output || "",
+            {
+              timeLimit,
+              memoryLimit,
+            },
+          );
+
+          results.push(result);
+          console.log(`Test case ${i + 1} result:`, result);
+        } catch (error) {
+          console.error(`Test case ${i + 1} execution failed:`, error);
+          results.push({
+            input: testCase.input || "",
+            expected_output: testCase.expected_output || "",
+            actual_output: "",
+            status: "ERROR",
+            error_message:
+              error instanceof Error ? error.message : "Unknown error",
+          });
+        }
+      }
+
       setTestResults(results);
+
+      // Show success message if no test cases but code ran successfully
+      if (
+        visibleTestCases.length === 0 &&
+        results.length > 0 &&
+        results[0].status !== "ERROR"
+      ) {
+        console.log("Code executed successfully!");
+      }
     } catch (error) {
-      console.error("Error running code:", error);
-      setTestResults([]);
+      console.error("Code execution error:", error);
+      alert(
+        `Execution failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+
+      // Set error result
+      setTestResults([
+        {
+          input: "",
+          expected_output: "",
+          actual_output: "",
+          status: "ERROR",
+          error_message:
+            error instanceof Error ? error.message : "Unknown error",
+        },
+      ]);
     } finally {
       setIsRunning(false);
+    }
+  };
+
+  const handleSubmitCode = async () => {
+    if (!codeValue.trim()) {
+      alert("Please write some code before submitting.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const allTestCases = [...visibleTestCases, ...hiddenTestCases];
+      const results: TestCase[] = [];
+      let passedCount = 0;
+
+      for (let i = 0; i < allTestCases.length; i++) {
+        const testCase = allTestCases[i];
+
+        try {
+          const result = await Judge0Service.executeTestCase(
+            codeValue,
+            selectedLanguage,
+            testCase.input || "",
+            testCase.expected_output || "",
+            {
+              timeLimit,
+              memoryLimit,
+            },
+          );
+
+          results.push(result);
+          if (result.status === "PASSED") {
+            passedCount++;
+          }
+        } catch (error) {
+          console.error(`Test case ${i + 1} execution failed:`, error);
+          results.push({
+            input: testCase.input || "",
+            expected_output: testCase.expected_output || "",
+            actual_output: "",
+            status: "ERROR",
+            error_message:
+              error instanceof Error ? error.message : "Unknown error",
+          });
+        }
+      }
+
+      // Calculate score
+      const totalTests = allTestCases.length;
+      const scorePercentage =
+        totalTests > 0 ? (passedCount / totalTests) * 100 : 0;
+      const score =
+        totalTests > 0 ? (passedCount / totalTests) * question.marks : 0;
+
+      // Store submission data (you can extend this to save to backend)
+      const submissionData = {
+        questionId: question.id,
+        code: codeValue,
+        language: selectedLanguage,
+        results,
+        totalTests,
+        passedTests: passedCount,
+        score,
+        scorePercentage,
+        submittedAt: new Date().toISOString(),
+      };
+
+      // Save to localStorage for now (replace with API call)
+      localStorage.setItem(
+        `submission_${question.id}`,
+        JSON.stringify(submissionData),
+      );
+
+      setSubmissionStatus({
+        submitted: true,
+        success: scorePercentage >= 50, // Consider 50% as success threshold
+        message: `Code submitted successfully! Passed ${passedCount}/${totalTests} test cases (${scorePercentage.toFixed(1)}%). Score: ${score.toFixed(1)}/${question.marks}`,
+      });
+
+      // Update the answer to mark as submitted
+      onAnswerChange(question.id, [], codeValue);
+    } catch (error) {
+      console.error("Code submission error:", error);
+      setSubmissionStatus({
+        submitted: false,
+        success: false,
+        message: `Submission failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -321,6 +649,13 @@ export default function QuestionRenderer({
       case "PASSED":
         return <Check className="w-4 h-4 text-green-500" />;
       case "FAILED":
+        return <X className="w-4 h-4 text-red-500" />;
+      case "TIME_LIMIT_EXCEEDED":
+        return <Clock className="w-4 h-4 text-yellow-500" />;
+      case "COMPILATION_ERROR":
+        return <AlertTriangle className="w-4 h-4 text-orange-500" />;
+      case "RUNTIME_ERROR":
+        return <AlertTriangle className="w-4 h-4 text-red-500" />;
       case "ERROR":
         return <X className="w-4 h-4 text-red-500" />;
       default:
@@ -330,17 +665,30 @@ export default function QuestionRenderer({
     }
   };
 
-  const renderMCQOptions = () => {
-    console.log("Rendering MCQ options for question:", question);
-    console.log("Available options:", question.options);
+  const getStatusColor = (status?: string) => {
+    switch (status) {
+      case "PASSED":
+        return "text-green-600 bg-green-100";
+      case "FAILED":
+        return "text-red-600 bg-red-100";
+      case "TIME_LIMIT_EXCEEDED":
+        return "text-yellow-600 bg-yellow-100";
+      case "COMPILATION_ERROR":
+        return "text-orange-600 bg-orange-100";
+      case "RUNTIME_ERROR":
+        return "text-red-600 bg-red-100";
+      case "ERROR":
+        return "text-red-600 bg-red-100";
+      default:
+        return "text-gray-600 bg-gray-100";
+    }
+  };
 
+  const renderMCQOptions = () => {
     if (!question.options || question.options.length === 0) {
-      console.warn("No options found for MCQ question:", question);
       return (
         <div className="text-red-500 p-4 border border-red-300 rounded-lg bg-red-50">
           <strong>Error:</strong> No options available for this MCQ question.
-          <br />
-          <span className="text-sm">Question ID: {question.id}</span>
         </div>
       );
     }
@@ -500,7 +848,6 @@ export default function QuestionRenderer({
         {/* Left Panel - Problem Description */}
         <div className="w-1/2 bg-white border-r border-gray-200 overflow-y-auto">
           <div className="p-6">
-            {/* Problem Information */}
             <div className="flex items-center space-x-4 text-sm text-gray-600 mb-6">
               <div className="flex items-center">
                 <span className="font-medium">Marks:</span>
@@ -520,7 +867,42 @@ export default function QuestionRenderer({
               )}
             </div>
 
-            {/* Problem Statement */}
+            {submissionStatus.submitted && (
+              <div
+                className={`p-4 rounded-lg mb-6 ${
+                  submissionStatus.success
+                    ? "bg-green-50 border border-green-200"
+                    : "bg-red-50 border border-red-200"
+                }`}
+              >
+                <div className="flex items-center">
+                  {submissionStatus.success ? (
+                    <Check className="w-5 h-5 text-green-600 mr-2" />
+                  ) : (
+                    <X className="w-5 h-5 text-red-600 mr-2" />
+                  )}
+                  <span
+                    className={`font-medium ${
+                      submissionStatus.success
+                        ? "text-green-800"
+                        : "text-red-800"
+                    }`}
+                  >
+                    {submissionStatus.success
+                      ? "Submitted Successfully!"
+                      : "Submission Error"}
+                  </span>
+                </div>
+                <p
+                  className={`mt-1 text-sm ${
+                    submissionStatus.success ? "text-green-700" : "text-red-700"
+                  }`}
+                >
+                  {submissionStatus.message}
+                </p>
+              </div>
+            )}
+
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-3">
                 Problem Statement
@@ -531,7 +913,6 @@ export default function QuestionRenderer({
               />
             </div>
 
-            {/* Examples */}
             {visibleTestCases && visibleTestCases.length > 0 && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">
@@ -570,21 +951,6 @@ export default function QuestionRenderer({
               </div>
             )}
 
-            {/* Show message if no test cases */}
-            {(!visibleTestCases || visibleTestCases.length === 0) && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                  Examples
-                </h3>
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <p className="text-yellow-800 text-sm">
-                    No visible test cases available for this problem.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Constraints */}
             {constraints && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">
@@ -597,49 +963,11 @@ export default function QuestionRenderer({
                 </div>
               </div>
             )}
-
-            {/* Show message if no constraints */}
-            {!constraints && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                  Constraints
-                </h3>
-                <div className="bg-gray-50 p-4 rounded-lg border">
-                  <p className="text-sm text-gray-500 italic">
-                    No constraints specified for this problem.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Debug Information (only in development) */}
-            {process.env.NODE_ENV === "development" && (
-              <div className="mt-6 p-4 bg-gray-100 rounded-lg border">
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                  Debug Info:
-                </h4>
-                <div className="text-xs text-gray-600 space-y-1">
-                  <div>
-                    Question Type:{" "}
-                    {questionData.type || questionData.questionType}
-                  </div>
-                  <div>Original Type: {questionData.originalType}</div>
-                  <div>Is Code Question: {isCodeQuestion.toString()}</div>
-                  <div>Visible Test Cases: {visibleTestCases?.length || 0}</div>
-                  <div>Hidden Test Cases: {hiddenTestCases?.length || 0}</div>
-                  <div>Has Constraints: {!!constraints}</div>
-                  <div>Time Limit: {timeLimit}ms</div>
-                  <div>Memory Limit: {memoryLimit}MB</div>
-                  <div>Code Language: {codeLanguage}</div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
         {/* Right Panel - Code Editor */}
         <div className="w-1/2 flex flex-col bg-white">
-          {/* Editor Header */}
           <div className="p-4 border-b border-gray-200 bg-gray-50">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -648,7 +976,7 @@ export default function QuestionRenderer({
                   onChange={(e) => handleLanguageChange(e.target.value)}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 >
-                  {LANGUAGES.map((lang) => (
+                  {PROGRAMMING_LANGUAGES.map((lang) => (
                     <option key={lang.id} value={lang.id}>
                       {lang.name}
                     </option>
@@ -665,23 +993,121 @@ export default function QuestionRenderer({
                   }}
                   className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
+                  <RefreshCw className="w-4 h-4 mr-1 inline" />
                   Reset
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Monaco Editor */}
-          <div className="flex-1">
-            <MonacoCodeEditor
-              value={codeValue}
-              onChange={handleCodeChange}
-              language={selectedLanguage}
-              height="100%"
-            />
+          <div className="flex-1 flex flex-col">
+            <div className="flex-1">
+              <SimpleCodeEditor
+                value={codeValue}
+                onChange={handleCodeChange}
+                language={selectedLanguage}
+                height="100%"
+                theme="dark"
+              />
+            </div>
+
+            {(testResults.length > 0 || isRunning) && (
+              <div className="h-48 border-t border-gray-200 bg-gray-50 flex flex-col">
+                <div className="px-4 py-2 bg-gray-100 border-b border-gray-200">
+                  <h4 className="font-medium text-gray-800 text-sm">Output</h4>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4">
+                  {isRunning ? (
+                    <div className="flex items-center text-gray-600">
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <span>Running code...</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {testResults.map((result, index) => (
+                        <div
+                          key={index}
+                          className="bg-white border border-gray-200 rounded p-3"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                              {getStatusIcon(result.status)}
+                              <span className="font-medium text-sm">
+                                Test Case {index + 1}
+                              </span>
+                              <span
+                                className={`text-xs px-2 py-1 rounded ${getStatusColor(result.status)}`}
+                              >
+                                {result.status?.replace(/_/g, " ") || "Unknown"}
+                              </span>
+                            </div>
+                            {result.execution_time && (
+                              <div className="text-xs text-gray-500">
+                                {result.execution_time.toFixed(1)}ms
+                              </div>
+                            )}
+                          </div>
+
+                          {result.actual_output && (
+                            <div className="mb-2">
+                              <div className="text-xs text-gray-600 font-medium mb-1">
+                                Output:
+                              </div>
+                              <div className="text-xs bg-gray-100 p-2 rounded border font-mono">
+                                {result.actual_output}
+                              </div>
+                            </div>
+                          )}
+
+                          {result.error_message && (
+                            <div className="mb-2">
+                              <div className="text-xs text-red-600 font-medium mb-1">
+                                Error:
+                              </div>
+                              <div className="text-xs text-red-700 bg-red-50 p-2 rounded border font-mono">
+                                {result.error_message}
+                              </div>
+                            </div>
+                          )}
+
+                          {result.compile_output && (
+                            <div className="mb-2">
+                              <div className="text-xs text-orange-600 font-medium mb-1">
+                                Compilation Output:
+                              </div>
+                              <div className="text-xs text-orange-700 bg-orange-50 p-2 rounded border font-mono">
+                                {result.compile_output}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="grid grid-cols-2 gap-3 text-xs mt-2">
+                            <div>
+                              <div className="text-gray-600 mb-1 font-medium">
+                                Input
+                              </div>
+                              <div className="bg-gray-50 p-2 rounded font-mono border max-h-16 overflow-y-auto">
+                                {result.input || "No input"}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-gray-600 mb-1 font-medium">
+                                Expected
+                              </div>
+                              <div className="bg-gray-50 p-2 rounded font-mono border max-h-16 overflow-y-auto">
+                                {result.expected_output || "No expected output"}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Action Buttons */}
           <div className="p-4 border-t border-gray-200 bg-gray-50">
             <div className="flex justify-between">
               <button
@@ -689,91 +1115,38 @@ export default function QuestionRenderer({
                 disabled={isRunning}
                 className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors"
               >
-                <Play className="w-4 h-4 mr-2" />
+                {isRunning ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Play className="w-4 h-4 mr-2" />
+                )}
                 {isRunning ? "Running..." : "Run Code"}
               </button>
+
               <button
-                onClick={() => handleCodeChange(codeValue)}
-                className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors ml-auto"
+                onClick={handleSubmitCode}
+                disabled={isSubmitting || submissionStatus.submitted}
+                className={`flex items-center px-6 py-2 rounded-lg transition-colors ml-auto ${
+                  submissionStatus.submitted
+                    ? "bg-green-600 text-white"
+                    : "bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                }`}
               >
-                <Send className="w-4 h-4 mr-2" />
-                Submit Solution
+                {isSubmitting ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : submissionStatus.submitted ? (
+                  <Check className="w-4 h-4 mr-2" />
+                ) : (
+                  <Send className="w-4 h-4 mr-2" />
+                )}
+                {isSubmitting
+                  ? "Submitting..."
+                  : submissionStatus.submitted
+                    ? "Submitted"
+                    : "Submit Solution"}
               </button>
             </div>
           </div>
-
-          {/* Test Results Panel */}
-          {testResults.length > 0 && (
-            <div className="h-48 border-t border-gray-200 bg-gray-50 overflow-y-auto">
-              <div className="p-4">
-                <h4 className="font-medium text-gray-800 mb-3">Test Results</h4>
-                <div className="space-y-3">
-                  {testResults.map((result, index) => (
-                    <div
-                      key={index}
-                      className="bg-white border border-gray-200 rounded-lg p-3"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          {getStatusIcon(result.status)}
-                          <span className="font-medium text-sm">
-                            Test Case {index + 1}
-                          </span>
-                          {result.status === "PASSED" && (
-                            <span className="text-green-600 text-xs bg-green-100 px-2 py-1 rounded">
-                              Passed
-                            </span>
-                          )}
-                          {result.status === "FAILED" && (
-                            <span className="text-red-600 text-xs bg-red-100 px-2 py-1 rounded">
-                              Failed
-                            </span>
-                          )}
-                          {result.status === "ERROR" && (
-                            <span className="text-red-600 text-xs bg-red-100 px-2 py-1 rounded">
-                              Error
-                            </span>
-                          )}
-                        </div>
-                        {result.execution_time && (
-                          <div className="text-xs text-gray-500">
-                            {result.execution_time.toFixed(1)}ms
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-3 text-xs">
-                        <div>
-                          <div className="text-gray-600 mb-1 font-medium">
-                            Input
-                          </div>
-                          <div className="bg-gray-50 p-2 rounded font-mono border max-h-12 overflow-y-auto">
-                            {result.input || "No input"}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-gray-600 mb-1 font-medium">
-                            Expected
-                          </div>
-                          <div className="bg-gray-50 p-2 rounded font-mono border max-h-12 overflow-y-auto">
-                            {result.expected_output || "No expected output"}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-gray-600 mb-1 font-medium">
-                            Actual
-                          </div>
-                          <div className="bg-gray-50 p-2 rounded font-mono border max-h-12 overflow-y-auto">
-                            {result.actual_output || "No output"}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     );
@@ -801,18 +1174,6 @@ export default function QuestionRenderer({
   };
 
   const renderQuestionContent = () => {
-    console.log(
-      "Rendering question with type:",
-      question.questionType,
-      "Original type:",
-      questionData.originalType,
-      "Type:",
-      questionData.type,
-      "Is code:",
-      isCodeQuestion,
-    );
-
-    // Handle CODE questions first
     if (isCodeQuestion) {
       return renderCodeInterface();
     }
@@ -829,20 +1190,9 @@ export default function QuestionRenderer({
       case QuestionType.LONG_ANSWER:
         return renderTextInput(true);
       default:
-        console.error(
-          "Unsupported question type:",
-          question.questionType,
-          "Question:",
-          question,
-        );
         return (
           <div className="text-red-500 p-4 border border-red-300 rounded-lg bg-red-50">
             <strong>Unsupported Question Type:</strong> {question.questionType}
-            <br />
-            <span className="text-sm">
-              Supported types: MCQ, MULTIPLE_SELECT, TRUE_FALSE, SHORT_ANSWER,
-              LONG_ANSWER, CODE
-            </span>
           </div>
         );
     }
@@ -851,12 +1201,9 @@ export default function QuestionRenderer({
   return (
     <>
       {isCodeQuestion ? (
-        // Full-screen LeetCode-style layout for CODE questions
         renderCodeInterface()
       ) : (
-        // Regular card layout for other question types
         <div className="bg-white rounded-lg shadow-lg p-6">
-          {/* Question Header */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <span
@@ -881,10 +1228,8 @@ export default function QuestionRenderer({
             </div>
           </div>
 
-          {/* Question Content */}
           <div className="mb-6">{renderQuestionContent()}</div>
 
-          {/* Answer Status */}
           <div className="border-t pt-4">
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center space-x-2">
@@ -907,7 +1252,9 @@ export default function QuestionRenderer({
                 )}
               </div>
 
-              <div className="text-gray-500">Question {question.order}</div>
+              <div className="text-gray-500">
+                Question {question.order || 1}
+              </div>
             </div>
           </div>
         </div>
