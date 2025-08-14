@@ -1,7 +1,5 @@
-"use client";
-
-import React, { useRef, useEffect } from "react";
-import * as monaco from "monaco-editor";
+import React from "react";
+import { Editor } from "@monaco-editor/react";
 
 interface MonacoCodeEditorProps {
   value: string;
@@ -10,6 +8,7 @@ interface MonacoCodeEditorProps {
   theme?: string;
   height?: string;
   readOnly?: boolean;
+  className?: string;
 }
 
 const MonacoCodeEditor: React.FC<MonacoCodeEditorProps> = ({
@@ -19,67 +18,96 @@ const MonacoCodeEditor: React.FC<MonacoCodeEditorProps> = ({
   theme = "vs-dark",
   height = "400px",
   readOnly = false,
+  className = "",
 }) => {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const monacoRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const handleEditorChange = (value: string | undefined) => {
+    onChange(value || "");
+  };
 
-  useEffect(() => {
-    if (editorRef.current) {
-      // Dispose previous editor if exists
-      if (monacoRef.current) {
-        monacoRef.current.dispose();
-      }
+  const handleEditorDidMount = (editor: any, monaco: any) => {
+    // Ensure scrollbars are always visible
+    editor.updateOptions({
+      scrollbar: {
+        vertical: "visible" as const,
+        horizontal: "visible" as const,
+        verticalScrollbarSize: 14,
+        horizontalScrollbarSize: 14,
+        arrowSize: 30,
+      },
+      minimap: { enabled: false },
+      overviewRulerLanes: 0,
+      scrollBeyondLastLine: true,
+      automaticLayout: true,
+    });
 
-      // Create new editor
-      monacoRef.current = monaco.editor.create(editorRef.current, {
-        value,
-        language,
-        theme,
-        fontSize: 14,
-        fontFamily: "Fira Code, Monaco, Consolas, monospace",
-        automaticLayout: true,
-        minimap: { enabled: false },
-        scrollBeyondLastLine: false,
-        wordWrap: "on",
-        lineNumbers: "on",
-        renderLineHighlight: "line",
-        selectOnLineNumbers: true,
-        roundedSelection: false,
-        readOnly,
-        cursorStyle: "line",
-        tabSize: 2,
-        insertSpaces: true,
-      });
+    // Force a layout update
+    setTimeout(() => {
+      editor.layout();
+    }, 100);
+  };
 
-      // Handle content changes
-      if (!readOnly) {
-        monacoRef.current.onDidChangeModelContent(() => {
-          const currentValue = monacoRef.current?.getValue() || "";
-          onChange(currentValue);
-        });
-      }
-    }
-
-    return () => {
-      if (monacoRef.current) {
-        monacoRef.current.dispose();
-      }
-    };
-  }, [language, theme, readOnly]);
-
-  // Update value when prop changes
-  useEffect(() => {
-    if (monacoRef.current && monacoRef.current.getValue() !== value) {
-      monacoRef.current.setValue(value);
-    }
-  }, [value]);
+  const editorOptions = {
+    fontSize: 14,
+    fontFamily: "Fira Code, Monaco, Consolas, 'Courier New', monospace",
+    automaticLayout: true,
+    minimap: { enabled: false },
+    scrollBeyondLastLine: true,
+    wordWrap: "on" as const,
+    lineNumbers: "on" as const,
+    renderLineHighlight: "line" as const,
+    selectOnLineNumbers: true,
+    roundedSelection: false,
+    readOnly,
+    cursorStyle: "line" as const,
+    tabSize: 2,
+    insertSpaces: true,
+    bracketPairColorization: { enabled: true },
+    suggest: {
+      showKeywords: true,
+      showSnippets: true,
+    },
+    quickSuggestions: {
+      other: true,
+      comments: true,
+      strings: true,
+    },
+    acceptSuggestionOnCommitCharacter: true,
+    acceptSuggestionOnEnter: "on" as const,
+    accessibilitySupport: "auto" as const,
+    scrollbar: {
+      vertical: "visible" as const,
+      horizontal: "visible" as const,
+      verticalScrollbarSize: 14,
+      horizontalScrollbarSize: 14,
+      arrowSize: 30,
+      useShadows: false,
+      verticalHasArrows: true,
+      horizontalHasArrows: true,
+      alwaysConsumeMouseWheel: true,
+    },
+    overviewRulerLanes: 0,
+  };
 
   return (
-    <div
-      ref={editorRef}
-      style={{ height, width: "100%" }}
-      className="border border-gray-300 rounded-lg overflow-hidden"
-    />
+    <div className={`${className}`} style={{ height, width: "100%" }}>
+      <Editor
+        height={height}
+        language={language}
+        value={value}
+        onChange={handleEditorChange}
+        theme={theme}
+        options={editorOptions}
+        onMount={handleEditorDidMount}
+        loading={
+          <div className="flex items-center justify-center h-full bg-gray-900">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+              <p className="text-gray-400">Loading Monaco Editor...</p>
+            </div>
+          </div>
+        }
+      />
+    </div>
   );
 };
 

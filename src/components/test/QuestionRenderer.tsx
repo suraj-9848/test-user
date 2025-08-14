@@ -16,9 +16,15 @@ import {
   AlertTriangle,
   RefreshCw,
   Loader2,
+  GripVertical,
 } from "lucide-react";
-import SimpleCodeEditor from "./SimpleCodeEditor";
+import MonacoCodeEditor from "../MonacoCodeEditor";
 import { LANGUAGE_TEMPLATES, PROGRAMMING_LANGUAGES } from "@/utils/languages";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "../resizable";
 
 interface TestCase {
   input: string;
@@ -67,6 +73,40 @@ interface QuestionRendererProps {
   ) => Promise<TestCase[]>;
 }
 
+// Helper function to map language IDs to Monaco language identifiers
+const getMonacoLanguage = (languageId: string): string => {
+  const languageMap: { [key: string]: string } = {
+    "63": "javascript",
+    "71": "python",
+    "62": "java",
+    "54": "cpp",
+    "50": "c",
+    "51": "csharp",
+    "78": "kotlin",
+    "60": "go",
+    "72": "ruby",
+    "68": "php",
+    "75": "typescript",
+    "76": "rust",
+    "77": "swift",
+    javascript: "javascript",
+    python: "python",
+    java: "java",
+    cpp: "cpp",
+    c: "c",
+    csharp: "csharp",
+    kotlin: "kotlin",
+    go: "go",
+    ruby: "ruby",
+    php: "php",
+    typescript: "typescript",
+    rust: "rust",
+    swift: "swift",
+  };
+
+  return languageMap[languageId] || "javascript";
+};
+
 class Judge0Service {
   private static readonly BASE_URL =
     process.env.JUDGE0_BASE_URL || "http://159.89.166.122:2358";
@@ -103,26 +143,11 @@ class Judge0Service {
       );
 
       const responseText = await response.text();
-      console.log("Judge0 raw response:", responseText);
-
       if (!response.ok) {
-        throw new Error(
-          `Judge0 API Error (${response.status}): ${responseText}`,
-        );
+        throw new Error(`HTTP ${response.status}: ${responseText}`);
       }
 
-      let result;
-      try {
-        result = JSON.parse(responseText);
-      } catch (e) {
-        throw new Error(`Invalid JSON response: ${responseText}`);
-      }
-
-      if (!result.token) {
-        throw new Error("No token returned from Judge0");
-      }
-
-      console.log("Judge0 submission successful, token:", result.token);
+      const result = JSON.parse(responseText);
       return result.token;
     } catch (error) {
       console.error("Judge0 submission error:", error);
@@ -135,169 +160,132 @@ class Judge0Service {
       const response = await fetch(
         `${this.BASE_URL}/submissions/${token}?base64_encoded=true`,
         {
-          method: "GET",
           headers: {
-            "Content-Type": "application/json",
             Accept: "application/json",
           },
         },
       );
 
       const responseText = await response.text();
-      console.log("Judge0 result response:", responseText);
-
       if (!response.ok) {
-        throw new Error(
-          `Judge0 API Error (${response.status}): ${responseText}`,
-        );
+        throw new Error(`HTTP ${response.status}: ${responseText}`);
       }
 
       const result = JSON.parse(responseText);
 
-      // Decode base64 encoded fields
-      if (result.stdout) {
-        try {
-          result.stdout = atob(result.stdout);
-        } catch (e) {
-          console.warn("Failed to decode stdout:", e);
-        }
-      }
-
-      if (result.stderr) {
-        try {
-          result.stderr = atob(result.stderr);
-        } catch (e) {
-          console.warn("Failed to decode stderr:", e);
-        }
-      }
-
-      if (result.compile_output) {
-        try {
-          result.compile_output = atob(result.compile_output);
-        } catch (e) {
-          console.warn("Failed to decode compile_output:", e);
-        }
-      }
+      if (result.stdout) result.stdout = atob(result.stdout);
+      if (result.stderr) result.stderr = atob(result.stderr);
+      if (result.compile_output)
+        result.compile_output = atob(result.compile_output);
 
       return result;
     } catch (error) {
-      console.error("Judge0 result fetch error:", error);
+      console.error("Judge0 result retrieval error:", error);
       throw error;
     }
   }
 
-  static async executeTestCase(
-    code: string,
-    language: string,
-    input: string,
-    expectedOutput: string,
-    options: { timeLimit?: number; memoryLimit?: number } = {},
-  ): Promise<TestCase> {
-    const lang = PROGRAMMING_LANGUAGES.find((l) => l.id === language);
-    if (!lang) {
-      throw new Error(`Unsupported language: ${language}`);
-    }
+  static async runCode(
+    sourceCode: string,
+    languageId: number,
+    testCases: TestCase[],
+    timeLimit: number = 5,
+    memoryLimit: number = 256,
+  ): Promise<TestCase[]> {
+    const results: TestCase[] = [];
 
-    const timeLimit = options.timeLimit || 5000; // ms
-    const memoryLimit = options.memoryLimit || 256; // MB
+    for (const testCase of testCases) {
+      try {
+        const token = await this.submitCode(
+          sourceCode,
+          languageId,
+          testCase.input,
+          testCase.expected_output,
+          timeLimit,
+          memoryLimit,
+        );
 
-    try {
-      // Submit code
-      const token = await this.submitCode(
-        code,
-        lang.judge0Id,
-        input,
-        expectedOutput,
-        timeLimit / 1000,
-        memoryLimit,
-      );
+        let result: Judge0Result;
+        let attempts = 0;
+        const maxAttempts = 30;
 
-      // Poll for result
-      let attempts = 0;
-      const maxAttempts = 20;
+        do {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          result = await this.getResult(token);
+          attempts++;
+        } while (result.status.id <= 2 && attempts < maxAttempts);
 
-      while (attempts < maxAttempts) {
-        await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second
-
-        const result = await this.getResult(token);
-
-        // Check if processing is complete
-        if (result.status.id !== 1 && result.status.id !== 2) {
-          // Not "In Queue" or "Processing"
-          return this.parseResult(result, input, expectedOutput);
-        }
-
-        attempts++;
+        const processedTestCase = this.processResult(result, testCase);
+        results.push(processedTestCase);
+      } catch (error) {
+        console.error("Error running test case:", error);
+        results.push({
+          ...testCase,
+          status: "ERROR",
+          error_message: `Execution error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        });
       }
-
-      throw new Error("Execution timeout - Judge0 took too long to process");
-    } catch (error) {
-      console.error("Test case execution error:", error);
-      return {
-        input,
-        expected_output: expectedOutput,
-        actual_output: "",
-        status: "ERROR",
-        error_message: error instanceof Error ? error.message : "Unknown error",
-      };
     }
+
+    return results;
   }
 
-  private static parseResult(
+  private static processResult(
     result: Judge0Result,
-    input: string,
-    expectedOutput: string,
+    testCase: TestCase,
   ): TestCase {
-    const testCase: TestCase = {
-      input,
-      expected_output: expectedOutput,
+    const processedTestCase: TestCase = {
+      ...testCase,
       actual_output: result.stdout || "",
-      execution_time: result.time ? parseFloat(result.time) * 1000 : undefined, // Convert to ms
-      memory_used: result.memory ? result.memory / 1024 : undefined, // Convert to MB
+      execution_time: result.time ? parseFloat(result.time) : 0,
+      memory_used: result.memory || 0,
     };
 
-    // Determine status based on Judge0 status ID
-    switch (result.status.id) {
-      case 3: // Accepted
-        const actualTrimmed = (result.stdout || "").trim();
-        const expectedTrimmed = expectedOutput.trim();
-        testCase.status =
-          actualTrimmed === expectedTrimmed ? "PASSED" : "FAILED";
+    const expectedOutput = testCase.expected_output;
+    const actualOutput = result.stdout || "";
 
-        if (testCase.status === "FAILED" && expectedTrimmed) {
-          testCase.error_message = `Output mismatch. Expected: "${expectedTrimmed}", Got: "${actualTrimmed}"`;
+    switch (result.status.id) {
+      case 3:
+        const expectedTrimmed = expectedOutput.trim();
+        const actualTrimmed = actualOutput.trim();
+        processedTestCase.status =
+          expectedTrimmed === actualTrimmed ? "PASSED" : "FAILED";
+
+        if (processedTestCase.status === "FAILED" && expectedTrimmed) {
+          processedTestCase.error_message = `Output mismatch. Expected: "${expectedTrimmed}", Got: "${actualTrimmed}"`;
         }
         break;
-      case 4: // Wrong Answer
-        testCase.status = "FAILED";
-        testCase.error_message = `Wrong Answer. Expected: "${expectedOutput.trim()}", Got: "${(result.stdout || "").trim()}"`;
+      case 4:
+        processedTestCase.status = "FAILED";
+        processedTestCase.error_message = `Wrong Answer. Expected: "${expectedOutput.trim()}", Got: "${actualOutput.trim()}"`;
         break;
-      case 5: // Time Limit Exceeded
-        testCase.status = "TIME_LIMIT_EXCEEDED";
-        testCase.error_message = "Time limit exceeded";
+      case 5:
+        processedTestCase.status = "TIME_LIMIT_EXCEEDED";
+        processedTestCase.error_message = "Time limit exceeded";
         break;
-      case 6: // Compilation Error
-        testCase.status = "COMPILATION_ERROR";
-        testCase.error_message = result.compile_output || "Compilation failed";
-        testCase.compile_output = result.compile_output;
+      case 6:
+        processedTestCase.status = "COMPILATION_ERROR";
+        processedTestCase.error_message =
+          result.compile_output || "Compilation failed";
+        processedTestCase.compile_output = result.compile_output;
         break;
       case 7:
       case 8:
       case 9:
       case 10:
       case 11:
-      case 12: // Runtime Errors
-        testCase.status = "RUNTIME_ERROR";
-        testCase.error_message =
+      case 12:
+        processedTestCase.status = "RUNTIME_ERROR";
+        processedTestCase.error_message =
           result.stderr || result.message || "Runtime error occurred";
         break;
       default:
-        testCase.status = "ERROR";
-        testCase.error_message =
+        processedTestCase.status = "ERROR";
+        processedTestCase.error_message =
           result.message || result.status.description || "Unknown error";
     }
 
-    return testCase;
+    return processedTestCase;
   }
 }
 
@@ -318,7 +306,17 @@ export default function QuestionRenderer({
     submitted: boolean;
     message: string;
     success: boolean;
-  }>({ submitted: false, message: "", success: false });
+    allTestsPassed: boolean;
+    totalTests: number;
+    passedTests: number;
+  }>({
+    submitted: false,
+    message: "",
+    success: false,
+    allTestsPassed: false,
+    totalTests: 0,
+    passedTests: 0,
+  });
 
   // Enhanced detection for CODE questions
   const questionData = question as any;
@@ -327,20 +325,10 @@ export default function QuestionRenderer({
     questionData.type === "CODE" ||
     questionData.questionType === "CODE";
 
-  console.log("Question analysis:", {
-    id: question.id,
-    originalType: questionData.originalType,
-    type: questionData.type,
-    questionType: question.questionType,
-    isCodeQuestion,
-  });
-
   // Parse test cases with enhanced error handling
   const parseTestCases = (testCases: any): TestCase[] => {
     if (!testCases) return [];
-
     if (Array.isArray(testCases)) return testCases;
-
     if (typeof testCases === "string") {
       try {
         const parsed = JSON.parse(testCases);
@@ -350,7 +338,6 @@ export default function QuestionRenderer({
         return [];
       }
     }
-
     return [];
   };
 
@@ -456,7 +443,7 @@ export default function QuestionRenderer({
     setSelectedLanguage(language);
     const template =
       LANGUAGE_TEMPLATES[language as keyof typeof LANGUAGE_TEMPLATES];
-    if (template && !(codeValue as any).trim()) {
+    if (template && !codeValue.trim()) {
       setCodeValue(template);
       onAnswerChange(question.id, [], template);
     }
@@ -468,212 +455,134 @@ export default function QuestionRenderer({
       return;
     }
 
+    if (visibleTestCases.length === 0) {
+      alert("No sample test cases available for this question.");
+      return;
+    }
+
     setIsRunning(true);
     setTestResults([]);
 
     try {
-      // If no visible test cases, create a simple test to run the code
-      let testCasesToRun = visibleTestCases;
-      if (testCasesToRun.length === 0) {
-        testCasesToRun = [{ input: "", expected_output: "" }];
+      const languageConfig = PROGRAMMING_LANGUAGES.find(
+        (lang) => lang.id === selectedLanguage,
+      );
+
+      if (!languageConfig) {
+        throw new Error("Unsupported language selected");
       }
 
-      const results: TestCase[] = [];
-
-      for (let i = 0; i < testCasesToRun.length; i++) {
-        const testCase = testCasesToRun[i];
-
-        try {
-          console.log(
-            `Running test case ${i + 1}: Input="${testCase.input}", Expected="${testCase.expected_output}"`,
-          );
-
-          const result = await Judge0Service.executeTestCase(
-            codeValue,
-            selectedLanguage,
-            testCase.input || "",
-            testCase.expected_output || "",
-            {
-              timeLimit,
-              memoryLimit,
-            },
-          );
-
-          results.push(result);
-          console.log(`Test case ${i + 1} result:`, result);
-        } catch (error) {
-          console.error(`Test case ${i + 1} execution failed:`, error);
-          results.push({
-            input: testCase.input || "",
-            expected_output: testCase.expected_output || "",
-            actual_output: "",
-            status: "ERROR",
-            error_message:
-              error instanceof Error ? error.message : "Unknown error",
-          });
-        }
-      }
+      // Only run visible test cases
+      const results = await Judge0Service.runCode(
+        codeValue,
+        languageConfig.judge0Id,
+        visibleTestCases,
+        Math.floor(timeLimit / 1000),
+        memoryLimit,
+      );
 
       setTestResults(results);
-
-      // Show success message if no test cases but code ran successfully
-      if (
-        visibleTestCases.length === 0 &&
-        results.length > 0 &&
-        results[0].status !== "ERROR"
-      ) {
-        console.log("Code executed successfully!");
-      }
     } catch (error) {
       console.error("Code execution error:", error);
       alert(
-        `Execution failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        `Error running code: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
-
-      // Set error result
-      setTestResults([
-        {
-          input: "",
-          expected_output: "",
-          actual_output: "",
-          status: "ERROR",
-          error_message:
-            error instanceof Error ? error.message : "Unknown error",
-        },
-      ]);
     } finally {
       setIsRunning(false);
     }
   };
 
-  const handleSubmitCode = async () => {
+  const handleSubmitSolution = async () => {
     if (!codeValue.trim()) {
       alert("Please write some code before submitting.");
+      return;
+    }
+
+    // Check if already submitted
+    if (submissionStatus.submitted) {
+      alert("You have already submitted this solution.");
+      return;
+    }
+
+    // Direct submission without popup
+    const allTestCases = [...visibleTestCases, ...hiddenTestCases];
+
+    if (allTestCases.length === 0) {
+      alert("No test cases available for this question.");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const allTestCases = [...visibleTestCases, ...hiddenTestCases];
-      const results: TestCase[] = [];
-      let passedCount = 0;
+      const languageConfig = PROGRAMMING_LANGUAGES.find(
+        (lang) => lang.id === selectedLanguage,
+      );
 
-      for (let i = 0; i < allTestCases.length; i++) {
-        const testCase = allTestCases[i];
-
-        try {
-          const result = await Judge0Service.executeTestCase(
-            codeValue,
-            selectedLanguage,
-            testCase.input || "",
-            testCase.expected_output || "",
-            {
-              timeLimit,
-              memoryLimit,
-            },
-          );
-
-          results.push(result);
-          if (result.status === "PASSED") {
-            passedCount++;
-          }
-        } catch (error) {
-          console.error(`Test case ${i + 1} execution failed:`, error);
-          results.push({
-            input: testCase.input || "",
-            expected_output: testCase.expected_output || "",
-            actual_output: "",
-            status: "ERROR",
-            error_message:
-              error instanceof Error ? error.message : "Unknown error",
-          });
-        }
+      if (!languageConfig) {
+        throw new Error("Unsupported language selected");
       }
 
-      // Calculate score
-      const totalTests = allTestCases.length;
-      const scorePercentage =
-        totalTests > 0 ? (passedCount / totalTests) * 100 : 0;
-      const score =
-        totalTests > 0 ? (passedCount / totalTests) * question.marks : 0;
-
-      // Store submission data (you can extend this to save to backend)
-      const submissionData = {
-        questionId: question.id,
-        code: codeValue,
-        language: selectedLanguage,
-        results,
-        totalTests,
-        passedTests: passedCount,
-        score,
-        scorePercentage,
-        submittedAt: new Date().toISOString(),
-      };
-
-      // Save to localStorage for now (replace with API call)
-      localStorage.setItem(
-        `submission_${question.id}`,
-        JSON.stringify(submissionData),
+      // Run all test cases (visible + hidden)
+      const results = await Judge0Service.runCode(
+        codeValue,
+        languageConfig.judge0Id,
+        allTestCases,
+        Math.floor(timeLimit / 1000),
+        memoryLimit,
       );
+
+      const passedTests = results.filter((r) => r.status === "PASSED").length;
+      const totalTests = results.length;
+      const allPassed = passedTests === totalTests;
+
+      // Calculate score - only give full marks if ALL tests pass
+      const score = allPassed ? question.marks : 0;
 
       setSubmissionStatus({
         submitted: true,
-        success: scorePercentage >= 50, // Consider 50% as success threshold
-        message: `Code submitted successfully! Passed ${passedCount}/${totalTests} test cases (${scorePercentage.toFixed(1)}%). Score: ${score.toFixed(1)}/${question.marks}`,
+        success: allPassed,
+        allTestsPassed: allPassed,
+        totalTests,
+        passedTests,
+        message: allPassed
+          ? `ACCEPTED - All ${totalTests} test cases passed!`
+          : `WRONG ANSWER - ${passedTests}/${totalTests} test cases passed.`,
       });
 
-      // Update the answer to mark as submitted
+      // Only store visible test cases results for display
+      const visibleResults = results.slice(0, visibleTestCases.length);
+      setTestResults(visibleResults);
+
+      // Update the answer - call onAnswerChange to save the code
       onAnswerChange(question.id, [], codeValue);
+
+      // Show success/failure message with score information
+      if (allPassed) {
+        alert(
+          `🎉 ACCEPTED!\n\nAll ${totalTests} test cases passed!\nScore: ${score}/${question.marks} marks`,
+        );
+      } else {
+        alert(
+          `❌ WRONG ANSWER\n\n${passedTests}/${totalTests} test cases passed.\nScore: 0/${question.marks} marks\n\nAll test cases must pass to earn marks.`,
+        );
+      }
     } catch (error) {
       console.error("Code submission error:", error);
       setSubmissionStatus({
-        submitted: false,
+        submitted: true,
         success: false,
-        message: `Submission failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        allTestsPassed: false,
+        totalTests: 0,
+        passedTests: 0,
+        message: `ERROR - Submission failed: ${error instanceof Error ? error.message : "Unknown error"}`,
       });
+
+      alert(
+        `❌ ERROR\n\nSubmission failed: ${error instanceof Error ? error.message : "Unknown error"}\nScore: 0/${question.marks} marks`,
+      );
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const getStatusIcon = (status?: string) => {
-    switch (status) {
-      case "PASSED":
-        return <Check className="w-4 h-4 text-green-500" />;
-      case "FAILED":
-        return <X className="w-4 h-4 text-red-500" />;
-      case "TIME_LIMIT_EXCEEDED":
-        return <Clock className="w-4 h-4 text-yellow-500" />;
-      case "COMPILATION_ERROR":
-        return <AlertTriangle className="w-4 h-4 text-orange-500" />;
-      case "RUNTIME_ERROR":
-        return <AlertTriangle className="w-4 h-4 text-red-500" />;
-      case "ERROR":
-        return <X className="w-4 h-4 text-red-500" />;
-      default:
-        return (
-          <div className="w-4 h-4 rounded-full border-2 border-gray-300" />
-        );
-    }
-  };
-
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case "PASSED":
-        return "text-green-600 bg-green-100";
-      case "FAILED":
-        return "text-red-600 bg-red-100";
-      case "TIME_LIMIT_EXCEEDED":
-        return "text-yellow-600 bg-yellow-100";
-      case "COMPILATION_ERROR":
-        return "text-orange-600 bg-orange-100";
-      case "RUNTIME_ERROR":
-        return "text-red-600 bg-red-100";
-      case "ERROR":
-        return "text-red-600 bg-red-100";
-      default:
-        return "text-gray-600 bg-gray-100";
     }
   };
 
@@ -688,75 +597,72 @@ export default function QuestionRenderer({
 
     return (
       <div className="space-y-3">
-        {question.options
-          .sort((a, b) => (a.optionOrder || 0) - (b.optionOrder || 0))
-          .map((option, index) => {
-            const isSelected = answer.selectedOptions.includes(option.id);
-
-            return (
-              <div
-                key={option.id || index}
-                className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                  isSelected
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-                }`}
-                onClick={() => handleOptionChange(option.id, false)}
-              >
-                <div className="flex items-center space-x-3">
-                  {isSelected ? (
-                    <CheckCircle className="h-5 w-5 text-blue-600" />
-                  ) : (
-                    <Circle className="h-5 w-5 text-gray-400" />
-                  )}
-                  <span className="font-medium text-gray-700 mr-2">
-                    {String.fromCharCode(65 + index)}.
-                  </span>
-                  <span className="text-gray-900">
-                    {option.optionText ||
-                      option.text ||
-                      option.label ||
-                      `Option ${index + 1}`}
-                  </span>
-                </div>
+        {question.options.map((option) => {
+          const isSelected = answer.selectedOptions.includes(option.id);
+          return (
+            <div
+              key={option.id}
+              className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                isSelected
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+              }`}
+              onClick={() => handleOptionChange(option.id)}
+            >
+              <div className="flex items-center space-x-3">
+                {isSelected ? (
+                  <CheckCircle className="h-5 w-5 text-blue-600" />
+                ) : (
+                  <Circle className="h-5 w-5 text-gray-400" />
+                )}
+                <span className="text-gray-900 font-medium">
+                  {option.optionText || option.text}
+                </span>
               </div>
-            );
-          })}
+            </div>
+          );
+        })}
       </div>
     );
   };
 
   const renderMultipleSelectOptions = () => {
-    if (!question.options) return null;
+    if (!question.options || question.options.length === 0) {
+      return (
+        <div className="text-red-500 p-4 border border-red-300 rounded-lg bg-red-50">
+          <strong>Error:</strong> No options available for this question.
+        </div>
+      );
+    }
 
     return (
       <div className="space-y-3">
         <p className="text-sm text-gray-600 mb-4">Select all that apply:</p>
-        {question.options
-          .sort((a, b) => a.optionOrder - b.optionOrder)
-          .map((option) => {
-            const isSelected = answer.selectedOptions.includes(option.id);
-            return (
-              <div
-                key={option.id}
-                className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                  isSelected
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-                }`}
-                onClick={() => handleOptionChange(option.id, true)}
-              >
-                <div className="flex items-center space-x-3">
-                  {isSelected ? (
-                    <CheckSquare className="h-5 w-5 text-blue-600" />
-                  ) : (
-                    <Square className="h-5 w-5 text-gray-400" />
-                  )}
-                  <span className="text-gray-900">{option.optionText}</span>
-                </div>
+        {question.options.map((option) => {
+          const isSelected = answer.selectedOptions.includes(option.id);
+          return (
+            <div
+              key={option.id}
+              className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                isSelected
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+              }`}
+              onClick={() => handleOptionChange(option.id, true)}
+            >
+              <div className="flex items-center space-x-3">
+                {isSelected ? (
+                  <CheckSquare className="h-5 w-5 text-blue-600" />
+                ) : (
+                  <Square className="h-5 w-5 text-gray-400" />
+                )}
+                <span className="text-gray-900 font-medium">
+                  {option.optionText || option.text}
+                </span>
               </div>
-            );
-          })}
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -796,21 +702,28 @@ export default function QuestionRenderer({
     );
   };
 
-  const renderTextInput = (isLongAnswer: boolean = false) => {
-    const placeholder = isLongAnswer
-      ? "Write your detailed answer here..."
-      : "Write your short answer here...";
+  const renderTextInput = (
+    isLongAnswer: boolean = false,
+    isCode: boolean = false,
+  ) => {
+    const placeholder = isCode
+      ? "Write your code here..."
+      : isLongAnswer
+        ? "Write your detailed answer here..."
+        : "Write your short answer here...";
 
-    if (isLongAnswer) {
+    if (isLongAnswer || isCode) {
       return (
         <div className="space-y-2">
           <textarea
             value={textValue}
             onChange={(e) => handleTextChange(e.target.value)}
             placeholder={placeholder}
-            className="w-full p-4 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none min-h-[200px] resize-vertical"
+            className={`w-full p-4 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none min-h-[200px] resize-vertical ${
+              isCode ? "font-mono text-sm" : ""
+            }`}
             rows={8}
-            spellCheck={true}
+            spellCheck={!isCode}
           />
           <div className="text-right text-sm text-gray-500">
             {textValue.length} characters
@@ -837,309 +750,334 @@ export default function QuestionRenderer({
 
   const renderCodeInterface = () => {
     return (
-      <div className="h-full flex bg-gray-50">
-        {/* Left Panel - Problem Description */}
-        <div className="w-1/2 bg-white border-r border-gray-200 overflow-y-auto">
-          <div className="p-6">
-            <div className="flex items-center space-x-4 text-sm text-gray-600 mb-6">
-              <div className="flex items-center">
-                <span className="font-medium">Marks:</span>
-                <span className="ml-1">{question.marks}</span>
-              </div>
-              {timeLimit && (
-                <div className="flex items-center">
-                  <Clock className="w-4 h-4 mr-1" />
-                  <span>{timeLimit}ms</span>
-                </div>
-              )}
-              {memoryLimit && (
-                <div className="flex items-center">
-                  <MemoryStick className="w-4 h-4 mr-1" />
-                  <span>{memoryLimit}MB</span>
-                </div>
-              )}
-            </div>
-
-            {submissionStatus.submitted && (
-              <div
-                className={`p-4 rounded-lg mb-6 ${
-                  submissionStatus.success
-                    ? "bg-green-50 border border-green-200"
-                    : "bg-red-50 border border-red-200"
-                }`}
-              >
-                <div className="flex items-center">
-                  {submissionStatus.success ? (
-                    <Check className="w-5 h-5 text-green-600 mr-2" />
-                  ) : (
-                    <X className="w-5 h-5 text-red-600 mr-2" />
-                  )}
-                  <span
-                    className={`font-medium ${
-                      submissionStatus.success
-                        ? "text-green-800"
-                        : "text-red-800"
-                    }`}
-                  >
-                    {submissionStatus.success
-                      ? "Submitted Successfully!"
-                      : "Submission Error"}
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800 mb-1">
+                Coding Question
+              </h2>
+              <div className="flex items-center space-x-4 text-sm text-gray-500">
+                <span>Marks: {question.marks}</span>
+                {timeLimit && (
+                  <span className="flex items-center">
+                    <Clock className="w-4 h-4 mr-1" />
+                    {Math.floor(timeLimit / 1000)}s
                   </span>
-                </div>
-                <p
-                  className={`mt-1 text-sm ${
-                    submissionStatus.success ? "text-green-700" : "text-red-700"
-                  }`}
-                >
-                  {submissionStatus.message}
-                </p>
+                )}
+                {memoryLimit && (
+                  <span className="flex items-center">
+                    <MemoryStick className="w-4 h-4 mr-1" />
+                    {memoryLimit}MB
+                  </span>
+                )}
               </div>
-            )}
-
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                Problem Statement
-              </h3>
-              <div
-                className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: question.questionText }}
-              />
             </div>
-
-            {visibleTestCases && visibleTestCases.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                  Examples
-                </h3>
-                <div className="space-y-4">
-                  {visibleTestCases.map((testCase, index) => (
-                    <div
-                      key={index}
-                      className="bg-gray-50 p-4 rounded-lg border"
-                    >
-                      <div className="font-medium mb-3 text-gray-800">
-                        Example {index + 1}:
-                      </div>
-                      <div className="space-y-3">
-                        <div>
-                          <span className="font-medium text-gray-700 block mb-1">
-                            Input:
-                          </span>
-                          <pre className="bg-white p-3 rounded border font-mono text-sm text-gray-800 overflow-x-auto whitespace-pre-wrap">
-                            {testCase.input || "No input"}
-                          </pre>
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700 block mb-1">
-                            Output:
-                          </span>
-                          <pre className="bg-white p-3 rounded border font-mono text-sm text-gray-800 overflow-x-auto whitespace-pre-wrap">
-                            {testCase.expected_output || "No expected output"}
-                          </pre>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {constraints && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                  Constraints
-                </h3>
-                <div className="bg-gray-50 p-4 rounded-lg border">
-                  <pre className="text-sm text-gray-700 whitespace-pre-line font-mono">
-                    {constraints}
-                  </pre>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Right Panel - Code Editor */}
-        <div className="w-1/2 flex flex-col bg-white">
-          <div className="p-4 border-b border-gray-200 bg-gray-50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <select
-                  value={selectedLanguage}
-                  onChange={(e) => handleLanguageChange(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                >
-                  {PROGRAMMING_LANGUAGES.map((lang) => (
-                    <option key={lang.id} value={lang.id}>
-                      {lang.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={() => {
-                    const template =
-                      LANGUAGE_TEMPLATES[
-                        selectedLanguage as keyof typeof LANGUAGE_TEMPLATES
-                      ];
-                    setCodeValue(template);
-                    handleCodeChange(template);
-                  }}
-                  className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  <RefreshCw className="w-4 h-4 mr-1 inline" />
-                  Reset
-                </button>
-              </div>
-            </div>
-          </div>
+        {/* Main Content with Resizable Panels */}
+        <div className="h-[calc(100vh-100px)]">
+          <ResizablePanelGroup direction="horizontal" className="h-full">
+            {/* Problem Description Panel */}
+            <ResizablePanel defaultSize={40} minSize={25}>
+              <div className="h-full overflow-y-auto">
+                <div className="p-6">
+                  <div className="prose prose-sm max-w-none mb-6">
+                    <div
+                      className="text-gray-900 leading-relaxed"
+                      dangerouslySetInnerHTML={{
+                        __html: question.questionText,
+                      }}
+                    />
+                  </div>
 
-          <div className="flex-1 flex flex-col">
-            <div className="flex-1">
-              <SimpleCodeEditor
-                value={codeValue}
-                onChange={handleCodeChange}
-                language={selectedLanguage}
-                height="100%"
-                theme="dark"
-              />
-            </div>
-
-            {(testResults.length > 0 || isRunning) && (
-              <div className="h-48 border-t border-gray-200 bg-gray-50 flex flex-col">
-                <div className="px-4 py-2 bg-gray-100 border-b border-gray-200">
-                  <h4 className="font-medium text-gray-800 text-sm">Output</h4>
-                </div>
-                <div className="flex-1 overflow-y-auto p-4">
-                  {isRunning ? (
-                    <div className="flex items-center text-gray-600">
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      <span>Running code...</span>
+                  {constraints && (
+                    <div className="mb-6">
+                      <h4 className="font-medium text-gray-800 mb-2">
+                        Constraints
+                      </h4>
+                      <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+                        <pre className="whitespace-pre-wrap">{constraints}</pre>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {testResults.map((result, index) => (
-                        <div
-                          key={index}
-                          className="bg-white border border-gray-200 rounded p-3"
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                              {getStatusIcon(result.status)}
-                              <span className="font-medium text-sm">
-                                Test Case {index + 1}
+                  )}
+
+                  {visibleTestCases.length > 0 && (
+                    <div className="mb-6">
+                      <h4 className="font-medium text-gray-800 mb-3">
+                        Examples
+                      </h4>
+                      <div className="space-y-4">
+                        {visibleTestCases.map((testCase, index) => (
+                          <div
+                            key={index}
+                            className="border border-gray-200 rounded-lg overflow-hidden"
+                          >
+                            <div className="bg-gray-50 px-3 py-2 border-b border-gray-200">
+                              <span className="text-sm font-medium text-gray-700">
+                                Example {index + 1}
                               </span>
-                              <span
-                                className={`text-xs px-2 py-1 rounded ${getStatusColor(result.status)}`}
-                              >
-                                {result.status?.replace(/_/g, " ") || "Unknown"}
-                              </span>
                             </div>
-                            {result.execution_time && (
-                              <div className="text-xs text-gray-500">
-                                {result.execution_time.toFixed(1)}ms
+                            <div className="p-3 space-y-2">
+                              <div>
+                                <span className="text-sm font-medium text-gray-700">
+                                  Input:
+                                </span>
+                                <pre className="text-sm text-gray-900 bg-gray-50 p-2 rounded mt-1">
+                                  {testCase.input}
+                                </pre>
                               </div>
-                            )}
-                          </div>
-
-                          {result.actual_output && (
-                            <div className="mb-2">
-                              <div className="text-xs text-gray-600 font-medium mb-1">
-                                Output:
-                              </div>
-                              <div className="text-xs bg-gray-100 p-2 rounded border font-mono">
-                                {result.actual_output}
-                              </div>
-                            </div>
-                          )}
-
-                          {result.error_message && (
-                            <div className="mb-2">
-                              <div className="text-xs text-red-600 font-medium mb-1">
-                                Error:
-                              </div>
-                              <div className="text-xs text-red-700 bg-red-50 p-2 rounded border font-mono">
-                                {result.error_message}
-                              </div>
-                            </div>
-                          )}
-
-                          {result.compile_output && (
-                            <div className="mb-2">
-                              <div className="text-xs text-orange-600 font-medium mb-1">
-                                Compilation Output:
-                              </div>
-                              <div className="text-xs text-orange-700 bg-orange-50 p-2 rounded border font-mono">
-                                {result.compile_output}
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="grid grid-cols-2 gap-3 text-xs mt-2">
-                            <div>
-                              <div className="text-gray-600 mb-1 font-medium">
-                                Input
-                              </div>
-                              <div className="bg-gray-50 p-2 rounded font-mono border max-h-16 overflow-y-auto">
-                                {result.input || "No input"}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="text-gray-600 mb-1 font-medium">
-                                Expected
-                              </div>
-                              <div className="bg-gray-50 p-2 rounded font-mono border max-h-16 overflow-y-auto">
-                                {result.expected_output || "No expected output"}
+                              <div>
+                                <span className="text-sm font-medium text-gray-700">
+                                  Output:
+                                </span>
+                                <pre className="text-sm text-gray-900 bg-gray-50 p-2 rounded mt-1">
+                                  {testCase.expected_output}
+                                </pre>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
               </div>
-            )}
-          </div>
+            </ResizablePanel>
 
-          <div className="p-4 border-t border-gray-200 bg-gray-50">
-            <div className="flex justify-between">
-              <button
-                onClick={handleRunCode}
-                disabled={isRunning}
-                className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors"
-              >
-                {isRunning ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Play className="w-4 h-4 mr-2" />
-                )}
-                {isRunning ? "Running..." : "Run Code"}
-              </button>
+            <ResizableHandle withHandle />
 
-              <button
-                onClick={handleSubmitCode}
-                disabled={isSubmitting || submissionStatus.submitted}
-                className={`flex items-center px-6 py-2 rounded-lg transition-colors ml-auto ${
-                  submissionStatus.submitted
-                    ? "bg-green-600 text-white"
-                    : "bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
-                }`}
-              >
-                {isSubmitting ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : submissionStatus.submitted ? (
-                  <Check className="w-4 h-4 mr-2" />
-                ) : (
-                  <Send className="w-4 h-4 mr-2" />
-                )}
-                {isSubmitting
-                  ? "Submitting..."
-                  : submissionStatus.submitted
-                    ? "Submitted"
-                    : "Submit Solution"}
-              </button>
-            </div>
-          </div>
+            {/* Code Editor and Results Panel */}
+            <ResizablePanel defaultSize={60} minSize={40}>
+              <ResizablePanelGroup direction="vertical" className="h-full">
+                {/* Code Editor Panel */}
+                <ResizablePanel defaultSize={65} minSize={40}>
+                  <div className="h-full flex flex-col bg-white">
+                    {/* Code Editor Header */}
+                    <div className="bg-white border-b border-gray-200 p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-medium text-gray-800">Solution</h3>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={handleRunCode}
+                            disabled={isRunning}
+                            className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg ${
+                              isRunning
+                                ? "bg-gray-400 text-white cursor-not-allowed"
+                                : "bg-blue-600 text-white hover:bg-blue-700"
+                            }`}
+                          >
+                            {isRunning ? (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <Play className="w-4 h-4 mr-2" />
+                            )}
+                            {isRunning ? "Running..." : "Run"}
+                          </button>
+
+                          <button
+                            onClick={handleSubmitSolution}
+                            disabled={isRunning || isSubmitting}
+                            className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg ${
+                              isRunning || isSubmitting
+                                ? "bg-gray-400 text-white cursor-not-allowed"
+                                : submissionStatus.submitted
+                                  ? "bg-green-600 text-white"
+                                  : "bg-green-600 text-white hover:bg-green-700"
+                            }`}
+                          >
+                            {submissionStatus.submitted ? (
+                              <Check className="w-4 h-4 mr-2" />
+                            ) : (
+                              <Send className="w-4 h-4 mr-2" />
+                            )}
+                            {submissionStatus.submitted
+                              ? "Submitted"
+                              : "Submit Answer"}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-3">
+                        <select
+                          value={selectedLanguage}
+                          onChange={(e) => handleLanguageChange(e.target.value)}
+                          className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        >
+                          {PROGRAMMING_LANGUAGES.map((lang) => (
+                            <option key={lang.id} value={lang.id}>
+                              {lang.name}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => {
+                            const template =
+                              LANGUAGE_TEMPLATES[
+                                selectedLanguage as keyof typeof LANGUAGE_TEMPLATES
+                              ];
+                            setCodeValue(template);
+                            handleCodeChange(template);
+                          }}
+                          className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
+                        >
+                          <RefreshCw className="w-4 h-4 mr-1 inline" />
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Monaco Editor */}
+                    <div className="flex-1">
+                      <MonacoCodeEditor
+                        value={codeValue}
+                        onChange={handleCodeChange}
+                        language={getMonacoLanguage(selectedLanguage)}
+                        height="100%"
+                        theme="vs-dark"
+                        className="h-full"
+                      />
+                    </div>
+                  </div>
+                </ResizablePanel>
+
+                <ResizableHandle withHandle />
+
+                {/* Test Results Panel */}
+                <ResizablePanel defaultSize={35} minSize={20}>
+                  <div className="h-full border-t border-gray-200 bg-gray-50 flex flex-col">
+                    <div className="px-4 py-2 bg-gray-100 border-b border-gray-200 flex justify-between items-center">
+                      <h4 className="font-medium text-gray-800 text-sm">
+                        {isRunning ? "Running Tests..." : "Test Results"}
+                      </h4>
+                      {submissionStatus.submitted && (
+                        <span
+                          className={`text-xs px-2 py-1 rounded font-medium ${
+                            submissionStatus.success
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {submissionStatus.success
+                            ? "ACCEPTED"
+                            : `WRONG ANSWER (${submissionStatus.passedTests}/${submissionStatus.totalTests})`}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4">
+                      {isRunning ? (
+                        <div className="flex items-center justify-center h-full">
+                          <div className="text-center">
+                            <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-600" />
+                            <p className="text-gray-600">Running tests...</p>
+                          </div>
+                        </div>
+                      ) : testResults.length > 0 ? (
+                        <div className="space-y-3">
+                          {testResults.map((result, index) => (
+                            <div
+                              key={index}
+                              className={`p-3 rounded-lg border ${
+                                result.status === "PASSED"
+                                  ? "bg-green-50 border-green-200"
+                                  : "bg-red-50 border-red-200"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="font-medium text-sm">
+                                  Test Case {index + 1}
+                                  {index < visibleTestCases.length
+                                    ? " (Sample)"
+                                    : " (Hidden)"}
+                                </span>
+                                <div className="flex items-center space-x-2">
+                                  {result.status === "PASSED" ? (
+                                    <Check className="w-4 h-4 text-green-600" />
+                                  ) : (
+                                    <X className="w-4 h-4 text-red-600" />
+                                  )}
+                                  <span
+                                    className={`text-xs font-medium ${
+                                      result.status === "PASSED"
+                                        ? "text-green-600"
+                                        : "text-red-600"
+                                    }`}
+                                  >
+                                    {result.status}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {result.execution_time !== undefined && (
+                                <div className="text-xs text-gray-500 mb-1">
+                                  Time: {result.execution_time.toFixed(3)}s
+                                  {result.memory_used &&
+                                    ` | Memory: ${result.memory_used}KB`}
+                                </div>
+                              )}
+
+                              {index < visibleTestCases.length && (
+                                <div className="mt-2 space-y-1">
+                                  <div className="text-xs">
+                                    <span className="font-medium text-gray-700">
+                                      Input:
+                                    </span>
+                                    <div className="bg-gray-100 p-1 rounded text-xs font-mono">
+                                      {result.input || "No input"}
+                                    </div>
+                                  </div>
+                                  <div className="text-xs">
+                                    <span className="font-medium text-gray-700">
+                                      Expected:
+                                    </span>
+                                    <div className="bg-gray-100 p-1 rounded text-xs font-mono">
+                                      {result.expected_output}
+                                    </div>
+                                  </div>
+                                  <div className="text-xs">
+                                    <span className="font-medium text-gray-700">
+                                      Your Output:
+                                    </span>
+                                    <div className="bg-gray-100 p-1 rounded text-xs font-mono">
+                                      {result.actual_output || "No output"}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {result.error_message && (
+                                <div className="text-sm text-red-600 mt-1">
+                                  {result.error_message}
+                                </div>
+                              )}
+
+                              {result.compile_output && (
+                                <div className="text-sm text-red-600 mt-1 font-mono">
+                                  <strong>Compilation Error:</strong>
+                                  <pre className="mt-1 text-xs">
+                                    {result.compile_output}
+                                  </pre>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-gray-500">
+                          <p>
+                            No test results yet. Run some tests to see results
+                            here.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </div>
       </div>
     );
@@ -1160,7 +1098,7 @@ export default function QuestionRenderer({
       case QuestionType.SHORT_ANSWER:
         return "Short Answer";
       case QuestionType.LONG_ANSWER:
-        return "Long Answer";
+        return question.originalType === "CODE" ? "Code Answer" : "Long Answer";
       default:
         return "Question";
     }
@@ -1181,7 +1119,8 @@ export default function QuestionRenderer({
       case QuestionType.SHORT_ANSWER:
         return renderTextInput(false);
       case QuestionType.LONG_ANSWER:
-        return renderTextInput(true);
+        const isCode = question.originalType === "CODE";
+        return renderTextInput(true, isCode);
       default:
         return (
           <div className="text-red-500 p-4 border border-red-300 rounded-lg bg-red-50">
@@ -1226,28 +1165,23 @@ export default function QuestionRenderer({
           <div className="border-t pt-4">
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center space-x-2">
-                {answer.selectedOptions.length > 0 ||
-                answer.textAnswer ||
-                codeValue !== LANGUAGE_TEMPLATES.javascript ? (
+                {answer.selectedOptions.length > 0 || answer.textAnswer ? (
                   <>
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <span className="text-green-600 font-medium">
-                      {isCodeQuestion ? "Code Written" : "Answered"}
-                    </span>
+                    <Check className="w-4 h-4 text-green-600" />
+                    <span className="text-green-600 font-medium">Answered</span>
                   </>
                 ) : (
                   <>
-                    <Circle className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-500">
-                      {isCodeQuestion ? "No code written" : "Not answered"}
+                    <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                    <span className="text-yellow-600 font-medium">
+                      Not answered
                     </span>
                   </>
                 )}
               </div>
-
-              <div className="text-gray-500">
-                Question {question.order || 1}
-              </div>
+              <span className="text-gray-500">
+                Question {question.id} of {question.marks} marks
+              </span>
             </div>
           </div>
         </div>

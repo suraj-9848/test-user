@@ -905,7 +905,6 @@ export default function TestInterface({
       {isCurrentQuestionCode ? (
         // Full-width layout for coding questions (like LeetCode)
         <div className="flex flex-col h-full">
-          {/* Header */}
           <div className="bg-white shadow-sm border-b px-6 py-4 flex-shrink-0">
             <div className="flex items-center justify-between">
               <div>
@@ -936,7 +935,6 @@ export default function TestInterface({
             </div>
           </div>
 
-          {/* Question Navigation */}
           <div className="bg-white border-b px-6 py-3 flex-shrink-0">
             <div className="flex items-center justify-between">
               <button
@@ -978,7 +976,6 @@ export default function TestInterface({
             </div>
           </div>
 
-          {/* Full-width coding interface */}
           <div className="flex-1 min-h-0">
             {currentQuestion && currentAnswer && (
               <QuestionRenderer
@@ -992,7 +989,6 @@ export default function TestInterface({
         </div>
       ) : (
         <>
-          {/* Test Header */}
           <div className="bg-white shadow-sm border-b">
             <div className="max-w-6xl mx-auto px-4 py-4">
               <div className="flex items-center justify-between">
@@ -1025,7 +1021,6 @@ export default function TestInterface({
             </div>
           </div>
 
-          {/* Question Navigation */}
           <div className="bg-white border-b">
             <div className="max-w-6xl mx-auto px-4 py-2">
               <div className="flex items-center justify-between">
@@ -1071,7 +1066,6 @@ export default function TestInterface({
             </div>
           </div>
 
-          {/* Question Content */}
           <div className="flex justify-center items-start w-full py-8 px-2 overflow-auto flex-1">
             <div
               className="bg-white shadow-lg rounded-xl p-10 w-full max-w-5xl min-h-[400px] flex flex-col justify-center overflow-auto"
