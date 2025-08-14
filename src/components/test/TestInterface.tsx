@@ -28,6 +28,16 @@ interface TestInterfaceProps {
   onBack: () => void;
 }
 
+// NEW: Interface for individual code submissions
+interface CodeSubmission {
+  questionId: string;
+  code: string;
+  language: string;
+  results: any[];
+  score: number;
+  submittedAt: string;
+}
+
 class CodeExecutionService {
   static async executeCode(
     questionId: string,
@@ -72,6 +82,8 @@ export default function TestInterface({
 }: TestInterfaceProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<TestAnswer[]>([]);
+  // NEW: State to track individual code submissions
+  const [codeSubmissions, setCodeSubmissions] = useState<CodeSubmission[]>([]);
   const [uiState, setUIState] = useState<TestUIState>({
     currentQuestionIndex: 0,
     isFullscreen: false,
@@ -110,6 +122,28 @@ export default function TestInterface({
     currentQuestion?.originalType === "CODE" ||
     (currentQuestion as any)?.type === "CODE" ||
     (currentQuestion as any)?.questionType === "CODE";
+
+  // NEW: Get submission status for a specific question
+  const getQuestionSubmission = (questionId: string) => {
+    const submission = codeSubmissions.find(
+      (sub) => sub.questionId === questionId,
+    );
+    if (!submission) return null;
+
+    return {
+      submitted: true,
+      success: submission.score > 0,
+      allTestsPassed: submission.score > 0,
+      totalTests: submission.results.length,
+      passedTests: submission.results.filter((r: any) => r.status === "PASSED")
+        .length,
+      score: submission.score,
+      message:
+        submission.score > 0
+          ? `ACCEPTED - All test cases passed!`
+          : `WRONG ANSWER - Not all test cases passed.`,
+    };
+  };
 
   // Trigger permissions (camera & fullscreen) then start test
   const handleStartTest = async () => {
@@ -200,6 +234,7 @@ export default function TestInterface({
       cleanup();
     };
   }, [test.id, attempt.id, testStarted]);
+
   // Enter fullscreen mode
   const enterFullscreen = async () => {
     try {
@@ -569,7 +604,55 @@ export default function TestInterface({
     await submitTest(submissionType);
   };
 
-  // Submit test
+  // NEW: Handle individual code question submission
+  const handleCodeSubmit = (
+    questionId: string,
+    code: string,
+    language: string,
+    results: any[],
+    score: number,
+  ) => {
+    console.log("Individual code submission:", {
+      questionId,
+      code,
+      language,
+      results,
+      score,
+    });
+
+    // Store the code submission
+    const newSubmission: CodeSubmission = {
+      questionId,
+      code,
+      language,
+      results,
+      score,
+      submittedAt: new Date().toISOString(),
+    };
+
+    setCodeSubmissions((prev) => {
+      const existing = prev.find((sub) => sub.questionId === questionId);
+      if (existing) {
+        // Update existing submission
+        return prev.map((sub) =>
+          sub.questionId === questionId ? newSubmission : sub,
+        );
+      } else {
+        // Add new submission
+        return [...prev, newSubmission];
+      }
+    });
+
+    // Save to localStorage as backup
+    localStorage.setItem(
+      `code_submission_${questionId}`,
+      JSON.stringify(newSubmission),
+    );
+
+    console.log("Code submission stored successfully");
+  };
+
+  // UPDATED: Submit test (only called when "Submit Test" button is clicked)
   const submitTest = async (
     submissionType:
       | "MANUAL"
@@ -594,6 +677,7 @@ export default function TestInterface({
           code: string;
           language: string;
           executionResults?: any;
+          score?: number;
         };
       }[] = questions.map((q) => {
         const answer = answers.find((a) => a.questionId === q.id);
@@ -606,22 +690,26 @@ export default function TestInterface({
           (q as any).questionType === "CODE";
 
         if (isCodeQuestion) {
-          // For code questions, save the code and language
-          formattedAnswer = answer?.textAnswer || "";
+          // For code questions, use the stored submission data
+          const submission = codeSubmissions.find(
+            (sub) => sub.questionId === q.id,
+          );
 
-          // Check if there's a submission in localStorage
-          const submissionData = localStorage.getItem(`submission_${q.id}`);
-          if (submissionData) {
-            const parsed = JSON.parse(submissionData);
+          if (submission) {
+            formattedAnswer = submission.code;
             codeSubmission = {
-              code: parsed.code,
-              language: parsed.language,
-              executionResults: parsed.results,
+              code: submission.code,
+              language: submission.language,
+              executionResults: submission.results,
+              score: submission.score,
             };
           } else {
+            // Fallback to current answer if no submission found
+            formattedAnswer = answer?.textAnswer || "";
             codeSubmission = {
               code: answer?.textAnswer || "",
               language: "javascript", // default
+              score: 0,
             };
           }
         } else if (q.questionType === QuestionType.MCQ) {
@@ -802,6 +890,32 @@ export default function TestInterface({
     onBack();
   };
 
+  // NEW: Get question status for display
+  const getQuestionStatus = (questionIndex: number) => {
+    const question = questions[questionIndex];
+    if (!question) return "unanswered";
+
+    const answer = answers[questionIndex];
+    const isCodeQuestion =
+      (question as any).originalType === "CODE" ||
+      (question as any).type === "CODE" ||
+      (question as any).questionType === "CODE";
+
+    if (isCodeQuestion) {
+      const submission = codeSubmissions.find(
+        (sub) => sub.questionId === question.id,
+      );
+      if (submission) {
+        return submission.score > 0 ? "correct" : "attempted";
+      }
+      return answer?.textAnswer ? "attempted" : "unanswered";
+    } else {
+      return answer?.selectedOptions.length > 0 || answer?.textAnswer
+        ? "answered"
+        : "unanswered";
+    }
+  };
+
   // Render permission overlay before test starts
   if (!testStarted) {
     return (
@@ -947,22 +1061,26 @@ export default function TestInterface({
               </button>
 
               <div className="flex space-x-2">
-                {questions.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => goToQuestion(index)}
-                    className={`w-8 h-8 rounded text-xs font-medium ${
-                      index === uiState.currentQuestionIndex
-                        ? "bg-blue-600 text-white"
-                        : answers[index]?.selectedOptions.length > 0 ||
-                            answers[index]?.textAnswer
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
-                  >
-                    {index + 1}
-                  </button>
-                ))}
+                {questions.map((_, index) => {
+                  const status = getQuestionStatus(index);
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => goToQuestion(index)}
+                      className={`w-8 h-8 rounded text-xs font-medium ${
+                        index === uiState.currentQuestionIndex
+                          ? "bg-blue-600 text-white"
+                          : status === "correct"
+                            ? "bg-green-100 text-green-800 border border-green-300"
+                            : status === "attempted" || status === "answered"
+                              ? "bg-yellow-100 text-yellow-800 border border-yellow-300"
+                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      {index + 1}
+                    </button>
+                  );
+                })}
               </div>
 
               <button
@@ -983,6 +1101,8 @@ export default function TestInterface({
                 answer={currentAnswer}
                 onAnswerChange={handleAnswerChange}
                 onRunCode={handleRunCode}
+                onCodeSubmit={handleCodeSubmit}
+                existingSubmission={getQuestionSubmission(currentQuestion.id)}
               />
             )}
           </div>
@@ -1034,22 +1154,26 @@ export default function TestInterface({
                 </button>
 
                 <div className="flex space-x-2">
-                  {questions.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => goToQuestion(index)}
-                      className={`w-8 h-8 rounded text-xs font-medium ${
-                        index === uiState.currentQuestionIndex
-                          ? "bg-blue-600 text-white"
-                          : answers[index]?.selectedOptions.length > 0 ||
-                              answers[index]?.textAnswer
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      }`}
-                    >
-                      {index + 1}
-                    </button>
-                  ))}
+                  {questions.map((_, index) => {
+                    const status = getQuestionStatus(index);
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => goToQuestion(index)}
+                        className={`w-8 h-8 rounded text-xs font-medium ${
+                          index === uiState.currentQuestionIndex
+                            ? "bg-blue-600 text-white"
+                            : status === "correct"
+                              ? "bg-green-100 text-green-800 border border-green-300"
+                              : status === "attempted" || status === "answered"
+                                ? "bg-yellow-100 text-yellow-800 border border-yellow-300"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      >
+                        {index + 1}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <button
@@ -1081,6 +1205,8 @@ export default function TestInterface({
                   answer={currentAnswer}
                   onAnswerChange={handleAnswerChange}
                   onRunCode={handleRunCode}
+                  onCodeSubmit={handleCodeSubmit}
+                  existingSubmission={getQuestionSubmission(currentQuestion.id)}
                 />
               )}
             </div>
@@ -1088,16 +1214,47 @@ export default function TestInterface({
         </>
       )}
 
+      {/* UPDATED: Submit Test Confirmation */}
       {showSubmitConfirmation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Submit Test
             </h3>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to submit your test? This action cannot be
-              undone. All your code submissions will be evaluated automatically.
-            </p>
+            <div className="mb-4">
+              <p className="text-gray-600 mb-2">
+                Are you sure you want to submit your test? This action cannot be
+                undone.
+              </p>
+
+              {/* Show submission summary */}
+              <div className="bg-gray-50 p-3 rounded mt-3">
+                <h4 className="font-medium text-sm text-gray-800 mb-2">
+                  Submission Summary:
+                </h4>
+                <div className="text-sm text-gray-600 space-y-1">
+                  <div>Total Questions: {questions.length}</div>
+                  <div>
+                    Coding Questions Submitted: {codeSubmissions.length} /{" "}
+                    {
+                      questions.filter(
+                        (q) =>
+                          (q as any).originalType === "CODE" ||
+                          (q as any).type === "CODE" ||
+                          (q as any).questionType === "CODE",
+                      ).length
+                    }
+                  </div>
+                  <div>
+                    Other Questions Answered:{" "}
+                    {answers.filter(
+                      (a) => a.selectedOptions.length > 0 || a.textAnswer,
+                    ).length - codeSubmissions.length}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowSubmitConfirmation(false)}
@@ -1112,7 +1269,7 @@ export default function TestInterface({
                 }}
                 className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
               >
-                Submit
+                Submit Test
               </button>
             </div>
           </div>

@@ -71,6 +71,24 @@ interface QuestionRendererProps {
     code: string,
     language: string,
   ) => Promise<TestCase[]>;
+  // Callback to handle individual code question submission
+  onCodeSubmit?: (
+    questionId: string,
+    code: string,
+    language: string,
+    results: TestCase[],
+    score: number,
+  ) => void;
+  // NEW: Prop to get existing submission status for this specific question
+  existingSubmission?: {
+    submitted: boolean;
+    message: string;
+    success: boolean;
+    allTestsPassed: boolean;
+    totalTests: number;
+    passedTests: number;
+    score: number;
+  } | null;
 }
 
 // Helper function to map language IDs to Monaco language identifiers
@@ -293,6 +311,8 @@ export default function QuestionRenderer({
   question,
   answer,
   onAnswerChange,
+  onCodeSubmit,
+  existingSubmission,
 }: QuestionRendererProps) {
   const [textValue, setTextValue] = useState(answer.textAnswer || "");
   const [codeValue, setCodeValue] = useState(
@@ -302,6 +322,8 @@ export default function QuestionRenderer({
   const [testResults, setTestResults] = useState<TestCase[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // FIXED: Use question-specific submission status
   const [submissionStatus, setSubmissionStatus] = useState<{
     submitted: boolean;
     message: string;
@@ -309,6 +331,7 @@ export default function QuestionRenderer({
     allTestsPassed: boolean;
     totalTests: number;
     passedTests: number;
+    score: number;
   }>({
     submitted: false,
     message: "",
@@ -316,6 +339,7 @@ export default function QuestionRenderer({
     allTestsPassed: false,
     totalTests: 0,
     passedTests: 0,
+    score: 0,
   });
 
   // Enhanced detection for CODE questions
@@ -324,6 +348,24 @@ export default function QuestionRenderer({
     questionData.originalType === "CODE" ||
     questionData.type === "CODE" ||
     questionData.questionType === "CODE";
+
+  // FIXED: Initialize submission status from existing submission if available
+  useEffect(() => {
+    if (existingSubmission) {
+      setSubmissionStatus(existingSubmission);
+    } else {
+      // Reset to default state for this specific question
+      setSubmissionStatus({
+        submitted: false,
+        message: "",
+        success: false,
+        allTestsPassed: false,
+        totalTests: 0,
+        passedTests: 0,
+        score: 0,
+      });
+    }
+  }, [existingSubmission, question.id]); // Re-run when question ID changes
 
   // Parse test cases with enhanced error handling
   const parseTestCases = (testCases: any): TestCase[] => {
@@ -492,19 +534,13 @@ export default function QuestionRenderer({
     }
   };
 
+  // FIXED: Individual code submission that doesn't auto-submit the entire test
   const handleSubmitSolution = async () => {
     if (!codeValue.trim()) {
       alert("Please write some code before submitting.");
       return;
     }
 
-    // Check if already submitted
-    if (submissionStatus.submitted) {
-      alert("You have already submitted this solution.");
-      return;
-    }
-
-    // Direct submission without popup
     const allTestCases = [...visibleTestCases, ...hiddenTestCases];
 
     if (allTestCases.length === 0) {
@@ -539,16 +575,20 @@ export default function QuestionRenderer({
       // Calculate score - only give full marks if ALL tests pass
       const score = allPassed ? question.marks : 0;
 
-      setSubmissionStatus({
+      // FIXED: Update only this question's submission status
+      const newSubmissionStatus = {
         submitted: true,
         success: allPassed,
         allTestsPassed: allPassed,
         totalTests,
         passedTests,
+        score,
         message: allPassed
           ? `ACCEPTED - All ${totalTests} test cases passed!`
           : `WRONG ANSWER - ${passedTests}/${totalTests} test cases passed.`,
-      });
+      };
+
+      setSubmissionStatus(newSubmissionStatus);
 
       // Only store visible test cases results for display
       const visibleResults = results.slice(0, visibleTestCases.length);
@@ -557,26 +597,34 @@ export default function QuestionRenderer({
       // Update the answer - call onAnswerChange to save the code
       onAnswerChange(question.id, [], codeValue);
 
+      // Call the onCodeSubmit callback to update parent state
+      if (onCodeSubmit) {
+        onCodeSubmit(question.id, codeValue, selectedLanguage, results, score);
+      }
+
       // Show success/failure message with score information
       if (allPassed) {
         alert(
-          `🎉 ACCEPTED!\n\nAll ${totalTests} test cases passed!\nScore: ${score}/${question.marks} marks`,
+          `🎉 ACCEPTED!\n\nAll ${totalTests} test cases passed!\nScore: ${score}/${question.marks} marks\n\nAnswer saved. Continue with other questions or submit the test when ready.`,
         );
       } else {
         alert(
-          `❌ WRONG ANSWER\n\n${passedTests}/${totalTests} test cases passed.\nScore: 0/${question.marks} marks\n\nAll test cases must pass to earn marks.`,
+          `❌ WRONG ANSWER\n\n${passedTests}/${totalTests} test cases passed.\nScore: 0/${question.marks} marks\n\nAll test cases must pass to earn marks.\nAnswer saved. You can continue or try again.`,
         );
       }
     } catch (error) {
       console.error("Code submission error:", error);
-      setSubmissionStatus({
+      const errorSubmissionStatus = {
         submitted: true,
         success: false,
         allTestsPassed: false,
         totalTests: 0,
         passedTests: 0,
+        score: 0,
         message: `ERROR - Submission failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-      });
+      };
+
+      setSubmissionStatus(errorSubmissionStatus);
 
       alert(
         `❌ ERROR\n\nSubmission failed: ${error instanceof Error ? error.message : "Unknown error"}\nScore: 0/${question.marks} marks`,
@@ -772,6 +820,21 @@ export default function QuestionRenderer({
                     {memoryLimit}MB
                   </span>
                 )}
+                {/* Show submission status for this specific question */}
+                {submissionStatus.submitted && (
+                  <span
+                    className={`px-2 py-1 rounded text-xs font-medium ${
+                      submissionStatus.success
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {submissionStatus.success
+                      ? "✅ ACCEPTED"
+                      : "❌ WRONG ANSWER"}{" "}
+                    ({submissionStatus.score}/{question.marks} marks)
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -884,18 +947,30 @@ export default function QuestionRenderer({
                               isRunning || isSubmitting
                                 ? "bg-gray-400 text-white cursor-not-allowed"
                                 : submissionStatus.submitted
-                                  ? "bg-green-600 text-white"
+                                  ? submissionStatus.success
+                                    ? "bg-green-600 text-white"
+                                    : "bg-orange-600 text-white hover:bg-orange-700"
                                   : "bg-green-600 text-white hover:bg-green-700"
                             }`}
                           >
-                            {submissionStatus.submitted ? (
-                              <Check className="w-4 h-4 mr-2" />
+                            {isSubmitting ? (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : submissionStatus.submitted ? (
+                              submissionStatus.success ? (
+                                <Check className="w-4 h-4 mr-2" />
+                              ) : (
+                                <X className="w-4 h-4 mr-2" />
+                              )
                             ) : (
                               <Send className="w-4 h-4 mr-2" />
                             )}
                             {submissionStatus.submitted
-                              ? "Submitted"
-                              : "Submit Answer"}
+                              ? submissionStatus.success
+                                ? "Accepted"
+                                : "Try Again"
+                              : isSubmitting
+                                ? "Submitting..."
+                                : "Submit Answer"}
                           </button>
                         </div>
                       </div>
@@ -987,10 +1062,7 @@ export default function QuestionRenderer({
                             >
                               <div className="flex items-center justify-between mb-2">
                                 <span className="font-medium text-sm">
-                                  Test Case {index + 1}
-                                  {index < visibleTestCases.length
-                                    ? " (Sample)"
-                                    : " (Hidden)"}
+                                  Test Case {index + 1} (Sample)
                                 </span>
                                 <div className="flex items-center space-x-2">
                                   {result.status === "PASSED" ? (
@@ -1018,34 +1090,32 @@ export default function QuestionRenderer({
                                 </div>
                               )}
 
-                              {index < visibleTestCases.length && (
-                                <div className="mt-2 space-y-1">
-                                  <div className="text-xs">
-                                    <span className="font-medium text-gray-700">
-                                      Input:
-                                    </span>
-                                    <div className="bg-gray-100 p-1 rounded text-xs font-mono">
-                                      {result.input || "No input"}
-                                    </div>
-                                  </div>
-                                  <div className="text-xs">
-                                    <span className="font-medium text-gray-700">
-                                      Expected:
-                                    </span>
-                                    <div className="bg-gray-100 p-1 rounded text-xs font-mono">
-                                      {result.expected_output}
-                                    </div>
-                                  </div>
-                                  <div className="text-xs">
-                                    <span className="font-medium text-gray-700">
-                                      Your Output:
-                                    </span>
-                                    <div className="bg-gray-100 p-1 rounded text-xs font-mono">
-                                      {result.actual_output || "No output"}
-                                    </div>
+                              <div className="mt-2 space-y-1">
+                                <div className="text-xs">
+                                  <span className="font-medium text-gray-700">
+                                    Input:
+                                  </span>
+                                  <div className="bg-gray-100 p-1 rounded text-xs font-mono">
+                                    {result.input || "No input"}
                                   </div>
                                 </div>
-                              )}
+                                <div className="text-xs">
+                                  <span className="font-medium text-gray-700">
+                                    Expected:
+                                  </span>
+                                  <div className="bg-gray-100 p-1 rounded text-xs font-mono">
+                                    {result.expected_output}
+                                  </div>
+                                </div>
+                                <div className="text-xs">
+                                  <span className="font-medium text-gray-700">
+                                    Your Output:
+                                  </span>
+                                  <div className="bg-gray-100 p-1 rounded text-xs font-mono">
+                                    {result.actual_output || "No output"}
+                                  </div>
+                                </div>
+                              </div>
 
                               {result.error_message && (
                                 <div className="text-sm text-red-600 mt-1">
