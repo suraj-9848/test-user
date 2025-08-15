@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Question, TestAnswer, QuestionType } from "@/types/test";
 import {
   CheckCircle,
   Circle,
@@ -16,7 +15,6 @@ import {
   AlertTriangle,
   RefreshCw,
   Loader2,
-  GripVertical,
 } from "lucide-react";
 import MonacoCodeEditor from "../MonacoCodeEditor";
 import { LANGUAGE_TEMPLATES, PROGRAMMING_LANGUAGES } from "@/utils/languages";
@@ -25,287 +23,12 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "../resizable";
-
-interface TestCase {
-  input: string;
-  expected_output: string;
-  actual_output?: string;
-  status?:
-    | "PASSED"
-    | "FAILED"
-    | "ERROR"
-    | "RUNTIME_ERROR"
-    | "TIME_LIMIT_EXCEEDED"
-    | "COMPILATION_ERROR";
-  execution_time?: number;
-  memory_used?: number;
-  error_message?: string;
-  compile_output?: string;
-}
-
-interface Judge0Result {
-  token: string;
-  status: {
-    id: number;
-    description: string;
-  };
-  stdout?: string;
-  stderr?: string;
-  compile_output?: string;
-  message?: string;
-  time?: string;
-  memory?: number;
-  exit_code?: number;
-}
-
-interface QuestionRendererProps {
-  question: Question;
-  answer: TestAnswer;
-  onAnswerChange: (
-    questionId: string,
-    selectedOptions: string[],
-    textAnswer?: string,
-  ) => void;
-  onRunCode?: (
-    questionId: string,
-    code: string,
-    language: string,
-  ) => Promise<TestCase[]>;
-  // Callback to handle individual code question submission
-  onCodeSubmit?: (
-    questionId: string,
-    code: string,
-    language: string,
-    results: TestCase[],
-    score: number,
-  ) => void;
-  // NEW: Prop to get existing submission status for this specific question
-  existingSubmission?: {
-    submitted: boolean;
-    message: string;
-    success: boolean;
-    allTestsPassed: boolean;
-    totalTests: number;
-    passedTests: number;
-    score: number;
-  } | null;
-}
-
-// Helper function to map language IDs to Monaco language identifiers
-const getMonacoLanguage = (languageId: string): string => {
-  const languageMap: { [key: string]: string } = {
-    "63": "javascript",
-    "71": "python",
-    "62": "java",
-    "54": "cpp",
-    "50": "c",
-    "51": "csharp",
-    "78": "kotlin",
-    "60": "go",
-    "72": "ruby",
-    "68": "php",
-    "75": "typescript",
-    "76": "rust",
-    "77": "swift",
-    javascript: "javascript",
-    python: "python",
-    java: "java",
-    cpp: "cpp",
-    c: "c",
-    csharp: "csharp",
-    kotlin: "kotlin",
-    go: "go",
-    ruby: "ruby",
-    php: "php",
-    typescript: "typescript",
-    rust: "rust",
-    swift: "swift",
-  };
-
-  return languageMap[languageId] || "javascript";
-};
-
-class Judge0Service {
-  private static readonly BASE_URL =
-    process.env.JUDGE0_BASE_URL || "http://159.89.166.122:2358";
-
-  static async submitCode(
-    sourceCode: string,
-    languageId: number,
-    stdin: string = "",
-    expectedOutput: string = "",
-    timeLimit: number = 5,
-    memoryLimit: number = 256,
-  ): Promise<string> {
-    try {
-      const payload = {
-        source_code: btoa(sourceCode),
-        language_id: languageId,
-        stdin: btoa(stdin),
-        expected_output: btoa(expectedOutput),
-        cpu_time_limit: timeLimit,
-        memory_limit: memoryLimit * 1024,
-        wall_time_limit: timeLimit + 1,
-      };
-
-      const response = await fetch(
-        `${this.BASE_URL}/submissions?base64_encoded=true&wait=false`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify(payload),
-        },
-      );
-
-      const responseText = await response.text();
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${responseText}`);
-      }
-
-      const result = JSON.parse(responseText);
-      return result.token;
-    } catch (error) {
-      console.error("Judge0 submission error:", error);
-      throw error;
-    }
-  }
-
-  static async getResult(token: string): Promise<Judge0Result> {
-    try {
-      const response = await fetch(
-        `${this.BASE_URL}/submissions/${token}?base64_encoded=true`,
-        {
-          headers: {
-            Accept: "application/json",
-          },
-        },
-      );
-
-      const responseText = await response.text();
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${responseText}`);
-      }
-
-      const result = JSON.parse(responseText);
-
-      if (result.stdout) result.stdout = atob(result.stdout);
-      if (result.stderr) result.stderr = atob(result.stderr);
-      if (result.compile_output)
-        result.compile_output = atob(result.compile_output);
-
-      return result;
-    } catch (error) {
-      console.error("Judge0 result retrieval error:", error);
-      throw error;
-    }
-  }
-
-  static async runCode(
-    sourceCode: string,
-    languageId: number,
-    testCases: TestCase[],
-    timeLimit: number = 5,
-    memoryLimit: number = 256,
-  ): Promise<TestCase[]> {
-    const results: TestCase[] = [];
-
-    for (const testCase of testCases) {
-      try {
-        const token = await this.submitCode(
-          sourceCode,
-          languageId,
-          testCase.input,
-          testCase.expected_output,
-          timeLimit,
-          memoryLimit,
-        );
-
-        let result: Judge0Result;
-        let attempts = 0;
-        const maxAttempts = 30;
-
-        do {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          result = await this.getResult(token);
-          attempts++;
-        } while (result.status.id <= 2 && attempts < maxAttempts);
-
-        const processedTestCase = this.processResult(result, testCase);
-        results.push(processedTestCase);
-      } catch (error) {
-        console.error("Error running test case:", error);
-        results.push({
-          ...testCase,
-          status: "ERROR",
-          error_message: `Execution error: ${error instanceof Error ? error.message : "Unknown error"}`,
-        });
-      }
-    }
-
-    return results;
-  }
-
-  private static processResult(
-    result: Judge0Result,
-    testCase: TestCase,
-  ): TestCase {
-    const processedTestCase: TestCase = {
-      ...testCase,
-      actual_output: result.stdout || "",
-      execution_time: result.time ? parseFloat(result.time) : 0,
-      memory_used: result.memory || 0,
-    };
-
-    const expectedOutput = testCase.expected_output;
-    const actualOutput = result.stdout || "";
-
-    switch (result.status.id) {
-      case 3:
-        const expectedTrimmed = expectedOutput.trim();
-        const actualTrimmed = actualOutput.trim();
-        processedTestCase.status =
-          expectedTrimmed === actualTrimmed ? "PASSED" : "FAILED";
-
-        if (processedTestCase.status === "FAILED" && expectedTrimmed) {
-          processedTestCase.error_message = `Output mismatch. Expected: "${expectedTrimmed}", Got: "${actualTrimmed}"`;
-        }
-        break;
-      case 4:
-        processedTestCase.status = "FAILED";
-        processedTestCase.error_message = `Wrong Answer. Expected: "${expectedOutput.trim()}", Got: "${actualOutput.trim()}"`;
-        break;
-      case 5:
-        processedTestCase.status = "TIME_LIMIT_EXCEEDED";
-        processedTestCase.error_message = "Time limit exceeded";
-        break;
-      case 6:
-        processedTestCase.status = "COMPILATION_ERROR";
-        processedTestCase.error_message =
-          result.compile_output || "Compilation failed";
-        processedTestCase.compile_output = result.compile_output;
-        break;
-      case 7:
-      case 8:
-      case 9:
-      case 10:
-      case 11:
-      case 12:
-        processedTestCase.status = "RUNTIME_ERROR";
-        processedTestCase.error_message =
-          result.stderr || result.message || "Runtime error occurred";
-        break;
-      default:
-        processedTestCase.status = "ERROR";
-        processedTestCase.error_message =
-          result.message || result.status.description || "Unknown error";
-    }
-
-    return processedTestCase;
-  }
-}
+import { Confetti } from "../Confetti";
+import { QuestionRendererProps, TestCase } from "@/types/testInterface";
+import { QuestionType } from "@/types/test";
+import { Toast } from "@/utils/Toast";
+import { CodeExecutionService } from "@/services/codeExecutionService";
+import { getMonacoLanguage } from "@/utils/getMonacoLanguage";
 
 export default function QuestionRenderer({
   question,
@@ -313,7 +36,30 @@ export default function QuestionRenderer({
   onAnswerChange,
   onCodeSubmit,
   existingSubmission,
+  testId = "",
 }: QuestionRendererProps) {
+  useEffect(() => {
+    console.log("QuestionRenderer mounted/updated:", {
+      questionId: question.id,
+      testId: testId,
+      testIdType: typeof testId,
+      testIdLength: testId?.length,
+      hasTestId: !!testId,
+      isCodeQuestion,
+    });
+  }, [testId, question.id]);
+  useEffect(() => {
+    console.log("Question changed, clearing test results:", {
+      previousResults: testResults.length,
+      newQuestionId: question.id,
+    });
+    setTestResults([]);
+    setIsRunning(false);
+    setIsSubmitting(false);
+    setToast(null);
+    setShowConfetti(false);
+  }, [question.id]);
+
   const [textValue, setTextValue] = useState(answer.textAnswer || "");
   const [codeValue, setCodeValue] = useState(
     answer.textAnswer || LANGUAGE_TEMPLATES.javascript,
@@ -322,8 +68,12 @@ export default function QuestionRenderer({
   const [testResults, setTestResults] = useState<TestCase[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error" | "warning" | "info";
+  } | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
 
-  // FIXED: Use question-specific submission status
   const [submissionStatus, setSubmissionStatus] = useState<{
     submitted: boolean;
     message: string;
@@ -341,20 +91,16 @@ export default function QuestionRenderer({
     passedTests: 0,
     score: 0,
   });
-
-  // Enhanced detection for CODE questions
   const questionData = question as any;
   const isCodeQuestion =
     questionData.originalType === "CODE" ||
     questionData.type === "CODE" ||
     questionData.questionType === "CODE";
 
-  // FIXED: Initialize submission status from existing submission if available
   useEffect(() => {
     if (existingSubmission) {
       setSubmissionStatus(existingSubmission);
     } else {
-      // Reset to default state for this specific question
       setSubmissionStatus({
         submitted: false,
         message: "",
@@ -365,7 +111,13 @@ export default function QuestionRenderer({
         score: 0,
       });
     }
-  }, [existingSubmission, question.id]); // Re-run when question ID changes
+
+    setTestResults([]);
+    setIsRunning(false);
+    setIsSubmitting(false);
+    setToast(null);
+    setShowConfetti(false);
+  }, [existingSubmission, question.id]);
 
   // Parse test cases with enhanced error handling
   const parseTestCases = (testCases: any): TestCase[] => {
@@ -447,8 +199,23 @@ export default function QuestionRenderer({
       } else {
         setCodeValue(answer.textAnswer);
       }
+
+      // Clear test results when switching to a different code question
+      console.log("Switching to code question, clearing previous test results");
+      setTestResults([]);
+      setIsRunning(false);
+      setIsSubmitting(false);
+      setToast(null);
+      setShowConfetti(false);
     }
-  }, [isCodeQuestion, answer.textAnswer, selectedLanguage]);
+  }, [isCodeQuestion, answer.textAnswer, selectedLanguage, question.id]);
+
+  const showToast = (
+    message: string,
+    type: "success" | "error" | "warning" | "info",
+  ) => {
+    setToast({ message, type });
+  };
 
   const handleOptionChange = (
     optionId: string,
@@ -489,100 +256,163 @@ export default function QuestionRenderer({
       setCodeValue(template);
       onAnswerChange(question.id, [], template);
     }
+
+    // Clear test results when language changes
+    console.log("Language changed, clearing test results");
+    setTestResults([]);
+    setIsRunning(false);
+    setIsSubmitting(false);
+    setToast(null);
+    setShowConfetti(false);
   };
 
   const handleRunCode = async () => {
+    // Enhanced validation with better debugging
     if (!codeValue.trim()) {
-      alert("Please write some code before running tests.");
+      showToast("Please write some code before running tests.", "warning");
       return;
     }
 
     if (visibleTestCases.length === 0) {
-      alert("No sample test cases available for this question.");
+      showToast("No sample test cases available for this question.", "warning");
       return;
     }
+
+    // Better testId validation and debugging
+    if (!testId || testId.trim() === "") {
+      console.error("QuestionRenderer: testId is missing or empty", {
+        testId,
+        question: question.id,
+      });
+      showToast(
+        "Test session not found. Please refresh the page and try again.",
+        "error",
+      );
+      return;
+    }
+
+    // UUID validation
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(testId)) {
+      console.error("QuestionRenderer: Invalid testId format", {
+        testId,
+        question: question.id,
+      });
+      showToast(
+        "Invalid test session. Please refresh the page and try again.",
+        "error",
+      );
+      return;
+    }
+
+    console.log("QuestionRenderer: Starting code execution", {
+      testId,
+      questionId: question.id,
+      language: selectedLanguage,
+      codeLength: codeValue.length,
+    });
 
     setIsRunning(true);
     setTestResults([]);
 
     try {
-      const languageConfig = PROGRAMMING_LANGUAGES.find(
-        (lang) => lang.id === selectedLanguage,
-      );
-
-      if (!languageConfig) {
-        throw new Error("Unsupported language selected");
-      }
-
-      // Only run visible test cases
-      const results = await Judge0Service.runCode(
+      const results = await CodeExecutionService.executeCode(
+        question.id,
         codeValue,
-        languageConfig.judge0Id,
-        visibleTestCases,
-        Math.floor(timeLimit / 1000),
-        memoryLimit,
+        selectedLanguage,
+        testId,
       );
 
       setTestResults(results);
+
+      const passedTests = results.filter((r) => r.status === "PASSED").length;
+      const totalTests = results.length;
+
+      if (passedTests === totalTests) {
+        showToast(`🎉 All ${totalTests} sample test cases passed!`, "success");
+      } else {
+        showToast(
+          `${passedTests}/${totalTests} sample test cases passed.`,
+          "info",
+        );
+      }
     } catch (error) {
       console.error("Code execution error:", error);
-      alert(
-        `Error running code: ${error instanceof Error ? error.message : "Unknown error"}`,
+      showToast(
+        `Execution failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        "error",
       );
     } finally {
       setIsRunning(false);
     }
   };
 
-  // FIXED: Individual code submission that doesn't auto-submit the entire test
   const handleSubmitSolution = async () => {
+    // Enhanced validation with better debugging
     if (!codeValue.trim()) {
-      alert("Please write some code before submitting.");
+      showToast("Please write some code before submitting.", "warning");
       return;
     }
 
-    const allTestCases = [...visibleTestCases, ...hiddenTestCases];
-
-    if (allTestCases.length === 0) {
-      alert("No test cases available for this question.");
+    // Better testId validation and debugging
+    if (!testId || testId.trim() === "") {
+      console.error(
+        "QuestionRenderer: testId is missing or empty for submission",
+        { testId, question: question.id },
+      );
+      showToast(
+        "Test session not found. Please refresh the page and try again.",
+        "error",
+      );
       return;
     }
+
+    // UUID validation
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(testId)) {
+      console.error("QuestionRenderer: Invalid testId format for submission", {
+        testId,
+        question: question.id,
+      });
+      showToast(
+        "Invalid test session. Please refresh the page and try again.",
+        "error",
+      );
+      return;
+    }
+
+    console.log("QuestionRenderer: Starting code submission", {
+      testId,
+      questionId: question.id,
+      language: selectedLanguage,
+      codeLength: codeValue.length,
+    });
 
     setIsSubmitting(true);
 
     try {
-      const languageConfig = PROGRAMMING_LANGUAGES.find(
-        (lang) => lang.id === selectedLanguage,
-      );
-
-      if (!languageConfig) {
-        throw new Error("Unsupported language selected");
-      }
-
-      // Run all test cases (visible + hidden)
-      const results = await Judge0Service.runCode(
+      const result = await CodeExecutionService.submitCode(
+        question.id,
         codeValue,
-        languageConfig.judge0Id,
-        allTestCases,
-        Math.floor(timeLimit / 1000),
-        memoryLimit,
+        selectedLanguage,
+        testId,
       );
 
-      const passedTests = results.filter((r) => r.status === "PASSED").length;
-      const totalTests = results.length;
+      const passedTests = result.results.filter(
+        (r) => r.status === "PASSED",
+      ).length;
+      const totalTests = result.results.length;
       const allPassed = passedTests === totalTests;
 
-      // Calculate score - only give full marks if ALL tests pass
-      const score = allPassed ? question.marks : 0;
-
-      // FIXED: Update only this question's submission status
       const newSubmissionStatus = {
         submitted: true,
         success: allPassed,
         allTestsPassed: allPassed,
         totalTests,
         passedTests,
-        score,
+        score: result.score,
         message: allPassed
           ? `ACCEPTED - All ${totalTests} test cases passed!`
           : `WRONG ANSWER - ${passedTests}/${totalTests} test cases passed.`,
@@ -590,30 +420,48 @@ export default function QuestionRenderer({
 
       setSubmissionStatus(newSubmissionStatus);
 
-      // Only store visible test cases results for display
-      const visibleResults = results.slice(0, visibleTestCases.length);
+      // Only show visible test results
+      const visibleResults = result.results.slice(0, visibleTestCases.length);
       setTestResults(visibleResults);
 
-      // Update the answer - call onAnswerChange to save the code
+      // Update answer
       onAnswerChange(question.id, [], codeValue);
 
-      // Call the onCodeSubmit callback to update parent state
+      // Notify parent component
       if (onCodeSubmit) {
-        onCodeSubmit(question.id, codeValue, selectedLanguage, results, score);
+        onCodeSubmit(
+          question.id,
+          codeValue,
+          selectedLanguage,
+          result.results,
+          result.score,
+        );
       }
 
-      // Show success/failure message with score information
-      if (allPassed) {
-        alert(
-          `🎉 ACCEPTED!\n\nAll ${totalTests} test cases passed!\nScore: ${score}/${question.marks} marks\n\nAnswer saved. Continue with other questions or submit the test when ready.`,
+      // FIXED: Only show confetti and success message when ALL tests pass AND score > 0
+      if (allPassed && result.score > 0) {
+        setShowConfetti(true);
+        showToast(
+          `🎉 ACCEPTED! All ${totalTests} test cases passed! Score: ${result.score}/${question.marks} marks`,
+          "success",
+        );
+        setTimeout(() => setShowConfetti(false), 5000);
+      } else if (allPassed && result.score === 0) {
+        // Edge case: All tests pass but score is 0 (shouldn't happen normally)
+        showToast(
+          `⚠️ All test cases passed but no score awarded. Please contact instructor.`,
+          "warning",
         );
       } else {
-        alert(
-          `❌ WRONG ANSWER\n\n${passedTests}/${totalTests} test cases passed.\nScore: 0/${question.marks} marks\n\nAll test cases must pass to earn marks.\nAnswer saved. You can continue or try again.`,
+        // Some or all tests failed
+        showToast(
+          `❌ WRONG ANSWER: ${passedTests}/${totalTests} test cases passed. Score: 0/${question.marks} marks`,
+          "error",
         );
       }
     } catch (error) {
       console.error("Code submission error:", error);
+
       const errorSubmissionStatus = {
         submitted: true,
         success: false,
@@ -625,9 +473,9 @@ export default function QuestionRenderer({
       };
 
       setSubmissionStatus(errorSubmissionStatus);
-
-      alert(
-        `❌ ERROR\n\nSubmission failed: ${error instanceof Error ? error.message : "Unknown error"}\nScore: 0/${question.marks} marks`,
+      showToast(
+        `❌ Submission failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        "error",
       );
     } finally {
       setIsSubmitting(false);
@@ -820,7 +668,6 @@ export default function QuestionRenderer({
                     {memoryLimit}MB
                   </span>
                 )}
-                {/* Show submission status for this specific question */}
                 {submissionStatus.submitted && (
                   <span
                     className={`px-2 py-1 rounded text-xs font-medium ${
@@ -833,6 +680,13 @@ export default function QuestionRenderer({
                       ? "✅ ACCEPTED"
                       : "❌ WRONG ANSWER"}{" "}
                     ({submissionStatus.score}/{question.marks} marks)
+                  </span>
+                )}
+                {/* Debug Info - Remove in production */}
+                {process.env.NODE_ENV === "development" && (
+                  <span className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-600">
+                    TestID:{" "}
+                    {testId ? `${testId.substring(0, 8)}...` : "MISSING"}
                   </span>
                 )}
               </div>
@@ -926,10 +780,10 @@ export default function QuestionRenderer({
                           <button
                             onClick={handleRunCode}
                             disabled={isRunning}
-                            className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg ${
+                            className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all ${
                               isRunning
                                 ? "bg-gray-400 text-white cursor-not-allowed"
-                                : "bg-blue-600 text-white hover:bg-blue-700"
+                                : "bg-blue-600 text-white hover:bg-blue-700 transform hover:scale-105"
                             }`}
                           >
                             {isRunning ? (
@@ -943,14 +797,14 @@ export default function QuestionRenderer({
                           <button
                             onClick={handleSubmitSolution}
                             disabled={isRunning || isSubmitting}
-                            className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg ${
+                            className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all ${
                               isRunning || isSubmitting
                                 ? "bg-gray-400 text-white cursor-not-allowed"
                                 : submissionStatus.submitted
                                   ? submissionStatus.success
-                                    ? "bg-green-600 text-white"
+                                    ? "bg-green-600 text-white hover:bg-green-700"
                                     : "bg-orange-600 text-white hover:bg-orange-700"
-                                  : "bg-green-600 text-white hover:bg-green-700"
+                                  : "bg-green-600 text-white hover:bg-green-700 transform hover:scale-105"
                             }`}
                           >
                             {isSubmitting ? (
@@ -995,8 +849,16 @@ export default function QuestionRenderer({
                               ];
                             setCodeValue(template);
                             handleCodeChange(template);
+
+                            // Clear test results when resetting code
+                            console.log("Code reset, clearing test results");
+                            setTestResults([]);
+                            setIsRunning(false);
+                            setIsSubmitting(false);
+                            setToast(null);
+                            setShowConfetti(false);
                           }}
-                          className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
+                          className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
                         >
                           <RefreshCw className="w-4 h-4 mr-1 inline" />
                           Reset
@@ -1027,19 +889,34 @@ export default function QuestionRenderer({
                       <h4 className="font-medium text-gray-800 text-sm">
                         {isRunning ? "Running Tests..." : "Test Results"}
                       </h4>
-                      {submissionStatus.submitted && (
-                        <span
-                          className={`text-xs px-2 py-1 rounded font-medium ${
-                            submissionStatus.success
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {submissionStatus.success
-                            ? "ACCEPTED"
-                            : `WRONG ANSWER (${submissionStatus.passedTests}/${submissionStatus.totalTests})`}
-                        </span>
-                      )}
+                      <div className="flex items-center space-x-2">
+                        {testResults.length > 0 && !isRunning && (
+                          <button
+                            onClick={() => {
+                              console.log("Manual clear test results");
+                              setTestResults([]);
+                              setToast(null);
+                              setShowConfetti(false);
+                            }}
+                            className="text-xs px-2 py-1 text-gray-600 hover:text-gray-800 border border-gray-300 rounded hover:bg-gray-50 transition-all"
+                          >
+                            Clear
+                          </button>
+                        )}
+                        {submissionStatus.submitted && (
+                          <span
+                            className={`text-xs px-2 py-1 rounded font-medium ${
+                              submissionStatus.success
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {submissionStatus.success
+                              ? "ACCEPTED"
+                              : `WRONG ANSWER (${submissionStatus.passedTests}/${submissionStatus.totalTests})`}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4">
                       {isRunning ? (
@@ -1053,11 +930,11 @@ export default function QuestionRenderer({
                         <div className="space-y-3">
                           {testResults.map((result, index) => (
                             <div
-                              key={index}
-                              className={`p-3 rounded-lg border ${
+                              key={`${question.id}-${index}`}
+                              className={`p-3 rounded-lg border transition-all ${
                                 result.status === "PASSED"
-                                  ? "bg-green-50 border-green-200"
-                                  : "bg-red-50 border-red-200"
+                                  ? "bg-green-50 border-green-200 hover:bg-green-100"
+                                  : "bg-red-50 border-red-200 hover:bg-red-100"
                               }`}
                             >
                               <div className="flex items-center justify-between mb-2">
@@ -1149,6 +1026,18 @@ export default function QuestionRenderer({
             </ResizablePanel>
           </ResizablePanelGroup>
         </div>
+
+        {/* Toast Notifications */}
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
+
+        {/* FIXED: Confetti Animation - Only shown when truly successful */}
+        <Confetti trigger={showConfetti} />
       </div>
     );
   };
@@ -1254,6 +1143,14 @@ export default function QuestionRenderer({
               </span>
             </div>
           </div>
+
+          {toast && (
+            <Toast
+              message={toast.message}
+              type={toast.type}
+              onClose={() => setToast(null)}
+            />
+          )}
         </div>
       )}
     </>

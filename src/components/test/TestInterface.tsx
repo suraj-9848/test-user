@@ -1101,6 +1101,7 @@ export default function TestInterface({
                 answer={currentAnswer}
                 onAnswerChange={handleAnswerChange}
                 onRunCode={handleRunCode}
+                testId={test.id}
                 onCodeSubmit={handleCodeSubmit}
                 existingSubmission={getQuestionSubmission(currentQuestion.id)}
               />
